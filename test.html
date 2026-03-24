@@ -1,0 +1,947 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VPinPlay Table Metadata Sync Service - Test Page</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+
+        h1, h2 {
+            color: #333;
+            border-bottom: 2px solid #007acc;
+            padding-bottom: 10px;
+        }
+
+        .section {
+            margin-bottom: 30px;
+        }
+
+        .query-block {
+            margin-bottom: 24px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .query-block:last-of-type {
+            margin-bottom: 0;
+            padding-bottom: 0;
+            border-bottom: none;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #555;
+        }
+
+        input, button {
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        input {
+            width: 100%;
+            max-width: 300px;
+        }
+
+        button {
+            background-color: #007acc;
+            color: white;
+            border: none;
+            cursor: pointer;
+            margin-right: 10px;
+        }
+
+        .button-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .button-group button {
+            margin-right: 0;
+        }
+
+        button:hover {
+            background-color: #005aa3;
+        }
+
+        button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+
+        .result {
+            margin-top: 15px;
+            padding: 10px;
+            border-radius: 4px;
+            white-space: pre-wrap;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .success {
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+
+        .error {
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+
+        .info {
+            background-color: #d1ecf1;
+            border: 1px solid #bee5eb;
+            color: #0c5460;
+        }
+
+        .table-container {
+            overflow-x: auto;
+            margin-top: 15px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+
+        th, td {
+            padding: 8px 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+
+        th {
+            background-color: #f8f9fa;
+            font-weight: bold;
+        }
+
+        tr:hover {
+            background-color: #f5f5f5;
+        }
+
+        .status-indicator {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-right: 5px;
+        }
+
+        .status-online {
+            background-color: #28a745;
+        }
+
+        .status-offline {
+            background-color: #dc3545;
+        }
+
+    </style>
+</head>
+<body>
+    <h1>VPinPlay Table Metadata Sync Service - Test Page</h1>
+
+    <div class="container">
+        <div class="section">
+            <h2>Service Status</h2>
+            <button onclick="checkHealth()">Check API Health</button>
+            <div id="health-result" class="result" style="display: none;"></div>
+        </div>
+
+        <div class="section">
+            <h2>Queries</h2>
+            <div class="query-block">
+                <h3>Global Queries</h3>
+                <div class="form-group">
+                    <label for="globalTableVpsId">Table VPS ID:</label>
+                    <input type="text" id="globalTableVpsId" placeholder="Enter VPS ID" value="lkSumsrF">
+                </div>
+                <div class="form-group">
+                    <label for="globalCheckUserId">User ID To Check:</label>
+                    <input type="text" id="globalCheckUserId" placeholder="Enter user ID" value="cabinet_1">
+                </div>
+                <div class="form-group">
+                    <label for="globalLimit">Global Limit (max 100):</label>
+                    <input type="number" id="globalLimit" placeholder="5" value="5" min="1" max="100">
+                </div>
+                <div class="button-group">
+                    <button onclick="getTableData()">Get Table Data</button>
+                    <button onclick="checkUserAvailable()">Check User Name</button>
+                    <button onclick="getLastGlobalSync()">Get Last Global Sync</button>
+                    <button onclick="getGlobalTopRatedTables()">Get Global Top Rated Tables</button>
+                    <button onclick="getGlobalTopPlayTimeTables()">Get Global Top Play Time Tables</button>
+                    <button onclick="getGlobalTableRatingSummary()">Get Table Rating Summary</button>
+                    <button onclick="getGlobalNewlyAddedTables()">Get Global Newly Added</button>
+                </div>
+                <div id="global-result" class="result" style="display: none;"></div>
+                <div id="user-result" class="result" style="display: none;"></div>
+            </div>
+
+            <div class="query-block">
+                <h3>VPS DB Cache Queries</h3>
+                <div class="form-group">
+                    <label for="vpsdbVpsId">VPS ID For VPS DB Lookup:</label>
+                    <input type="text" id="vpsdbVpsId" placeholder="Enter VPS ID" value="lkSumsrF">
+                </div>
+                <div class="button-group">
+                    <button onclick="getVpsdbById()">Get VPS DB By ID</button>
+                    <button onclick="getVpsdbStatus()">Get VPS DB Sync Status</button>
+                </div>
+                <div id="vpsdb-result" class="result" style="display: none;"></div>
+            </div>
+
+            <div class="query-block">
+                <h3>User-Specific Queries</h3>
+                <div class="form-group">
+                    <label for="userQueryId">User ID:</label>
+                    <input type="text" id="userQueryId" placeholder="Enter user ID" value="cabinet_1">
+                </div>
+                <div class="form-group">
+                    <label for="userTableVpsId">User Table VPS ID:</label>
+                    <input type="text" id="userTableVpsId" placeholder="Enter VPS ID" value="lkSumsrF">
+                </div>
+                <div class="form-group">
+                    <label for="userLimit">Limit (max 1000):</label>
+                    <input type="number" id="userLimit" placeholder="100" value="100" min="1" max="1000">
+                </div>
+                <div class="form-group">
+                    <label for="userOffset">Offset:</label>
+                    <input type="number" id="userOffset" placeholder="0" value="0" min="0">
+                </div>
+                <div class="button-group">
+                    <button onclick="getUserLastSync()">Get User Last Sync</button>
+                    <button onclick="getUserTableState()">Get User Table State</button>
+                    <button onclick="getAllUserTables()">Get All User Tables</button>
+                    <button onclick="getUserTableCount()">Get User Table Count</button>
+                    <button onclick="getUserRuntimeSum()">Get User Runtime Sum</button>
+                    <button onclick="getUserStartCountSum()">Get User Start Count Sum</button>
+                    <button onclick="getUserTopRatedTables()">Get Top Rated Tables</button>
+                    <button onclick="getUserRecentlyPlayedTables()">Get Recently Played Tables</button>
+                    <button onclick="getUserTopPlayTimeTables()">Get Top Play Time Tables</button>
+                    <button onclick="getUserMostPlayedTables()">Get Most Played Tables</button>
+                    <button onclick="getUserNewlyAddedTables()">Get Newest Added Tables</button>
+                </div>
+            </div>
+
+            <div id="table-result" class="result" style="display: none;"></div>
+        </div>
+
+        <div class="section">
+            <h2>Data Tables</h2>
+            <div id="data-tables"></div>
+        </div>
+    </div>
+
+    <script>
+        // Dynamically determine API base URL from current page location
+        const API_BASE = `${window.location.protocol}//${window.location.hostname}:8888`;
+
+        // Utility functions
+        function showResult(elementId, content, type = 'info') {
+            const element = document.getElementById(elementId);
+            element.textContent = content;
+            element.className = `result ${type}`;
+            element.style.display = 'block';
+        }
+
+        function hideResult(elementId) {
+            document.getElementById(elementId).style.display = 'none';
+        }
+
+        // API call functions
+        async function makeApiCall(endpoint, options = {}) {
+            try {
+                const response = await fetch(`${API_BASE}${endpoint}`, options);
+                const data = await response.json();
+                return { status: response.status, data };
+            } catch (error) {
+                return { status: 0, error: error.message };
+            }
+        }
+
+        // Health check
+        async function checkHealth() {
+            const result = await makeApiCall('/health');
+            if (result.status === 200) {
+                showResult('health-result', `✅ API is healthy\n${JSON.stringify(result.data, null, 2)}`, 'success');
+            } else {
+                showResult('health-result', `❌ Health check failed: ${result.error || 'Unknown error'}`, 'error');
+            }
+        }
+
+        // User availability check
+        async function checkUserAvailable() {
+            const userId = document.getElementById('globalCheckUserId').value.trim();
+            if (!userId) {
+                showResult('user-result', '❌ Please enter a user ID', 'error');
+                return;
+            }
+
+            const result = await makeApiCall(`/api/v1/users/${encodeURIComponent(userId)}/available`);
+            if (result.status === 200) {
+                const available = result.data.available;
+                const status = available ? '✅ Available' : '❌ Not available (already taken)';
+                showResult('user-result', `${status}\n${JSON.stringify(result.data, null, 2)}`, available ? 'success' : 'error');
+            } else {
+                showResult('user-result', `❌ Error: ${JSON.stringify(result.data || result.error, null, 2)}`, 'error');
+            }
+        }
+
+        // Get table data
+        async function getTableData() {
+            const vpsId = document.getElementById('globalTableVpsId').value.trim();
+            if (!vpsId) {
+                showResult('global-result', '❌ Please enter a VPS ID', 'error');
+                return;
+            }
+
+            const result = await makeApiCall(`/api/v1/tables/${encodeURIComponent(vpsId)}`);
+            if (result.status === 200) {
+                showResult('global-result', `📋 Table Data:\n${JSON.stringify(result.data, null, 2)}`, 'success');
+                displayUserTables(result.data, 'table-data');
+            } else {
+                showResult('global-result', `❌ Error: ${JSON.stringify(result.data || result.error, null, 2)}`, 'error');
+            }
+        }
+
+        // Get last global sync timestamp across all users
+        async function getLastGlobalSync() {
+            const result = await makeApiCall('/api/v1/sync/last');
+            if (result.status === 200) {
+                showResult('global-result', `🌐 Last Global Sync:\n${JSON.stringify(result.data, null, 2)}`, 'success');
+                displayUserTables([result.data], 'global-last-sync');
+            } else {
+                showResult('global-result', `❌ Error: ${JSON.stringify(result.data || result.error, null, 2)}`, 'error');
+            }
+        }
+
+        // Get global top-rated tables by cumulative average rating
+        async function getGlobalTopRatedTables() {
+            const limit = document.getElementById('globalLimit').value.trim() || 5;
+            const result = await makeApiCall(`/api/v1/tables/top-rated?limit=${encodeURIComponent(limit)}`);
+
+            if (result.status === 200) {
+                const count = result.data ? result.data.length : 0;
+                showResult('global-result', `🌍 Global Top Rated Tables (${count}):\n${JSON.stringify(result.data, null, 2)}`, 'success');
+                displayUserTables(result.data, 'global-top-rated');
+            } else {
+                showResult('global-result', `❌ Error: ${JSON.stringify(result.data || result.error, null, 2)}`, 'error');
+            }
+        }
+
+        // Get global top play-time tables by cumulative runtime
+        async function getGlobalTopPlayTimeTables() {
+            const limit = document.getElementById('globalLimit').value.trim() || 5;
+            const result = await makeApiCall(`/api/v1/tables/top-play-time?limit=${encodeURIComponent(limit)}`);
+
+            if (result.status === 200) {
+                const count = result.data ? result.data.length : 0;
+                showResult('global-result', `🌍 Global Top Play Time Tables (${count}):\n${JSON.stringify(result.data, null, 2)}`, 'success');
+                displayUserTables(result.data, 'global-top-play-time');
+            } else {
+                showResult('global-result', `❌ Error: ${JSON.stringify(result.data || result.error, null, 2)}`, 'error');
+            }
+        }
+
+        // Get global cumulative rating summary for one table
+        async function getGlobalTableRatingSummary() {
+            const vpsId = document.getElementById('globalTableVpsId').value.trim();
+            if (!vpsId) {
+                showResult('global-result', '❌ Please enter a VPS ID', 'error');
+                return;
+            }
+
+            const result = await makeApiCall(`/api/v1/tables/${encodeURIComponent(vpsId)}/rating-summary`);
+            if (result.status === 200) {
+                showResult('global-result', `📈 Table Rating Summary:\n${JSON.stringify(result.data, null, 2)}`, 'success');
+                displayUserTables([result.data], 'global-table-rating-summary');
+            } else {
+                showResult('global-result', `❌ Error: ${JSON.stringify(result.data || result.error, null, 2)}`, 'error');
+            }
+        }
+
+        // Get globally newly-added tables (first seen each vpsId)
+        async function getGlobalNewlyAddedTables() {
+            const limit = document.getElementById('globalLimit').value.trim() || 100;
+            const result = await makeApiCall(`/api/v1/tables/newly-added?limit=${encodeURIComponent(limit)}`);
+            if (result.status === 200) {
+                const count = result.data ? result.data.length : 0;
+                showResult('global-result', `🆕 Global Newly Added Tables (${count}):\n${JSON.stringify(result.data, null, 2)}`, 'success');
+                displayUserTables(result.data, 'global-newly-added');
+            } else {
+                showResult('global-result', `❌ Error: ${JSON.stringify(result.data || result.error, null, 2)}`, 'error');
+            }
+        }
+
+        // Get cached VPS DB record by vpsId
+        async function getVpsdbById() {
+            const vpsId = document.getElementById('vpsdbVpsId').value.trim();
+            if (!vpsId) {
+                showResult('vpsdb-result', '❌ Please enter a VPS ID', 'error');
+                return;
+            }
+
+            const result = await makeApiCall(`/api/v1/vpsdb/${encodeURIComponent(vpsId)}`);
+            if (result.status === 200) {
+                showResult('vpsdb-result', `🗂️ VPS DB Record:\n${JSON.stringify(result.data, null, 2)}`, 'success');
+                displayUserTables([result.data], 'vpsdb-by-id');
+            } else {
+                showResult('vpsdb-result', `❌ Error: ${JSON.stringify(result.data || result.error, null, 2)}`, 'error');
+            }
+        }
+
+        // Get VPS DB background sync status
+        async function getVpsdbStatus() {
+            const result = await makeApiCall('/api/v1/vpsdb/status');
+            if (result.status === 200) {
+                showResult('vpsdb-result', `🔄 VPS DB Sync Status:\n${JSON.stringify(result.data, null, 2)}`, 'success');
+                displayUserTables([result.data], 'vpsdb-status');
+            } else {
+                showResult('vpsdb-result', `❌ Error: ${JSON.stringify(result.data || result.error, null, 2)}`, 'error');
+            }
+        }
+
+        // Get user table state
+        async function getUserTableState() {
+            const userId = document.getElementById('userQueryId').value.trim();
+            const vpsId = document.getElementById('userTableVpsId').value.trim();
+
+            if (!userId || !vpsId) {
+                showResult('table-result', '❌ Please enter both user ID and VPS ID', 'error');
+                return;
+            }
+
+            const result = await makeApiCall(`/api/v1/users/${encodeURIComponent(userId)}/tables/${encodeURIComponent(vpsId)}`);
+            if (result.status === 200) {
+                showResult('table-result', `👤 User Table State:\n${JSON.stringify(result.data, null, 2)}`, 'success');
+                displayUserTables([result.data], 'user-table-state');
+            } else {
+                showResult('table-result', `❌ Error: ${JSON.stringify(result.data || result.error, null, 2)}`, 'error');
+            }
+        }
+
+        // Get user last sync timestamp
+        async function getUserLastSync() {
+            const userId = document.getElementById('userQueryId').value.trim();
+            if (!userId) {
+                showResult('table-result', '❌ Please enter a user ID', 'error');
+                return;
+            }
+
+            const result = await makeApiCall(`/api/v1/users/${encodeURIComponent(userId)}/last-sync`);
+            if (result.status === 200) {
+                showResult('table-result', `🕘 User Last Sync:\n${JSON.stringify(result.data, null, 2)}`, 'success');
+                displayUserTables([result.data], 'user-last-sync');
+            } else {
+                showResult('table-result', `❌ Error: ${JSON.stringify(result.data || result.error, null, 2)}`, 'error');
+            }
+        }
+
+        // Get all user tables
+        async function getAllUserTables() {
+            const userId = document.getElementById('userQueryId').value.trim();
+            const limit = document.getElementById('userLimit').value.trim();
+            const offset = document.getElementById('userOffset').value.trim();
+            
+            if (!userId) {
+                showResult('table-result', '❌ Please enter a user ID', 'error');
+                return;
+            }
+
+            let url = `/api/v1/users/${encodeURIComponent(userId)}/tables`;
+            const params = [];
+            if (limit) params.push(`limit=${encodeURIComponent(limit)}`);
+            if (offset) params.push(`offset=${encodeURIComponent(offset)}`);
+            if (params.length > 0) url += `?${params.join('&')}`;
+
+            const result = await makeApiCall(url);
+            if (result.status === 200) {
+                const count = result.data ? result.data.length : 0;
+                showResult('table-result', `📊 All User Tables (${count} returned, limit: ${limit || 100}, offset: ${offset || 0}):\n${JSON.stringify(result.data, null, 2)}`, 'success');
+                displayUserTables(result.data, 'all');
+            } else {
+                showResult('table-result', `❌ Error: ${JSON.stringify(result.data || result.error, null, 2)}`, 'error');
+            }
+        }
+
+        // Get user table count
+        async function getUserTableCount() {
+            const userId = document.getElementById('userQueryId').value.trim();
+            if (!userId) {
+                showResult('table-result', '❌ Please enter a user ID', 'error');
+                return;
+            }
+
+            const result = await makeApiCall(`/api/v1/users/${encodeURIComponent(userId)}/tables/count`);
+            if (result.status === 200) {
+                showResult('table-result', `📊 User Table Count:\n${JSON.stringify(result.data, null, 2)}`, 'success');
+            } else {
+                showResult('table-result', `❌ Error: ${JSON.stringify(result.data || result.error, null, 2)}`, 'error');
+            }
+        }
+
+        // Get user runtime sum
+        async function getUserRuntimeSum() {
+            const userId = document.getElementById('userQueryId').value.trim();
+            if (!userId) {
+                showResult('table-result', '❌ Please enter a user ID', 'error');
+                return;
+            }
+
+            const result = await makeApiCall(`/api/v1/users/${encodeURIComponent(userId)}/tables/runtime-sum`);
+            if (result.status === 200) {
+                showResult('table-result', `⏳ User Runtime Sum:\n${JSON.stringify(result.data, null, 2)}`, 'success');
+                displayUserTables([result.data], 'user-runtime-sum');
+            } else {
+                showResult('table-result', `❌ Error: ${JSON.stringify(result.data || result.error, null, 2)}`, 'error');
+            }
+        }
+
+        // Get user start count sum
+        async function getUserStartCountSum() {
+            const userId = document.getElementById('userQueryId').value.trim();
+            if (!userId) {
+                showResult('table-result', '❌ Please enter a user ID', 'error');
+                return;
+            }
+
+            const result = await makeApiCall(`/api/v1/users/${encodeURIComponent(userId)}/tables/start-count-sum`);
+            if (result.status === 200) {
+                showResult('table-result', `🎯 User Start Count Sum:\n${JSON.stringify(result.data, null, 2)}`, 'success');
+                displayUserTables([result.data], 'user-start-count-sum');
+            } else {
+                showResult('table-result', `❌ Error: ${JSON.stringify(result.data || result.error, null, 2)}`, 'error');
+            }
+        }
+
+        // Get top rated user tables
+        async function getUserTopRatedTables() {
+            const userId = document.getElementById('userQueryId').value.trim();
+            const limit = document.getElementById('userLimit').value.trim() || 5;
+
+            if (!userId) {
+                showResult('table-result', '❌ Please enter a user ID', 'error');
+                return;
+            }
+
+            const result = await makeApiCall(`/api/v1/users/${encodeURIComponent(userId)}/tables/top-rated?limit=${encodeURIComponent(limit)}`);
+            if (result.status === 200) {
+                const count = result.data ? result.data.length : 0;
+                showResult('table-result', `⭐ Top Rated Tables (${count}):\n${JSON.stringify(result.data, null, 2)}`, 'success');
+                displayUserTables(result.data, 'top-rated');
+            } else {
+                showResult('table-result', `❌ Error: ${JSON.stringify(result.data || result.error, null, 2)}`, 'error');
+            }
+        }
+
+        // Get recently played user tables
+        async function getUserRecentlyPlayedTables() {
+            const userId = document.getElementById('userQueryId').value.trim();
+            const limit = document.getElementById('userLimit').value.trim() || 5;
+
+            if (!userId) {
+                showResult('table-result', '❌ Please enter a user ID', 'error');
+                return;
+            }
+
+            const result = await makeApiCall(`/api/v1/users/${encodeURIComponent(userId)}/tables/recently-played?limit=${encodeURIComponent(limit)}`);
+            if (result.status === 200) {
+                const count = result.data ? result.data.length : 0;
+                showResult('table-result', `🕒 Recently Played Tables (${count}):\n${JSON.stringify(result.data, null, 2)}`, 'success');
+                displayUserTables(result.data, 'recently-played');
+            } else {
+                showResult('table-result', `❌ Error: ${JSON.stringify(result.data || result.error, null, 2)}`, 'error');
+            }
+        }
+
+        // Get top play-time user tables
+        async function getUserTopPlayTimeTables() {
+            const userId = document.getElementById('userQueryId').value.trim();
+            const limit = document.getElementById('userLimit').value.trim() || 5;
+
+            if (!userId) {
+                showResult('table-result', '❌ Please enter a user ID', 'error');
+                return;
+            }
+
+            const result = await makeApiCall(`/api/v1/users/${encodeURIComponent(userId)}/tables/top-play-time?limit=${encodeURIComponent(limit)}`);
+            if (result.status === 200) {
+                const count = result.data ? result.data.length : 0;
+                showResult('table-result', `⏱️ Top Play Time Tables (${count}):\n${JSON.stringify(result.data, null, 2)}`, 'success');
+                displayUserTables(result.data, 'top-play-time');
+            } else {
+                showResult('table-result', `❌ Error: ${JSON.stringify(result.data || result.error, null, 2)}`, 'error');
+            }
+        }
+
+        // Get most played user tables
+        async function getUserMostPlayedTables() {
+            const userId = document.getElementById('userQueryId').value.trim();
+            const limit = document.getElementById('userLimit').value.trim() || 1;
+
+            if (!userId) {
+                showResult('table-result', '❌ Please enter a user ID', 'error');
+                return;
+            }
+
+            const result = await makeApiCall(`/api/v1/users/${encodeURIComponent(userId)}/tables/most-played?limit=${encodeURIComponent(limit)}`);
+            if (result.status === 200) {
+                const count = result.data ? result.data.length : 0;
+                showResult('table-result', `🎮 Most Played Tables (${count}):\n${JSON.stringify(result.data, null, 2)}`, 'success');
+                displayUserTables(result.data, 'most-played');
+            } else {
+                showResult('table-result', `❌ Error: ${JSON.stringify(result.data || result.error, null, 2)}`, 'error');
+            }
+        }
+
+        // Get newest tables added for a user
+        async function getUserNewlyAddedTables() {
+            const userId = document.getElementById('userQueryId').value.trim();
+            const limit = document.getElementById('userLimit').value.trim() || 5;
+
+            if (!userId) {
+                showResult('table-result', '❌ Please enter a user ID', 'error');
+                return;
+            }
+
+            const result = await makeApiCall(`/api/v1/users/${encodeURIComponent(userId)}/tables/newly-added?limit=${encodeURIComponent(limit)}`);
+            if (result.status === 200) {
+                const count = result.data ? result.data.length : 0;
+                showResult('table-result', `🆕 User Newest Added Tables (${count}):\n${JSON.stringify(result.data, null, 2)}`, 'success');
+                displayUserTables(result.data, 'user-newly-added');
+            } else {
+                showResult('table-result', `❌ Error: ${JSON.stringify(result.data || result.error, null, 2)}`, 'error');
+            }
+        }
+
+        function formatLastRun(table) {
+            return table.lastRun ? new Date(table.lastRun).toLocaleString() : 'Never';
+        }
+
+        function formatUpdatedAt(table) {
+            return table.updatedAt ? new Date(table.updatedAt).toLocaleString() : '-';
+        }
+
+        function fmtRuntime(value) {
+            const minutes = Number(value || 0);
+            return `${minutes} min`;
+        }
+
+        function formatRunTime(table) {
+            return fmtRuntime(table.runTime);
+        }
+
+        function formatAuthorsFromVpsdb(row) {
+            const authors = getValueByPath(row, 'vpsdb.authors');
+            if (Array.isArray(authors)) return authors.join(', ');
+            return authors || '-';
+        }
+
+        function getValueByPath(obj, path) {
+            if (!path) return undefined;
+            return path.split('.').reduce((current, part) => {
+                if (current === null || current === undefined) return undefined;
+                return current[part];
+            }, obj);
+        }
+
+        const TABLE_VIEW_CONFIG = {
+            'table-data': {
+                title: 'Table Metadata',
+                columns: [
+                    { key: 'vpsId', label: 'VPS ID' },
+                    { key: 'vpsdb.name', label: 'Name', valuePath: 'vpsdb.name' },
+                    { key: 'vpsdb.authors', label: 'Authors', valuePath: 'vpsdb.authors', formatter: formatAuthorsFromVpsdb },
+                    { key: 'vpsdb.manufacturer', label: 'Manufacturer', valuePath: 'vpsdb.manufacturer' },
+                    { key: 'vpsdb.year', label: 'Year', valuePath: 'vpsdb.year' },
+                    { key: 'rom', label: 'ROM' },
+                    { key: 'vpxFile.filename', label: 'VPX File', valuePath: 'vpxFile.filename' },
+                    { key: 'vpxFile.version', label: 'Version', valuePath: 'vpxFile.version' },
+                    { key: 'vpxFile.rom', label: 'VPX ROM', valuePath: 'vpxFile.rom' },
+                    { key: 'updatedAt', label: 'Updated', formatter: formatUpdatedAt },
+                    { key: 'lastSeenAt', label: 'Last Seen', formatter: (table) => table.lastSeenAt ? new Date(table.lastSeenAt).toLocaleString() : '-' }
+                ]
+            },
+            'user-table-state': {
+                title: 'User Table State',
+                columns: [
+                    { key: 'userId', label: 'User ID' },
+                    { key: 'vpsId', label: 'VPS ID' },
+                    { key: 'vpsdb.name', label: 'Name', valuePath: 'vpsdb.name' },
+                    { key: 'vpsdb.authors', label: 'Authors', valuePath: 'vpsdb.authors', formatter: formatAuthorsFromVpsdb },
+                    { key: 'vpsdb.manufacturer', label: 'Manufacturer', valuePath: 'vpsdb.manufacturer' },
+                    { key: 'vpsdb.year', label: 'Year', valuePath: 'vpsdb.year' },
+                    { key: 'rating', label: 'Rating' },
+                    { key: 'lastRun', label: 'Last Run', formatter: formatLastRun },
+                    { key: 'startCount', label: 'Starts' },
+                    { key: 'runTime', label: 'Run Time', formatter: formatRunTime },
+                    { key: 'updatedAt', label: 'Updated', formatter: formatUpdatedAt }
+                ]
+            },
+            'user-last-sync': {
+                title: 'User Last Sync',
+                columns: [
+                    { key: 'userId', label: 'User ID' },
+                    { key: 'lastSyncAt', label: 'Last Sync', formatter: (row) => row.lastSyncAt ? new Date(row.lastSyncAt).toLocaleString() : 'Never' }
+                ]
+            },
+            'user-runtime-sum': {
+                title: 'User Runtime Sum',
+                columns: [
+                    { key: 'userId', label: 'User ID' },
+                    { key: 'runTimeTotal', label: 'Total Run Time', formatter: (row) => fmtRuntime(row.runTimeTotal) }
+                ]
+            },
+            'user-start-count-sum': {
+                title: 'User Start Count Sum',
+                columns: [
+                    { key: 'userId', label: 'User ID' },
+                    { key: 'startCountTotal', label: 'Total Starts' }
+                ]
+            },
+            'global-last-sync': {
+                title: 'Last Global Sync',
+                columns: [
+                    { key: 'userId', label: 'User ID' },
+                    { key: 'lastSyncAt', label: 'Last Sync', formatter: (row) => row.lastSyncAt ? new Date(row.lastSyncAt).toLocaleString() : 'Never' }
+                ]
+            },
+            'global-top-rated': {
+                title: 'Global Top Rated Tables',
+                columns: [
+                    { key: 'vpsId', label: 'VPS ID' },
+                    { key: 'vpsdb.name', label: 'Name', valuePath: 'vpsdb.name' },
+                    { key: 'vpsdb.authors', label: 'Authors', valuePath: 'vpsdb.authors', formatter: formatAuthorsFromVpsdb },
+                    { key: 'vpsdb.manufacturer', label: 'Manufacturer', valuePath: 'vpsdb.manufacturer' },
+                    { key: 'vpsdb.year', label: 'Year', valuePath: 'vpsdb.year' },
+                    { key: 'avgRating', label: 'Average Rating' },
+                    { key: 'ratingCount', label: 'Rating Count' }
+                ]
+            },
+            'global-top-play-time': {
+                title: 'Global Top Play Time Tables',
+                columns: [
+                    { key: 'vpsId', label: 'VPS ID' },
+                    { key: 'vpsdb.name', label: 'Name', valuePath: 'vpsdb.name' },
+                    { key: 'vpsdb.authors', label: 'Authors', valuePath: 'vpsdb.authors', formatter: formatAuthorsFromVpsdb },
+                    { key: 'vpsdb.manufacturer', label: 'Manufacturer', valuePath: 'vpsdb.manufacturer' },
+                    { key: 'vpsdb.year', label: 'Year', valuePath: 'vpsdb.year' },
+                    { key: 'runTimeTotal', label: 'Total Run Time', formatter: (row) => fmtRuntime(row.runTimeTotal) },
+                    { key: 'startCountTotal', label: 'Total Starts' },
+                    { key: 'playerCount', label: 'Players' }
+                ]
+            },
+            'global-table-rating-summary': {
+                title: 'Table Rating Summary',
+                columns: [
+                    { key: 'vpsId', label: 'VPS ID' },
+                    { key: 'vpsdb.name', label: 'Name', valuePath: 'vpsdb.name' },
+                    { key: 'vpsdb.authors', label: 'Authors', valuePath: 'vpsdb.authors', formatter: formatAuthorsFromVpsdb },
+                    { key: 'vpsdb.manufacturer', label: 'Manufacturer', valuePath: 'vpsdb.manufacturer' },
+                    { key: 'vpsdb.year', label: 'Year', valuePath: 'vpsdb.year' },
+                    { key: 'avgRating', label: 'Average Rating' },
+                    { key: 'ratingCount', label: 'Rating Count' }
+                ]
+            },
+            'global-newly-added': {
+                title: 'Global Newly Added Tables',
+                columns: [
+                    { key: 'vpsId', label: 'VPS ID' },
+                    { key: 'vpsdb.name', label: 'Name', valuePath: 'vpsdb.name' },
+                    { key: 'vpsdb.authors', label: 'Authors', valuePath: 'vpsdb.authors', formatter: formatAuthorsFromVpsdb },
+                    { key: 'vpsdb.manufacturer', label: 'Manufacturer', valuePath: 'vpsdb.manufacturer' },
+                    { key: 'vpsdb.year', label: 'Year', valuePath: 'vpsdb.year' },
+                    { key: 'firstSeenAt', label: 'First Seen', formatter: (row) => row.firstSeenAt ? new Date(row.firstSeenAt).toLocaleString() : '-' },
+                    { key: 'variationCount', label: 'Variations' }
+                ]
+            },
+            'vpsdb-by-id': {
+                title: 'VPS DB Record',
+                columns: [
+                    { key: 'vpsId', label: 'VPS ID' },
+                    { key: 'vpsdb.name', label: 'Name', valuePath: 'vpsdb.name' },
+                    { key: 'vpsdb.authors', label: 'Authors', valuePath: 'vpsdb.authors', formatter: formatAuthorsFromVpsdb },
+                    { key: 'vpsdb.manufacturer', label: 'Manufacturer', valuePath: 'vpsdb.manufacturer' },
+                    { key: 'vpsdb.year', label: 'Year', valuePath: 'vpsdb.year' },
+                    { key: 'updatedAt', label: 'Updated', formatter: (row) => row.updatedAt ? new Date(row.updatedAt).toLocaleString() : '-' }
+                ]
+            },
+            'vpsdb-status': {
+                title: 'VPS DB Sync Status',
+                columns: [
+                    { key: 'status', label: 'Status' },
+                    { key: 'recordCount', label: 'Record Count' },
+                    { key: 'selectedFields', label: 'Selected Fields', formatter: (row) => Array.isArray(row.selectedFields) ? row.selectedFields.join(', ') : '-' },
+                    { key: 'lastSyncAt', label: 'Last Sync', formatter: (row) => row.lastSyncAt ? new Date(row.lastSyncAt).toLocaleString() : '-' },
+                    { key: 'lastError', label: 'Last Error' }
+                ]
+            },
+            all: {
+                title: 'All User Tables',
+                columns: [
+                    { key: 'vpsId', label: 'VPS ID' },
+                    { key: 'vpsdb.name', label: 'Name', valuePath: 'vpsdb.name' },
+                    { key: 'vpsdb.authors', label: 'Authors', valuePath: 'vpsdb.authors', formatter: formatAuthorsFromVpsdb },
+                    { key: 'vpsdb.manufacturer', label: 'Manufacturer', valuePath: 'vpsdb.manufacturer' },
+                    { key: 'vpsdb.year', label: 'Year', valuePath: 'vpsdb.year' },
+                    { key: 'rating', label: 'Rating' },
+                    { key: 'lastRun', label: 'Last Run', formatter: formatLastRun },
+                    { key: 'startCount', label: 'Start Count' },
+                    { key: 'runTime', label: 'Run Time', formatter: formatRunTime },
+                    { key: 'altvpsid', label: 'Alt VPS ID' },
+                    { key: 'updatedAt', label: 'Updated', formatter: formatUpdatedAt }
+                ]
+            },
+            'top-rated': {
+                title: 'Top Rated Tables',
+                columns: [
+                    { key: 'vpsId', label: 'VPS ID' },
+                    { key: 'vpsdb.name', label: 'Name', valuePath: 'vpsdb.name' },
+                    { key: 'vpsdb.authors', label: 'Authors', valuePath: 'vpsdb.authors', formatter: formatAuthorsFromVpsdb },
+                    { key: 'vpsdb.manufacturer', label: 'Manufacturer', valuePath: 'vpsdb.manufacturer' },
+                    { key: 'vpsdb.year', label: 'Year', valuePath: 'vpsdb.year' },
+                    { key: 'rating', label: 'Rating' },
+                    { key: 'lastRun', label: 'Last Run', formatter: formatLastRun },
+                    { key: 'startCount', label: 'Starts' },
+                    { key: 'runTime', label: 'Run Time', formatter: formatRunTime }
+                ]
+            },
+            'recently-played': {
+                title: 'Recently Played Tables',
+                columns: [
+                    { key: 'vpsId', label: 'VPS ID' },
+                    { key: 'vpsdb.name', label: 'Name', valuePath: 'vpsdb.name' },
+                    { key: 'vpsdb.authors', label: 'Authors', valuePath: 'vpsdb.authors', formatter: formatAuthorsFromVpsdb },
+                    { key: 'vpsdb.manufacturer', label: 'Manufacturer', valuePath: 'vpsdb.manufacturer' },
+                    { key: 'vpsdb.year', label: 'Year', valuePath: 'vpsdb.year' },
+                    { key: 'lastRun', label: 'Last Run', formatter: formatLastRun },
+                    { key: 'startCount', label: 'Starts' },
+                    { key: 'runTime', label: 'Run Time', formatter: formatRunTime },
+                    { key: 'rating', label: 'Rating' }
+                ]
+            },
+            'top-play-time': {
+                title: 'Top Play Time Tables',
+                columns: [
+                    { key: 'vpsId', label: 'VPS ID' },
+                    { key: 'vpsdb.name', label: 'Name', valuePath: 'vpsdb.name' },
+                    { key: 'vpsdb.authors', label: 'Authors', valuePath: 'vpsdb.authors', formatter: formatAuthorsFromVpsdb },
+                    { key: 'vpsdb.manufacturer', label: 'Manufacturer', valuePath: 'vpsdb.manufacturer' },
+                    { key: 'vpsdb.year', label: 'Year', valuePath: 'vpsdb.year' },
+                    { key: 'runTime', label: 'Run Time', formatter: formatRunTime },
+                    { key: 'startCount', label: 'Starts' },
+                    { key: 'lastRun', label: 'Last Run', formatter: formatLastRun },
+                    { key: 'rating', label: 'Rating' }
+                ]
+            },
+            'most-played': {
+                title: 'Most Played Tables',
+                columns: [
+                    { key: 'vpsId', label: 'VPS ID' },
+                    { key: 'vpsdb.name', label: 'Name', valuePath: 'vpsdb.name' },
+                    { key: 'vpsdb.authors', label: 'Authors', valuePath: 'vpsdb.authors', formatter: formatAuthorsFromVpsdb },
+                    { key: 'vpsdb.manufacturer', label: 'Manufacturer', valuePath: 'vpsdb.manufacturer' },
+                    { key: 'vpsdb.year', label: 'Year', valuePath: 'vpsdb.year' },
+                    { key: 'startCount', label: 'Starts' },
+                    { key: 'runTime', label: 'Run Time', formatter: formatRunTime },
+                    { key: 'lastRun', label: 'Last Run', formatter: formatLastRun },
+                    { key: 'rating', label: 'Rating' }
+                ]
+            },
+            'user-newly-added': {
+                title: 'User Newest Added Tables',
+                columns: [
+                    { key: 'vpsId', label: 'VPS ID' },
+                    { key: 'vpsdb.name', label: 'Name', valuePath: 'vpsdb.name' },
+                    { key: 'vpsdb.authors', label: 'Authors', valuePath: 'vpsdb.authors', formatter: formatAuthorsFromVpsdb },
+                    { key: 'vpsdb.manufacturer', label: 'Manufacturer', valuePath: 'vpsdb.manufacturer' },
+                    { key: 'vpsdb.year', label: 'Year', valuePath: 'vpsdb.year' },
+                    { key: 'createdAt', label: 'Added At', formatter: (row) => row.createdAt ? new Date(row.createdAt).toLocaleString() : '-' },
+                    { key: 'rating', label: 'Rating' },
+                    { key: 'startCount', label: 'Starts' }
+                ]
+            }
+        };
+
+        // Display user tables with dynamic columns per query type
+        function displayUserTables(tables, viewType = 'all') {
+            const container = document.getElementById('data-tables');
+            const config = TABLE_VIEW_CONFIG[viewType] || TABLE_VIEW_CONFIG.all;
+
+            if (!tables || tables.length === 0) {
+                container.innerHTML = '<p>No tables found for this user.</p>';
+                return;
+            }
+
+            let html = `<h3>${config.title} (${tables.length} total)</h3>`;
+            html += '<div class="table-container">';
+            html += '<table>';
+            html += '<thead>';
+            html += '<tr>';
+            config.columns.forEach((column) => {
+                html += `<th>${column.label}</th>`;
+            });
+            html += '</tr>';
+            html += '</thead>';
+            html += '<tbody>';
+
+            tables.forEach(table => {
+                html += '<tr>';
+                config.columns.forEach((column) => {
+                    const rawValue = column.valuePath ? getValueByPath(table, column.valuePath) : table[column.key];
+                    let value = rawValue;
+
+                    if (column.formatter) {
+                        value = column.formatter(table);
+                    } else if (rawValue === null || rawValue === undefined || rawValue === '') {
+                        value = '-';
+                    }
+
+                    html += `<td>${value}</td>`;
+                });
+                html += '</tr>';
+            });
+
+            html += '</tbody>';
+            html += '</table>';
+            html += '</div>';
+
+            container.innerHTML = html;
+        }
+
+        // Initialize page
+        document.addEventListener('DOMContentLoaded', function() {
+            // Auto-check health on page load
+            setTimeout(checkHealth, 500);
+        });
+    </script>
+</body>
+</html>

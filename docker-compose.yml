@@ -1,0 +1,40 @@
+services:
+  api:
+    build: .
+    container_name: vpinfe_api
+    ports:
+      - "8888:8888"
+    environment:
+      - MONGO_URL=mongodb://mongo:27017
+      - MONGO_DB_NAME=vpinfe_db
+    depends_on:
+      mongo:
+        condition: service_healthy
+    volumes:
+      - .:/app
+    networks:
+      - vpinfe_network
+
+  mongo:
+    image: mongo:7.0
+    container_name: vpinfe_mongo
+    ports:
+      - "27017:27017"
+    environment:
+      - MONGO_INITDB_DATABASE=vpinfe_db
+    volumes:
+      - mongo_data:/data/db
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - vpinfe_network
+
+volumes:
+  mongo_data:
+
+networks:
+  vpinfe_network:
+    driver: bridge

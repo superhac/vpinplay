@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VPinPlay Table Dashboard</title>
+    <style>
+        :root {
+            --bg: #f5f7fb;
+            --surface: #ffffff;
+            --line: #dbe3f0;
+            --ink: #1b2a41;
+            --muted: #63738d;
+            --shadow: 0 12px 32px rgba(15, 23, 42, 0.08);
+            --radius: 14px;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            font-family: "Avenir Next", "Montserrat", "Segoe UI", sans-serif;
+            color: var(--ink);
+            background:
+                radial-gradient(900px 420px at -10% -10%, rgba(14, 123, 108, 0.15), transparent 60%),
+                radial-gradient(900px 420px at 110% -15%, rgba(29, 78, 216, 0.14), transparent 65%),
+                var(--bg);
+        }
+
+        .wrap {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 24px 16px 40px;
+        }
+
+        .hero {
+            background: linear-gradient(135deg, #0f766e, #1d4ed8);
+            color: #f8fbff;
+            border-radius: 18px;
+            padding: 18px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            box-shadow: var(--shadow);
+        }
+
+        .hero h1 { margin: 0; font-size: clamp(1.25rem, 2vw, 1.9rem); }
+
+        .hero-actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .pill, .btn {
+            border-radius: 999px;
+            padding: 8px 12px;
+            font-size: 0.88rem;
+            font-weight: 700;
+            text-decoration: none;
+        }
+
+        .pill {
+            color: #fff;
+            border: 1px solid rgba(255, 255, 255, 0.35);
+            background: rgba(255, 255, 255, 0.12);
+        }
+
+        .btn {
+            border: none;
+            color: #173264;
+            background: #fff;
+            cursor: pointer;
+        }
+
+        .controls, .panel {
+            background: var(--surface);
+            border: 1px solid var(--line);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+        }
+
+        .controls {
+            margin-top: 14px;
+            padding: 12px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-items: end;
+        }
+
+        .field {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .field label {
+            font-size: 0.82rem;
+            color: var(--muted);
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+
+        input {
+            border: 1px solid var(--line);
+            border-radius: 10px;
+            padding: 9px 11px;
+            min-width: 280px;
+            font-size: 0.94rem;
+        }
+
+        .grid-panels {
+            margin-top: 12px;
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 10px;
+        }
+
+        .panel {
+            padding: 12px;
+            min-height: 240px;
+        }
+
+        .panel h3 {
+            margin: 0 0 10px;
+            font-size: 1rem;
+        }
+
+        .panel p {
+            margin: 0 0 10px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.88rem;
+        }
+
+        th, td {
+            text-align: left;
+            padding: 8px 6px;
+            border-bottom: 1px solid #ecf1f8;
+            vertical-align: top;
+        }
+
+        th {
+            color: var(--muted);
+            font-size: 0.76rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .muted { color: var(--muted); }
+
+        .variation-details {
+            margin-top: 12px;
+            display: grid;
+            gap: 10px;
+        }
+
+        .variation-card {
+            border: 1px solid var(--line);
+            border-radius: 10px;
+            background: #fbfdff;
+            padding: 10px;
+        }
+
+        .variation-title {
+            font-weight: 700;
+            margin-bottom: 8px;
+            font-size: 0.92rem;
+        }
+
+        .variation-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 8px 10px;
+        }
+
+        .variation-field {
+            border: 1px solid #e7edf6;
+            border-radius: 8px;
+            padding: 8px;
+            background: #ffffff;
+        }
+
+        .variation-label {
+            font-size: 0.72rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--muted);
+            margin-bottom: 4px;
+            font-weight: 700;
+        }
+
+        .variation-value {
+            font-size: 0.9rem;
+            word-break: break-word;
+        }
+
+        @media (max-width: 640px) {
+            input { min-width: 0; width: 100%; }
+            .variation-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <div class="wrap">
+        <section class="hero">
+            <div>
+                <h1>Table Dashboard (Testing)</h1>
+                <div id="lastRefresh" class="muted">Last refresh: -</div>
+            </div>
+            <div class="hero-actions">
+                <button class="btn" onclick="refreshDashboard()">Refresh</button>
+                <a class="pill" href="main.html">Open Global</a>
+                <a class="pill" href="player.html">Open Player</a>
+            </div>
+        </section>
+
+        <section class="controls">
+            <div class="field">
+                <label for="vpsIdInput">VPS ID Focus</label>
+                <input id="vpsIdInput" type="text" value="lkSumsrF" placeholder="Enter VPS ID">
+            </div>
+            <button class="btn" onclick="refreshDashboard()">Apply</button>
+        </section>
+
+        <section class="grid-panels">
+            <section class="panel">
+                <h3>Rating Summary</h3>
+                <table id="ratingSummaryTable"></table>
+            </section>
+
+            <section class="panel">
+                <h3 id="tableVariationsTitle">Table Variations (0)</h3>
+                <div id="tableByIdDetails" class="variation-details"></div>
+            </section>
+
+            <section class="panel">
+                <h3>VPSDB Record</h3>
+                <div id="vpsdbByIdDetails" class="variation-details"></div>
+            </section>
+        </section>
+    </div>
+
+    <script>
+        const API_BASE = `${window.location.protocol}//${window.location.hostname}:8888`;
+
+        function q(id) { return document.getElementById(id); }
+
+        function escapeHtml(value) {
+            return String(value ?? "")
+                .replaceAll("&", "&amp;")
+                .replaceAll("<", "&lt;")
+                .replaceAll(">", "&gt;")
+                .replaceAll('"', "&quot;")
+                .replaceAll("'", "&#039;");
+        }
+
+        function fmtDate(value) {
+            if (!value) return "-";
+            const d = new Date(value);
+            if (Number.isNaN(d.getTime())) return "-";
+            return d.toLocaleString();
+        }
+
+        function fmtTableName(row) {
+            const name = row?.vpsdb?.name || "Unknown Table";
+            const manufacturer = row?.vpsdb?.manufacturer;
+            const year = row?.vpsdb?.year;
+            const parts = [manufacturer, year].filter(v => v !== null && v !== undefined && String(v).trim() !== "");
+            return parts.length ? `${name} (${parts.join(", ")})` : name;
+        }
+
+        async function api(path) {
+            try {
+                const response = await fetch(`${API_BASE}${path}`);
+                const data = await response.json().catch(() => ({}));
+                return { ok: response.ok, status: response.status, data };
+            } catch (error) {
+                return { ok: false, status: 0, data: { error: error.message } };
+            }
+        }
+
+        function renderTable(elId, columns, rows) {
+            const el = q(elId);
+            if (!rows || rows.length === 0) {
+                el.innerHTML = `<tr><td class="muted">No data</td></tr>`;
+                return;
+            }
+
+            let html = "<thead><tr>";
+            columns.forEach(col => { html += `<th>${escapeHtml(col.label)}</th>`; });
+            html += "</tr></thead><tbody>";
+
+            rows.forEach(row => {
+                html += "<tr>";
+                columns.forEach(col => {
+                    const raw = col.getter(row);
+                    const text = raw === null || raw === undefined || raw === "" ? "-" : raw;
+                    html += `<td>${escapeHtml(text)}</td>`;
+                });
+                html += "</tr>";
+            });
+
+            html += "</tbody>";
+            el.innerHTML = html;
+        }
+
+        function renderVariationDetails(rows) {
+            const container = q("tableByIdDetails");
+            const title = q("tableVariationsTitle");
+            const count = Array.isArray(rows) ? rows.length : 0;
+            if (title) {
+                title.textContent = `Table Variations (${count})`;
+            }
+
+            if (!rows || rows.length === 0) {
+                container.innerHTML = `<div class="muted">No table variations found for this VPS ID.</div>`;
+                return;
+            }
+
+            let html = "";
+            rows.forEach((row) => {
+                const filename = row?.vpxFile?.filename || "Unknown file";
+                const field = (label, value) => `
+                    <div class="variation-field">
+                        <div class="variation-label">${escapeHtml(label)}</div>
+                        <div class="variation-value">${escapeHtml(value ?? "-")}</div>
+                    </div>
+                `;
+
+                const priorityOrder = [
+                    "vpsdb.name",
+                    "vpsdb.manufacturer",
+                    "vpsdb.year",
+                    "vpsdb.authors",
+                    "vpsId",
+                    "rom",
+                    "vpxFile.filename",
+                    "vpxFile.filehash",
+                    "vpxFile.version",
+                    "vpxFile.rom",
+                    "createdAt",
+                    "updatedAt",
+                    "lastSeenAt"
+                ];
+
+                const flatFields = flattenObject(row)
+                    .map(item => {
+                        const raw = item.value;
+                        const isDateField = /(At|Run)$/i.test(item.key);
+                        const rendered = isDateField ? fmtDate(raw) : (raw ?? "-");
+                        return { key: item.key, value: rendered };
+                    });
+
+                const priorityMap = new Map(priorityOrder.map((k, i) => [k, i]));
+                flatFields.sort((a, b) => {
+                    const ai = priorityMap.has(a.key) ? priorityMap.get(a.key) : 9999;
+                    const bi = priorityMap.has(b.key) ? priorityMap.get(b.key) : 9999;
+                    if (ai !== bi) return ai - bi;
+                    return a.key.localeCompare(b.key);
+                });
+
+                const fieldsHtml = flatFields.map(item => field(item.key, item.value)).join("");
+                html += `
+                    <article class="variation-card">
+                        <div class="variation-title">${escapeHtml(filename)}</div>
+                        <div class="variation-grid">
+                            ${field("tableLabel", fmtTableName(row))}
+                            ${fieldsHtml}
+                        </div>
+                    </article>
+                `;
+            });
+            container.innerHTML = html;
+        }
+
+        function flattenObject(obj, prefix = "") {
+            const out = [];
+            if (obj === null || obj === undefined) {
+                out.push({ key: prefix || "value", value: "-" });
+                return out;
+            }
+            if (Array.isArray(obj)) {
+                out.push({ key: prefix, value: obj.map(item => (typeof item === "object" ? JSON.stringify(item) : String(item))).join(", ") || "-" });
+                return out;
+            }
+            if (typeof obj !== "object") {
+                out.push({ key: prefix || "value", value: obj });
+                return out;
+            }
+
+            Object.entries(obj).forEach(([key, value]) => {
+                const path = prefix ? `${prefix}.${key}` : key;
+                if (value && typeof value === "object" && !Array.isArray(value)) {
+                    out.push(...flattenObject(value, path));
+                } else if (Array.isArray(value)) {
+                    out.push({ key: path, value: value.map(item => (typeof item === "object" ? JSON.stringify(item) : String(item))).join(", ") || "-" });
+                } else {
+                    out.push({ key: path, value });
+                }
+            });
+            return out;
+        }
+
+        function renderVpsdbDetails(record) {
+            const container = q("vpsdbByIdDetails");
+            if (!record) {
+                container.innerHTML = `<div class="muted">No VPSDB record found for this VPS ID.</div>`;
+                return;
+            }
+
+            const field = (label, value) => `
+                <div class="variation-field">
+                    <div class="variation-label">${escapeHtml(label)}</div>
+                    <div class="variation-value">${escapeHtml(value ?? "-")}</div>
+                </div>
+            `;
+
+            const flatFields = flattenObject(record).map(item => {
+                const raw = item.value;
+                const isDateField = /(At|Run)$/i.test(item.key);
+                return { key: item.key, value: isDateField ? fmtDate(raw) : (raw ?? "-") };
+            });
+
+            const fieldsHtml = flatFields.map(item => field(item.key, item.value)).join("");
+            container.innerHTML = `
+                <article class="variation-card">
+                    <div class="variation-title">${escapeHtml(record?.vpsdb?.name || record?.vpsId || "VPSDB Record")}</div>
+                    <div class="variation-grid">
+                        ${fieldsHtml}
+                    </div>
+                </article>
+            `;
+        }
+
+        async function refreshDashboard() {
+            const vpsId = q("vpsIdInput").value.trim();
+            q("lastRefresh").textContent = `Last refresh: ${new Date().toLocaleString()}`;
+
+            if (!vpsId) {
+                renderTable("ratingSummaryTable", [{ label: "Info", getter: () => "Enter a VPS ID" }], []);
+                renderVariationDetails([]);
+                renderVpsdbDetails(null);
+                return;
+            }
+
+            const [ratingSummaryRes, tableByIdRes, vpsdbByIdRes] = await Promise.all([
+                api(`/api/v1/tables/${encodeURIComponent(vpsId)}/rating-summary`),
+                api(`/api/v1/tables/${encodeURIComponent(vpsId)}`),
+                api(`/api/v1/vpsdb/${encodeURIComponent(vpsId)}`),
+            ]);
+
+            const ratingSummaryRows = ratingSummaryRes.ok && ratingSummaryRes.data ? [ratingSummaryRes.data] : [];
+            renderTable("ratingSummaryTable",
+                [
+                    { label: "Table", getter: r => fmtTableName(r) },
+                    { label: "Avg Rating", getter: r => r.avgRating ?? "-" },
+                    { label: "Rating Count", getter: r => r.ratingCount ?? "-" },
+                    { label: "VPS ID", getter: r => r.vpsId ?? "-" },
+                ],
+                ratingSummaryRows
+            );
+
+            const byIdRows = tableByIdRes.ok && Array.isArray(tableByIdRes.data) ? tableByIdRes.data : [];
+            renderVariationDetails(byIdRows);
+
+            const vpsdbRecord = vpsdbByIdRes.ok && vpsdbByIdRes.data ? vpsdbByIdRes.data : null;
+            renderVpsdbDetails(vpsdbRecord);
+        }
+
+        document.addEventListener("DOMContentLoaded", refreshDashboard);
+    </script>
+</body>
+</html>

@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VPinPlay Dashboard</title>
+    <style>
+        :root {
+            --bg: #f5f7fb;
+            --surface: #ffffff;
+            --line: #dbe3f0;
+            --ink: #1b2a41;
+            --muted: #63738d;
+            --ok: #0f766e;
+            --bad: #b91c1c;
+            --shadow: 0 12px 32px rgba(15, 23, 42, 0.08);
+            --radius: 14px;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            font-family: "Avenir Next", "Montserrat", "Segoe UI", sans-serif;
+            color: var(--ink);
+            background:
+                radial-gradient(900px 420px at -10% -10%, rgba(14, 123, 108, 0.15), transparent 60%),
+                radial-gradient(900px 420px at 110% -15%, rgba(29, 78, 216, 0.14), transparent 65%),
+                var(--bg);
+        }
+
+        .wrap {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 24px 16px 40px;
+        }
+
+        .hero {
+            background: linear-gradient(135deg, #0f766e, #1d4ed8);
+            color: #f8fbff;
+            border-radius: 18px;
+            padding: 18px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            box-shadow: var(--shadow);
+        }
+
+        .hero h1 { margin: 0; font-size: clamp(1.25rem, 2vw, 1.9rem); }
+
+        .hero-actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .pill, .btn {
+            border-radius: 999px;
+            padding: 8px 12px;
+            font-size: 0.88rem;
+            font-weight: 700;
+            text-decoration: none;
+        }
+
+        .pill {
+            color: #fff;
+            border: 1px solid rgba(255, 255, 255, 0.35);
+            background: rgba(255, 255, 255, 0.12);
+        }
+
+        .btn {
+            border: none;
+            color: #173264;
+            background: #fff;
+            cursor: pointer;
+        }
+
+        .controls, .kpi, .panel {
+            background: var(--surface);
+            border: 1px solid var(--line);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+        }
+
+        .controls {
+            margin-top: 14px;
+            padding: 12px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-items: end;
+        }
+
+        .field {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .field label {
+            font-size: 0.82rem;
+            color: var(--muted);
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+
+        input {
+            border: 1px solid var(--line);
+            border-radius: 10px;
+            padding: 9px 11px;
+            min-width: 220px;
+            font-size: 0.94rem;
+        }
+
+        .grid-kpi {
+            margin-top: 14px;
+            display: grid;
+            grid-template-columns: repeat(6, minmax(0, 1fr));
+            gap: 10px;
+        }
+
+        .kpi {
+            padding: 12px;
+        }
+
+        .kpi .label {
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            font-size: 0.76rem;
+            margin-bottom: 6px;
+            font-weight: 700;
+        }
+
+        .kpi .value {
+            font-size: 1.35rem;
+            font-weight: 800;
+        }
+
+        .kpi .sub {
+            margin-top: 4px;
+            color: var(--muted);
+            font-size: 0.85rem;
+        }
+
+        .status-ok { color: var(--ok); }
+        .status-bad { color: var(--bad); }
+
+        .grid-panels {
+            margin-top: 12px;
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 10px;
+        }
+
+        .panel {
+            padding: 12px;
+            min-height: 260px;
+        }
+
+        .panel.bottom {
+            margin-top: 12px;
+            min-height: 0;
+        }
+
+        .panel h3 {
+            margin: 0 0 10px;
+            font-size: 1rem;
+        }
+
+        .pager {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            flex-wrap: wrap;
+            margin-bottom: 8px;
+        }
+
+        .pager .btn {
+            background: #f8fbff;
+            border: 1px solid var(--line);
+        }
+
+        .pager .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.88rem;
+        }
+
+        th, td {
+            text-align: left;
+            padding: 8px 6px;
+            border-bottom: 1px solid #ecf1f8;
+            vertical-align: top;
+        }
+
+        th {
+            color: var(--muted);
+            font-size: 0.76rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .muted { color: var(--muted); }
+
+        @media (max-width: 1050px) {
+            .grid-kpi { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+            .grid-panels { grid-template-columns: 1fr; }
+        }
+
+        @media (max-width: 640px) {
+            .grid-kpi { grid-template-columns: 1fr; }
+            input { min-width: 0; width: 100%; }
+        }
+    </style>
+</head>
+<body>
+    <div class="wrap">
+        <section class="hero">
+            <div>
+                <h1>Dashboard (Testing)</h1>
+                <div id="lastRefresh" class="muted">Last refresh: -</div>
+            </div>
+            <div class="hero-actions">
+                <button class="btn" onclick="refreshDashboard()">Refresh</button>
+                <a class="pill" href="table.html">Open Table</a>
+                <a class="pill" href="player.html">Open Player</a>
+            </div>
+        </section>
+
+        <section class="controls">
+            <div class="field">
+                <label for="limitInput">Top/New Limit</label>
+                <input id="limitInput" type="number" value="5" min="1" max="100">
+            </div>
+            <button class="btn" onclick="refreshDashboard()">Apply</button>
+        </section>
+
+        <section class="grid-kpi">
+            <article class="kpi">
+                <div class="label">Last Global Sync</div>
+                <div id="kpiLastSync" class="value">-</div>
+                <div id="kpiLastSyncUser" class="sub">Last sync by user: -</div>
+            </article>
+            <article class="kpi">
+                <div class="label">Total Tables In System</div>
+                <div id="kpiTotalTables" class="value">-</div>
+                <div class="sub">All table variation rows</div>
+            </article>
+            <article class="kpi">
+                <div class="label">Total Users</div>
+                <div id="kpiUserCount" class="value">-</div>
+                <div class="sub">Registered users</div>
+            </article>
+            <article class="kpi">
+                <div class="label">VPSDB Sync</div>
+                <div id="kpiVpsdbStatus" class="value">-</div>
+                <div id="kpiVpsdbMeta" class="sub">-</div>
+            </article>
+            <article class="kpi">
+                <div class="label">This Week Play Time</div>
+                <div id="kpiRuntimeWeek" class="value">-</div>
+                <div class="sub">Global runtime delta (7d)</div>
+            </article>
+            <article class="kpi">
+                <div class="label">This Week Plays</div>
+                <div id="kpiStartsWeek" class="value">-</div>
+                <div class="sub">Global startCount delta (7d)</div>
+            </article>
+        </section>
+
+        <section class="grid-panels">
+            <section class="panel">
+                <h3>Top Rated</h3>
+                <table id="topRatedTable"></table>
+            </section>
+
+            <section class="panel">
+                <h3>Top Play Time</h3>
+                <table id="topPlayTimeGlobalTable"></table>
+            </section>
+
+            <section class="panel">
+                <h3>Newly Added</h3>
+                <table id="newlyAddedTable"></table>
+            </section>
+
+            <section class="panel">
+                <h3>Top Tables by Variants</h3>
+                <table id="topVariantsTable"></table>
+            </section>
+        </section>
+
+        <section class="panel bottom">
+            <h3>All Tables (Paginated)</h3>
+            <div class="pager">
+                <button id="allTablesPrevBtn" class="btn" onclick="prevAllTablesPage()">Prev</button>
+                <button id="allTablesNextBtn" class="btn" onclick="nextAllTablesPage()">Next</button>
+                <span id="allTablesPageInfo" class="muted">Page 1</span>
+                <span class="muted">50 per page</span>
+            </div>
+            <table id="allTablesTable"></table>
+        </section>
+    </div>
+
+    <script>
+        const API_BASE = `${window.location.protocol}//${window.location.hostname}:8888`;
+        const ALL_TABLES_PAGE_SIZE = 50;
+        let allTablesOffset = 0;
+        let allTablesTotal = null;
+
+        function q(id) { return document.getElementById(id); }
+
+        function escapeHtml(value) {
+            return String(value ?? "")
+                .replaceAll("&", "&amp;")
+                .replaceAll("<", "&lt;")
+                .replaceAll(">", "&gt;")
+                .replaceAll('"', "&quot;")
+                .replaceAll("'", "&#039;");
+        }
+
+        function fmtDate(value) {
+            if (!value) return "-";
+            const d = new Date(value);
+            if (Number.isNaN(d.getTime())) return "-";
+            return d.toLocaleString();
+        }
+
+        function truncateHash(value, max = 32) {
+            const text = value || "";
+            return text.length > max ? text.slice(0, max) : (text || "-");
+        }
+
+        function fmtNumber(value) {
+            return Number(value || 0).toLocaleString();
+        }
+
+        function fmtTableName(row) {
+            const name = row?.vpsdb?.name || "Unknown Table";
+            const manufacturer = row?.vpsdb?.manufacturer;
+            const year = row?.vpsdb?.year;
+            const parts = [manufacturer, year].filter(v => v !== null && v !== undefined && String(v).trim() !== "");
+            return parts.length ? `${name} (${parts.join(", ")})` : name;
+        }
+
+        async function api(path) {
+            try {
+                const response = await fetch(`${API_BASE}${path}`);
+                const data = await response.json().catch(() => ({}));
+                return { ok: response.ok, status: response.status, data };
+            } catch (error) {
+                return { ok: false, status: 0, data: { error: error.message } };
+            }
+        }
+
+        function renderTable(elId, columns, rows) {
+            const el = q(elId);
+            if (!rows || rows.length === 0) {
+                el.innerHTML = `<tr><td class="muted">No data</td></tr>`;
+                return;
+            }
+
+            let html = "<thead><tr>";
+            columns.forEach(col => { html += `<th>${escapeHtml(col.label)}</th>`; });
+            html += "</tr></thead><tbody>";
+
+            rows.forEach(row => {
+                html += "<tr>";
+                columns.forEach(col => {
+                    const raw = col.getter(row);
+                    const text = raw === null || raw === undefined || raw === "" ? "-" : raw;
+                    html += `<td>${escapeHtml(text)}</td>`;
+                });
+                html += "</tr>";
+            });
+
+            html += "</tbody>";
+            el.innerHTML = html;
+        }
+
+        function setKpi(id, value, className = "") {
+            const el = q(id);
+            el.textContent = value;
+            el.className = `value ${className}`.trim();
+        }
+
+        async function loadAllTablesPage() {
+            const result = await api(`/api/v1/tables?limit=${ALL_TABLES_PAGE_SIZE}&offset=${allTablesOffset}`);
+            const items = result.ok && Array.isArray(result.data?.items) ? result.data.items : [];
+            const pg = result.ok ? (result.data?.pagination || {}) : {};
+            allTablesTotal = result.ok ? (pg.total ?? null) : null;
+
+            renderTable("allTablesTable",
+                [
+                    { label: "Name", getter: r => r.vpsdb?.name || "Unknown Table" },
+                    { label: "Manufacturer", getter: r => r.vpsdb?.manufacturer || "-" },
+                    { label: "Year", getter: r => r.vpsdb?.year || "-" },
+                    { label: "VPS ID", getter: r => r.vpsId || "-" },
+                    { label: "Filename", getter: r => r.filename || "-" },
+                    { label: "Filehash", getter: r => truncateHash(r.filehash, 32) },
+                ],
+                items
+            );
+
+            const pageNumber = Math.floor((pg.offset || 0) / ALL_TABLES_PAGE_SIZE) + 1;
+            const total = pg.total || 0;
+            const returned = pg.returned || 0;
+            const start = total === 0 ? 0 : (pg.offset || 0) + 1;
+            const end = (pg.offset || 0) + returned;
+            q("allTablesPageInfo").textContent = `Page ${pageNumber} (${start}-${end} of ${total})`;
+            q("allTablesPrevBtn").disabled = !pg.hasPrev;
+            q("allTablesNextBtn").disabled = !pg.hasNext;
+        }
+
+        async function prevAllTablesPage() {
+            allTablesOffset = Math.max(0, allTablesOffset - ALL_TABLES_PAGE_SIZE);
+            await loadAllTablesPage();
+        }
+
+        async function nextAllTablesPage() {
+            allTablesOffset = allTablesOffset + ALL_TABLES_PAGE_SIZE;
+            await loadAllTablesPage();
+        }
+
+        async function refreshDashboard() {
+            const limit = q("limitInput").value.trim() || "5";
+
+            const [
+                lastSyncRes,
+                topRatedRes,
+                topPlayTimeRes,
+                newlyAddedRes,
+                topVariantsRes,
+                vpsdbStatusRes,
+                weeklyActivityRes,
+                userCountRes,
+            ] = await Promise.all([
+                api("/api/v1/sync/last"),
+                api(`/api/v1/tables/top-rated?limit=${encodeURIComponent(limit)}`),
+                api(`/api/v1/tables/top-play-time?limit=${encodeURIComponent(limit)}`),
+                api(`/api/v1/tables/newly-added?limit=${encodeURIComponent(limit)}`),
+                api(`/api/v1/tables/top-variants?limit=${encodeURIComponent(limit)}`),
+                api("/api/v1/vpsdb/status"),
+                api("/api/v1/tables/activity-weekly?days=7"),
+                api("/api/v1/users/count"),
+            ]);
+
+            q("lastRefresh").textContent = `Last refresh: ${new Date().toLocaleString()}`;
+
+            q("kpiLastSync").textContent = lastSyncRes.ok ? fmtDate(lastSyncRes.data.lastSyncAt) : "-";
+            q("kpiLastSyncUser").textContent = `Last sync by user: ${lastSyncRes.ok ? (lastSyncRes.data.userId || "-") : "-"}`;
+
+            const topRatedRows = topRatedRes.ok && Array.isArray(topRatedRes.data) ? topRatedRes.data : [];
+            const newlyAddedRows = newlyAddedRes.ok && Array.isArray(newlyAddedRes.data) ? newlyAddedRes.data : [];
+            const topVariantsRows = topVariantsRes.ok && Array.isArray(topVariantsRes.data) ? topVariantsRes.data : [];
+            q("kpiTotalTables").textContent = allTablesTotal === null ? "-" : String(allTablesTotal);
+            q("kpiUserCount").textContent = userCountRes.ok ? fmtNumber(userCountRes.data.userCount) : "-";
+
+            if (vpsdbStatusRes.ok) {
+                const statusText = String(vpsdbStatusRes.data.status || "unknown");
+                setKpi("kpiVpsdbStatus", statusText, statusText === "ok" ? "status-ok" : "status-bad");
+                q("kpiVpsdbMeta").textContent = `records: ${vpsdbStatusRes.data.recordCount ?? "-"} | last: ${fmtDate(vpsdbStatusRes.data.lastSyncAt)}`;
+            } else {
+                setKpi("kpiVpsdbStatus", "error", "status-bad");
+                q("kpiVpsdbMeta").textContent = "Unable to fetch VPSDB status";
+            }
+
+            if (weeklyActivityRes.ok) {
+                q("kpiRuntimeWeek").textContent = `${fmtNumber(weeklyActivityRes.data.runTimePlayed)} min`;
+                q("kpiStartsWeek").textContent = fmtNumber(weeklyActivityRes.data.startCountPlayed);
+            } else {
+                q("kpiRuntimeWeek").textContent = "-";
+                q("kpiStartsWeek").textContent = "-";
+            }
+
+            renderTable("topRatedTable",
+                [
+                    { label: "Table", getter: r => fmtTableName(r) },
+                    { label: "Avg Rating", getter: r => r.avgRating },
+                    { label: "Rating Count", getter: r => r.ratingCount },
+                    { label: "VPS ID", getter: r => r.vpsId },
+                ],
+                topRatedRows
+            );
+
+            const topPlayTimeRows = topPlayTimeRes.ok && Array.isArray(topPlayTimeRes.data) ? topPlayTimeRes.data : [];
+            renderTable("topPlayTimeGlobalTable",
+                [
+                    { label: "Table", getter: r => fmtTableName(r) },
+                    { label: "Run Time (Total)", getter: r => `${Number(r.runTimeTotal || 0)} min` },
+                    { label: "Starts (Total)", getter: r => r.startCountTotal },
+                    { label: "Players", getter: r => r.playerCount },
+                    { label: "VPS ID", getter: r => r.vpsId },
+                ],
+                topPlayTimeRows
+            );
+
+            renderTable("newlyAddedTable",
+                [
+                    { label: "Table", getter: r => fmtTableName(r) },
+                    { label: "First Seen", getter: r => fmtDate(r.firstSeenAt) },
+                    { label: "Variations", getter: r => r.variationCount },
+                    { label: "VPS ID", getter: r => r.vpsId },
+                ],
+                newlyAddedRows
+            );
+
+            renderTable("topVariantsTable",
+                [
+                    { label: "Table", getter: r => fmtTableName(r) },
+                    { label: "Variants", getter: r => r.variationCount },
+                    { label: "VPS ID", getter: r => r.vpsId },
+                ],
+                topVariantsRows
+            );
+
+            await loadAllTablesPage();
+            q("kpiTotalTables").textContent = allTablesTotal === null ? "-" : String(allTablesTotal);
+        }
+
+        document.addEventListener("DOMContentLoaded", refreshDashboard);
+    </script>
+</body>
+</html>

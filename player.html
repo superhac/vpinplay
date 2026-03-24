@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VPinPlay Player Dashboard</title>
+    <style>
+        :root {
+            --bg: #f4f6fb;
+            --surface: #ffffff;
+            --surface-soft: #f8faff;
+            --ink: #152238;
+            --ink-muted: #5d6a81;
+            --accent: #0e7b6c;
+            --accent-2: #1d4ed8;
+            --line: #d9e2ef;
+            --ok: #0f766e;
+            --warn: #b45309;
+            --bad: #b91c1c;
+            --shadow: 0 16px 40px rgba(15, 23, 42, 0.08);
+            --radius: 16px;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            color: var(--ink);
+            background:
+                radial-gradient(900px 420px at -10% -10%, rgba(14, 123, 108, 0.18), transparent 60%),
+                radial-gradient(900px 420px at 110% -15%, rgba(29, 78, 216, 0.16), transparent 65%),
+                var(--bg);
+            font-family: "Avenir Next", "Montserrat", "Segoe UI", sans-serif;
+        }
+
+        .wrap {
+            max-width: 1300px;
+            margin: 0 auto;
+            padding: 28px 18px 44px;
+        }
+
+        .hero {
+            background: linear-gradient(135deg, #0f766e, #1d4ed8);
+            color: #f8fbff;
+            border-radius: 20px;
+            padding: 20px 22px;
+            box-shadow: var(--shadow);
+            display: flex;
+            flex-wrap: wrap;
+            gap: 14px;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .hero h1 {
+            margin: 0;
+            font-size: clamp(1.3rem, 2.1vw, 2rem);
+            letter-spacing: 0.01em;
+        }
+
+        .hero-meta {
+            margin-top: 6px;
+            color: rgba(241, 245, 249, 0.9);
+            font-size: 0.92rem;
+        }
+
+        .hero-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .pill {
+            background: rgba(255, 255, 255, 0.16);
+            border: 1px solid rgba(255, 255, 255, 0.28);
+            color: #fff;
+            border-radius: 999px;
+            padding: 8px 12px;
+            font-size: 0.88rem;
+            font-weight: 600;
+            text-decoration: none;
+        }
+
+        .btn {
+            border: none;
+            border-radius: 10px;
+            background: #ffffff;
+            color: #173364;
+            font-weight: 700;
+            padding: 9px 14px;
+            cursor: pointer;
+        }
+
+        .btn:hover {
+            filter: brightness(0.97);
+        }
+
+        .setup {
+            margin-top: 18px;
+            background: var(--surface);
+            border: 1px solid var(--line);
+            border-radius: var(--radius);
+            padding: 16px;
+            box-shadow: var(--shadow);
+        }
+
+        .setup h2 {
+            margin: 0 0 10px;
+            font-size: 1.1rem;
+        }
+
+        .setup-row {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        input {
+            border: 1px solid var(--line);
+            background: #fff;
+            color: var(--ink);
+            border-radius: 10px;
+            padding: 10px 12px;
+            font-size: 0.95rem;
+            min-width: 280px;
+        }
+
+        .grid-kpi {
+            margin-top: 18px;
+            display: grid;
+            grid-template-columns: repeat(6, minmax(0, 1fr));
+            gap: 12px;
+        }
+
+        .kpi {
+            background: var(--surface);
+            border: 1px solid var(--line);
+            border-radius: 14px;
+            padding: 12px 14px;
+            box-shadow: var(--shadow);
+        }
+
+        .kpi-label {
+            color: var(--ink-muted);
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            margin-bottom: 8px;
+        }
+
+        .kpi-value {
+            font-size: 1.5rem;
+            font-weight: 800;
+        }
+
+        .kpi-sub {
+            color: var(--ink-muted);
+            margin-top: 4px;
+            font-size: 0.86rem;
+        }
+
+        .grid-panels {
+            margin-top: 16px;
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 12px;
+        }
+
+        .panel {
+            background: var(--surface);
+            border: 1px solid var(--line);
+            border-radius: 14px;
+            padding: 12px;
+            box-shadow: var(--shadow);
+            min-height: 220px;
+        }
+
+        .panel h3 {
+            margin: 0 0 10px;
+            font-size: 1rem;
+            color: #22324f;
+        }
+
+        .status {
+            margin-top: 10px;
+            padding: 8px 10px;
+            border-radius: 10px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            width: fit-content;
+        }
+
+        .ok {
+            background: #ddfbf3;
+            color: var(--ok);
+            border: 1px solid #9fe8d8;
+        }
+
+        .warn {
+            background: #fff2dc;
+            color: var(--warn);
+            border: 1px solid #f4d7a1;
+        }
+
+        .bad {
+            background: #fee2e2;
+            color: var(--bad);
+            border: 1px solid #fecaca;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+        }
+
+        th, td {
+            text-align: left;
+            padding: 8px 6px;
+            border-bottom: 1px solid #edf2f8;
+        }
+
+        th {
+            color: var(--ink-muted);
+            font-size: 0.77rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .muted {
+            color: var(--ink-muted);
+        }
+
+        .mono {
+            font-family: "IBM Plex Mono", "Consolas", monospace;
+            letter-spacing: 0.01em;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        @media (max-width: 1050px) {
+            .grid-kpi {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+            .grid-panels {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 640px) {
+            .grid-kpi {
+                grid-template-columns: 1fr;
+            }
+            input {
+                min-width: 0;
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="wrap">
+        <section class="hero">
+            <div>
+                <h1 id="title">Player Dashboard (Testing)</h1>
+            </div>
+            <div class="hero-actions">
+                <span id="userBadge" class="pill mono">userid=?</span>
+                <button class="btn" onclick="refreshDashboard()">Refresh</button>
+            </div>
+        </section>
+
+        <section id="setup" class="setup hidden">
+            <h2>Set User ID</h2>
+            <div class="setup-row">
+                <input id="setupUserId" type="text" placeholder="Enter userid">
+                <button class="btn" onclick="applyUserId()">Load Dashboard</button>
+            </div>
+            <p class="muted">Use URL format: <span class="mono">player.html?userid=cabinet_1</span></p>
+        </section>
+
+        <section id="dashboard" class="hidden">
+            <div class="grid-kpi">
+                <article class="kpi">
+                    <div class="kpi-label">Table Count</div>
+                    <div id="kpiTableCount" class="kpi-value">-</div>
+                    <div class="kpi-sub">Total submitted tables</div>
+                </article>
+                <article class="kpi">
+                    <div class="kpi-label">Last Sync</div>
+                    <div id="kpiLastSync" class="kpi-value">-</div>
+                    <div class="kpi-sub">Latest successful sync</div>
+                </article>
+                <article class="kpi">
+                    <div class="kpi-label">Total Table Plays</div>
+                    <div id="kpiStarts" class="kpi-value">-</div>
+                    <div class="kpi-sub">Sum of startCount</div>
+                </article>
+                <article class="kpi">
+                    <div class="kpi-label">Total Play Time</div>
+                    <div id="kpiRuntime" class="kpi-value">-</div>
+                    <div class="kpi-sub">Sum of runTime</div>
+                </article>
+                <article class="kpi">
+                    <div class="kpi-label">This Week Play Time</div>
+                    <div id="kpiRuntimeWeek" class="kpi-value">-</div>
+                    <div class="kpi-sub">Last 7 days (delta)</div>
+                </article>
+                <article class="kpi">
+                    <div class="kpi-label">This Week Plays</div>
+                    <div id="kpiStartsWeek" class="kpi-value">-</div>
+                    <div class="kpi-sub">Last 7 days (delta)</div>
+                </article>
+            </div>
+
+            <div class="grid-panels">
+                <section class="panel">
+                    <h3>User Status</h3>
+                    <div id="userStatus" class="status warn">Checking...</div>
+                    <table id="spotlightTable"></table>
+                </section>
+
+                <section class="panel">
+                    <h3>Top Rated (User)</h3>
+                    <table id="topRatedTable"></table>
+                </section>
+
+                <section class="panel">
+                    <h3>Recently Played</h3>
+                    <table id="recentlyPlayedTable"></table>
+                </section>
+
+                <section class="panel">
+                    <h3>Top Play Time</h3>
+                    <table id="topPlaytimeTable"></table>
+                </section>
+
+                <section class="panel">
+                    <h3>Most Played</h3>
+                    <table id="mostPlayedTable"></table>
+                </section>
+
+                <section class="panel">
+                    <h3>Newest Added</h3>
+                    <table id="userNewlyAddedTable"></table>
+                </section>
+            </div>
+        </section>
+    </div>
+
+    <script>
+        const API_BASE = `${window.location.protocol}//${window.location.hostname}:8888`;
+        let currentUserId = null;
+
+        function q(id) {
+            return document.getElementById(id);
+        }
+
+        function escapeHtml(value) {
+            return String(value ?? "")
+                .replaceAll("&", "&amp;")
+                .replaceAll("<", "&lt;")
+                .replaceAll(">", "&gt;")
+                .replaceAll("\"", "&quot;")
+                .replaceAll("'", "&#039;");
+        }
+
+        function fmtDate(value) {
+            if (!value) return "Never";
+            const d = new Date(value);
+            if (Number.isNaN(d.getTime())) return "Invalid date";
+            return d.toLocaleString();
+        }
+
+        function fmtRuntime(minutes) {
+            const n = Number(minutes || 0);
+            return `${n} min`;
+        }
+
+        function fmtNumber(value) {
+            return Number(value || 0).toLocaleString();
+        }
+
+        function fmtTableName(row) {
+            const name = row?.vpsdb?.name;
+            const manufacturer = row?.vpsdb?.manufacturer;
+            const year = row?.vpsdb?.year;
+            const suffixParts = [manufacturer, year].filter(v => v !== null && v !== undefined && String(v).trim() !== "");
+            const baseName = name || "Unknown Table";
+            return suffixParts.length ? `${baseName} (${suffixParts.join(", ")})` : baseName;
+        }
+
+        async function api(path) {
+            try {
+                const response = await fetch(`${API_BASE}${path}`);
+                const data = await response.json().catch(() => ({}));
+                return { ok: response.ok, status: response.status, data };
+            } catch (error) {
+                return { ok: false, status: 0, data: { error: error.message } };
+            }
+        }
+
+        async function getGlobalAvgRatingMap(rows) {
+            const vpsIds = [...new Set((rows || []).map(r => r?.vpsId).filter(Boolean))];
+            if (vpsIds.length === 0) return {};
+
+            const responses = await Promise.all(
+                vpsIds.map(vpsId => api(`/api/v1/tables/${encodeURIComponent(vpsId)}/rating-summary`))
+            );
+
+            const map = {};
+            responses.forEach((res, idx) => {
+                const vpsId = vpsIds[idx];
+                if (!res.ok || !res.data) {
+                    map[vpsId] = null;
+                    return;
+                }
+                const avg = res.data.avgRating;
+                map[vpsId] = avg === null || avg === undefined ? null : Number(avg);
+            });
+            return map;
+        }
+
+        function fmtUserOverGlobalRating(row, globalAvgRatingMap) {
+            const userRating = row?.rating;
+            const globalAvg = globalAvgRatingMap?.[row?.vpsId];
+            const userText = userRating === null || userRating === undefined ? "-" : String(userRating);
+            const globalText = globalAvg === null || globalAvg === undefined ? "-" : String(globalAvg);
+            return `${userText} / ${globalText}`;
+        }
+
+        function renderTable(elId, columns, rows) {
+            const el = q(elId);
+            if (!rows || rows.length === 0) {
+                el.innerHTML = `<tr><td class="muted">No data</td></tr>`;
+                return;
+            }
+
+            let html = "<thead><tr>";
+            columns.forEach(col => {
+                html += `<th>${escapeHtml(col.label)}</th>`;
+            });
+            html += "</tr></thead><tbody>";
+
+            rows.forEach(row => {
+                html += "<tr>";
+                columns.forEach(col => {
+                    const raw = col.getter(row);
+                    const text = raw === null || raw === undefined || raw === "" ? "-" : raw;
+                    html += `<td>${escapeHtml(text)}</td>`;
+                });
+                html += "</tr>";
+            });
+
+            html += "</tbody>";
+            el.innerHTML = html;
+        }
+
+        function setUserStatus(availableResponse) {
+            const el = q("userStatus");
+            if (!availableResponse.ok) {
+                el.className = "status bad";
+                el.textContent = "Could not verify user availability";
+                return;
+            }
+
+            const available = !!availableResponse.data.available;
+            if (available) {
+                el.className = "status warn";
+                el.textContent = "User ID is currently available (no registered sync yet)";
+            } else {
+                el.className = "status ok";
+                el.textContent = "User ID is registered";
+            }
+        }
+
+        function setKpi(id, value) {
+            q(id).textContent = value;
+        }
+
+        function buildSpotlightRows(userLastSync, runtimeSum, runtimeWeek, startCountSum, startsWeek, mostPlayed) {
+            const rows = [];
+            if (userLastSync?.ok) {
+                rows.push({ metric: "Last Sync", value: fmtDate(userLastSync.data.lastSyncAt) });
+            }
+            if (runtimeSum?.ok) {
+                rows.push({ metric: "Runtime Sum", value: fmtRuntime(runtimeSum.data.runTimeTotal) });
+            }
+            if (runtimeWeek?.ok) {
+                rows.push({ metric: "This Week Runtime", value: fmtRuntime(runtimeWeek.data.runTimePlayed) });
+            }
+            if (startCountSum?.ok) {
+                rows.push({ metric: "Start Count Sum", value: fmtNumber(startCountSum.data.startCountTotal) });
+            }
+            if (startsWeek?.ok) {
+                rows.push({ metric: "This Week Plays", value: fmtNumber(startsWeek.data.startCountPlayed) });
+            }
+            if (mostPlayed?.ok && Array.isArray(mostPlayed.data) && mostPlayed.data[0]) {
+                rows.push({
+                    metric: "Most Played Table",
+                    value: `${fmtTableName(mostPlayed.data[0])} (${fmtNumber(mostPlayed.data[0].startCount)} starts)`
+                });
+            }
+            return rows;
+        }
+
+        async function refreshDashboard() {
+            if (!currentUserId) return;
+
+            q("userBadge").textContent = `userid=${currentUserId}`;
+
+            const [
+                availableRes,
+                lastSyncRes,
+                countRes,
+                runtimeSumRes,
+                runtimeWeekRes,
+                startCountSumRes,
+                startCountWeekRes,
+                topRatedRes,
+                recentRes,
+                topPlaytimeRes,
+                mostPlayedRes,
+                userNewlyAddedRes
+            ] = await Promise.all([
+                api(`/api/v1/users/${encodeURIComponent(currentUserId)}/available`),
+                api(`/api/v1/users/${encodeURIComponent(currentUserId)}/last-sync`),
+                api(`/api/v1/users/${encodeURIComponent(currentUserId)}/tables/count`),
+                api(`/api/v1/users/${encodeURIComponent(currentUserId)}/tables/runtime-sum`),
+                api(`/api/v1/users/${encodeURIComponent(currentUserId)}/tables/runtime-weekly?days=7`),
+                api(`/api/v1/users/${encodeURIComponent(currentUserId)}/tables/start-count-sum`),
+                api(`/api/v1/users/${encodeURIComponent(currentUserId)}/tables/start-count-weekly?days=7`),
+                api(`/api/v1/users/${encodeURIComponent(currentUserId)}/tables/top-rated?limit=5`),
+                api(`/api/v1/users/${encodeURIComponent(currentUserId)}/tables/recently-played?limit=5`),
+                api(`/api/v1/users/${encodeURIComponent(currentUserId)}/tables/top-play-time?limit=5`),
+                api(`/api/v1/users/${encodeURIComponent(currentUserId)}/tables/most-played?limit=5`),
+                api(`/api/v1/users/${encodeURIComponent(currentUserId)}/tables/newly-added?limit=5`)
+            ]);
+
+            const rowsNeedingGlobalRating = [
+                ...(topRatedRes.ok ? topRatedRes.data : []),
+                ...(recentRes.ok ? recentRes.data : []),
+                ...(userNewlyAddedRes.ok ? userNewlyAddedRes.data : []),
+            ];
+            const globalAvgRatingMap = await getGlobalAvgRatingMap(rowsNeedingGlobalRating);
+
+            setUserStatus(availableRes);
+
+            const totalStarts = startCountSumRes.ok
+                ? Number(startCountSumRes.data.startCountTotal || 0)
+                : 0;
+            const totalRuntime = runtimeSumRes.ok
+                ? Number(runtimeSumRes.data.runTimeTotal || 0)
+                : 0;
+            const runtimeWeek = runtimeWeekRes.ok
+                ? Number(runtimeWeekRes.data.runTimePlayed || 0)
+                : 0;
+            const startsWeek = startCountWeekRes.ok
+                ? Number(startCountWeekRes.data.startCountPlayed || 0)
+                : 0;
+
+            setKpi("kpiTableCount", countRes.ok ? fmtNumber(countRes.data.tableCount) : "-");
+            setKpi("kpiLastSync", lastSyncRes.ok ? fmtDate(lastSyncRes.data.lastSyncAt) : "-");
+            setKpi("kpiStarts", fmtNumber(totalStarts));
+            setKpi("kpiRuntime", fmtRuntime(totalRuntime));
+            setKpi("kpiRuntimeWeek", fmtRuntime(runtimeWeek));
+            setKpi("kpiStartsWeek", fmtNumber(startsWeek));
+
+            renderTable("spotlightTable",
+                [
+                    { label: "Metric", getter: r => r.metric },
+                    { label: "Value", getter: r => r.value }
+                ],
+                buildSpotlightRows(lastSyncRes, runtimeSumRes, runtimeWeekRes, startCountSumRes, startCountWeekRes, mostPlayedRes)
+            );
+
+            renderTable("topRatedTable",
+                [
+                    { label: "Table", getter: r => fmtTableName(r) },
+                    { label: "Mine / Avg Rating", getter: r => fmtUserOverGlobalRating(r, globalAvgRatingMap) },
+                    { label: "Starts", getter: r => r.startCount }
+                ],
+                topRatedRes.ok ? topRatedRes.data : []
+            );
+
+            renderTable("recentlyPlayedTable",
+                [
+                    { label: "Table", getter: r => fmtTableName(r) },
+                    { label: "Last Run", getter: r => fmtDate(r.lastRun) },
+                    { label: "Mine / Avg Rating", getter: r => fmtUserOverGlobalRating(r, globalAvgRatingMap) }
+                ],
+                recentRes.ok ? recentRes.data : []
+            );
+
+            renderTable("topPlaytimeTable",
+                [
+                    { label: "Table", getter: r => fmtTableName(r) },
+                    { label: "Run Time", getter: r => fmtRuntime(r.runTime) },
+                    { label: "Starts", getter: r => fmtNumber(r.startCount) }
+                ],
+                topPlaytimeRes.ok ? topPlaytimeRes.data : []
+            );
+
+            renderTable("mostPlayedTable",
+                [
+                    { label: "Table", getter: r => fmtTableName(r) },
+                    { label: "Starts", getter: r => fmtNumber(r.startCount) },
+                    { label: "Last Run", getter: r => fmtDate(r.lastRun) }
+                ],
+                mostPlayedRes.ok ? mostPlayedRes.data : []
+            );
+
+            renderTable("userNewlyAddedTable",
+                [
+                    { label: "Table", getter: r => fmtTableName(r) },
+                    { label: "Added", getter: r => fmtDate(r.createdAt) },
+                    { label: "My / Avg Rating", getter: r => fmtUserOverGlobalRating(r, globalAvgRatingMap) }
+                ],
+                userNewlyAddedRes.ok ? userNewlyAddedRes.data : []
+            );
+
+        }
+
+        function applyUserId() {
+            const entered = q("setupUserId").value.trim();
+            if (!entered) return;
+            const url = new URL(window.location.href);
+            url.searchParams.set("userid", entered);
+            window.location.href = url.toString();
+        }
+
+        function init() {
+            const params = new URLSearchParams(window.location.search);
+            const userId = params.get("userid");
+
+            if (!userId) {
+                q("setup").classList.remove("hidden");
+                q("dashboard").classList.add("hidden");
+                q("title").textContent = "Player Dashboard (Testing)";
+                return;
+            }
+
+            currentUserId = userId;
+            q("setup").classList.add("hidden");
+            q("dashboard").classList.remove("hidden");
+            q("title").textContent = `${userId}`;
+            q("userBadge").textContent = `userid=${userId}`;
+            refreshDashboard();
+        }
+
+        document.addEventListener("DOMContentLoaded", init);
+    </script>
+</body>
+</html>
