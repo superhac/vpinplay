@@ -252,6 +252,21 @@
 
         function q(id) { return document.getElementById(id); }
 
+        function getVpisidFromUrl() {
+            const params = new URLSearchParams(window.location.search);
+            return (params.get("vpisid") || "").trim();
+        }
+
+        function setVpisidInUrl(vpsId) {
+            const url = new URL(window.location.href);
+            if (vpsId) {
+                url.searchParams.set("vpisid", vpsId);
+            } else {
+                url.searchParams.delete("vpisid");
+            }
+            window.history.replaceState({}, "", url);
+        }
+
         function escapeHtml(value) {
             return String(value ?? "")
                 .replaceAll("&", "&amp;")
@@ -441,6 +456,7 @@
 
         async function refreshDashboard() {
             const vpsId = q("vpsIdInput").value.trim();
+            setVpisidInUrl(vpsId);
             q("lastRefresh").textContent = `Last refresh: ${new Date().toLocaleString()}`;
 
             if (!vpsId) {
@@ -474,7 +490,13 @@
             renderVpsdbDetails(vpsdbRecord);
         }
 
-        document.addEventListener("DOMContentLoaded", refreshDashboard);
+        document.addEventListener("DOMContentLoaded", () => {
+            const vpisid = getVpisidFromUrl();
+            if (vpisid) {
+                q("vpsIdInput").value = vpisid;
+            }
+            refreshDashboard();
+        });
     </script>
 </body>
 </html>
