@@ -65,15 +65,20 @@ async def create_indexes():
     """
     # Indexes for client_registry
     db["client_registry"].create_index("userId", unique=True)
+    db["client_registry"].create_index("userIdNormalized")
     db["client_registry"].create_index("machineId")
 
     # Indexes for tables
     db["tables"].create_index("vpsId")
+    db["user_table_state"].create_index([("userIdNormalized", 1), ("vpsId", 1)])
     db["user_table_state"].create_index([("userId", 1), ("vpsId", 1)])
+    db["user_table_state"].create_index("userIdNormalized")
     db["user_table_state"].create_index("userId")
 
     # Indexes for user state deltas (analytics)
     db["user_table_state_deltas"].create_index("changedAt")
+    db["user_table_state_deltas"].create_index([("userIdNormalized", 1), ("changedAt", -1)])
+    db["user_table_state_deltas"].create_index([("userIdNormalized", 1), ("vpsId", 1), ("changedAt", -1)])
     db["user_table_state_deltas"].create_index([("userId", 1), ("changedAt", -1)])
     db["user_table_state_deltas"].create_index([("userId", 1), ("vpsId", 1), ("changedAt", -1)])
 

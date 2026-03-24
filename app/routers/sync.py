@@ -3,6 +3,7 @@ from datetime import datetime
 from pymongo.database import Database
 from app.models import FullSyncRequest, SyncResponse, SyncSummary
 from app.dependencies import get_db
+from app.userid import normalize_user_id, user_id_filter, and_user_id_filter
 
 router = APIRouter(
     prefix="/api/v1",
@@ -48,12 +49,12 @@ async def submit_sync(request: FullSyncRequest, db: Database = Depends(get_db)):
     # TODO: Collection structure may change in future implementation
     client_registry = db["client_registry"]
     
-    user_id = request.client.userId
+    user_id = normalize_user_id(request.client.userId)
     machine_id = request.client.machineId
     
     # Check if machineId is already registered to a different userId
     existing_machine = client_registry.find_one({"machineId": machine_id})
-    if existing_machine and existing_machine["userId"] != user_id:
+    if existing_machine and normalize_user_id(existing_machine["userId"]) != user_id:
         # Invalid: machineId already used by another user
         return SyncResponse(
             status="error",
@@ -70,7 +71,7 @@ async def submit_sync(request: FullSyncRequest, db: Database = Depends(get_db)):
         )
     
     # Check if userId is already registered
-    existing_client = client_registry.find_one({"userId": user_id})
+    existing_client = client_registry.find_one(user_id_filter(user_id))
     
     received_at = datetime.utcnow()
 
@@ -95,6 +96,7 @@ async def submit_sync(request: FullSyncRequest, db: Database = Depends(get_db)):
         # First time seeing this userId, register it with the machineId
         client_registry.insert_one({
             "userId": user_id,
+            "userIdNormalized": user_id,
             "machineId": machine_id,
             "registeredAt": received_at,
             "lastSyncAt": received_at,
@@ -104,8 +106,13 @@ async def submit_sync(request: FullSyncRequest, db: Database = Depends(get_db)):
     # Record latest successful sync time for existing users.
     if existing_client:
         client_registry.update_one(
-            {"userId": user_id},
-            {"$set": {"lastSyncAt": received_at, "lastSyncTableCount": len(request.tables)}}
+            {"_id": existing_client["_id"]},
+            {"$set": {
+                "userId": user_id,
+                "userIdNormalized": user_id,
+                "lastSyncAt": received_at,
+                "lastSyncTableCount": len(request.tables)
+            }}
         )
 
     summary = SyncSummary(
@@ -164,9 +171,9 @@ async def submit_sync(request: FullSyncRequest, db: Database = Depends(get_db)):
                 summary.tablesCreated += 1
             
             # Upsert user state document
-            user_id = request.client.userId
             user_state_doc = {
                 "userId": user_id,
+                "userIdNormalized": user_id,
                 "vpsId": vps_id,
                 "rating": normalized_rating,
                 "lastRun": table_payload.user.lastRun,
@@ -177,10 +184,7 @@ async def submit_sync(request: FullSyncRequest, db: Database = Depends(get_db)):
                 "updatedAt": received_at
             }
             
-            existing_user_state = user_state_col.find_one({
-                "userId": user_id,
-                "vpsId": vps_id
-            })
+            existing_user_state = user_state_col.find_one(and_user_id_filter(user_id, {"vpsId": vps_id}))
             
             if existing_user_state:
                 # Check if anything changed
@@ -204,6 +208,7 @@ async def submit_sync(request: FullSyncRequest, db: Database = Depends(get_db)):
                     # Persist per-sync diff data so analytics can answer "what changed"
                     user_state_deltas_col.insert_one({
                         "userId": user_id,
+                        "userIdNormalized": user_id,
                         "vpsId": vps_id,
                         "changedAt": received_at,
                         "prevRating": existing_user_state.get("rating"),
@@ -221,15 +226,15 @@ async def submit_sync(request: FullSyncRequest, db: Database = Depends(get_db)):
                     })
 
                     user_state_col.update_one(
-                        {"userId": user_id, "vpsId": vps_id},
+                        {"_id": existing_user_state["_id"]},
                         {"$set": user_state_doc}
                     )
                     summary.userStatesUpdated += 1
                 else:
                     # Just update lastSeenAt
                     user_state_col.update_one(
-                        {"userId": user_id, "vpsId": vps_id},
-                        {"$set": {"lastSeenAt": received_at}}
+                        {"_id": existing_user_state["_id"]},
+                        {"$set": {"lastSeenAt": received_at, "userId": user_id, "userIdNormalized": user_id}}
                     )
             else:
                 user_state_col.insert_one({

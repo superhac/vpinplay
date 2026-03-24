@@ -1,6 +1,7 @@
 from typing import Optional, List, Union, Any
 from datetime import datetime
 from pydantic import BaseModel, Field, field_validator
+from app.userid import normalize_user_id
 
 
 # Info section models
@@ -64,6 +65,13 @@ class SourceInfo(BaseModel):
 class ClientInfo(BaseModel):
     userId: str
     machineId: str = Field(..., min_length=64, max_length=64, description="64-character machine identifier")
+
+    @field_validator('userId', mode='before')
+    @classmethod
+    def normalize_user_id_value(cls, v):
+        if isinstance(v, str):
+            return normalize_user_id(v)
+        return v
 
 
 # Individual table in sync payload

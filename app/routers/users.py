@@ -5,6 +5,7 @@ from pymongo.database import Database
 from app.models import UserTableStateResponse
 from app.dependencies import get_db
 from app.response_enrichment import enrich_with_vpsdb
+from app.userid import normalize_user_id, user_id_filter, and_user_id_filter
 
 router = APIRouter(
     prefix="/api/v1",
@@ -60,7 +61,7 @@ async def check_user_id_available(userId: str, db: Database = Depends(get_db)):
 
     Returns true if the userId is available (not registered), false if taken.
     """
-    existing_client = db["client_registry"].find_one({"userId": userId})  # TODO: Collection structure may change
+    existing_client = db["client_registry"].find_one(user_id_filter(userId))  # TODO: Collection structure may change
     return {"available": existing_client is None}
 
 
@@ -69,13 +70,14 @@ async def get_user_last_sync(userId: str, db: Database = Depends(get_db)):
     """
     Get the user's most recent successful sync timestamp.
     """
-    client = db["client_registry"].find_one({"userId": userId})  # TODO: Collection structure may change
+    normalized_user_id = normalize_user_id(userId)
+    client = db["client_registry"].find_one(user_id_filter(normalized_user_id))  # TODO: Collection structure may change
 
     if not client:
-        raise HTTPException(status_code=404, detail=f"User not found: {userId}")
+        raise HTTPException(status_code=404, detail=f"User not found: {normalized_user_id}")
 
     return {
-        "userId": userId,
+        "userId": normalized_user_id,
         "lastSyncAt": client.get("lastSyncAt")
     }
 
@@ -88,13 +90,14 @@ async def get_user_table_count(userId: str, db: Database = Depends(get_db)):
     `tableCount` prefers the last full sync table payload count (includes variations).
     Falls back to unique user table-state rows if that sync count is unavailable.
     """
-    unique_count = db["user_table_state"].count_documents({"userId": userId})  # TODO: Collection structure may change
-    client = db["client_registry"].find_one({"userId": userId}, {"_id": 0, "lastSyncTableCount": 1})
+    normalized_user_id = normalize_user_id(userId)
+    unique_count = db["user_table_state"].count_documents(user_id_filter(normalized_user_id))  # TODO: Collection structure may change
+    client = db["client_registry"].find_one(user_id_filter(normalized_user_id), {"_id": 0, "lastSyncTableCount": 1})
     synced_count = client.get("lastSyncTableCount") if client else None
     table_count = synced_count if synced_count is not None else unique_count
 
     return {
-        "userId": userId,
+        "userId": normalized_user_id,
         "tableCount": int(table_count),
         "syncedTableCount": int(synced_count) if synced_count is not None else None,
         "uniqueTableCount": int(unique_count),
@@ -106,8 +109,9 @@ async def get_user_runtime_sum(userId: str, db: Database = Depends(get_db)):
     """
     Get the total runTime across all tables for a user.
     """
+    normalized_user_id = normalize_user_id(userId)
     pipeline = [
-        {"$match": {"userId": userId}},
+        {"$match": user_id_filter(normalized_user_id)},
         {
             "$group": {
                 "_id": None,
@@ -119,7 +123,7 @@ async def get_user_runtime_sum(userId: str, db: Database = Depends(get_db)):
     result = list(db["user_table_state"].aggregate(pipeline))  # TODO: Collection structure may change
     run_time_total = int(result[0]["runTimeTotal"]) if result else 0
 
-    return {"userId": userId, "runTimeTotal": run_time_total}
+    return {"userId": normalized_user_id, "runTimeTotal": run_time_total}
 
 
 @router.get("/users/{userId}/tables/runtime-weekly")
@@ -135,12 +139,15 @@ async def get_user_runtime_weekly(
     now = datetime.utcnow()
     since = now - timedelta(days=days)
 
+    normalized_user_id = normalize_user_id(userId)
     pipeline = [
         {
             "$match": {
-                "userId": userId,
-                "changedAt": {"$gte": since},
-                "deltaRunTime": {"$gt": 0},
+                "$and": [
+                    user_id_filter(normalized_user_id),
+                    {"changedAt": {"$gte": since}},
+                    {"deltaRunTime": {"$gt": 0}},
+                ],
             }
         },
         {
@@ -157,7 +164,7 @@ async def get_user_runtime_weekly(
     change_events = int(result[0]["changeEvents"]) if result else 0
 
     return {
-        "userId": userId,
+        "userId": normalized_user_id,
         "days": days,
         "from": since,
         "to": now,
@@ -171,8 +178,9 @@ async def get_user_start_count_sum(userId: str, db: Database = Depends(get_db)):
     """
     Get the total startCount across all tables for a user.
     """
+    normalized_user_id = normalize_user_id(userId)
     pipeline = [
-        {"$match": {"userId": userId}},
+        {"$match": user_id_filter(normalized_user_id)},
         {
             "$group": {
                 "_id": None,
@@ -184,7 +192,7 @@ async def get_user_start_count_sum(userId: str, db: Database = Depends(get_db)):
     result = list(db["user_table_state"].aggregate(pipeline))  # TODO: Collection structure may change
     start_count_total = int(result[0]["startCountTotal"]) if result else 0
 
-    return {"userId": userId, "startCountTotal": start_count_total}
+    return {"userId": normalized_user_id, "startCountTotal": start_count_total}
 
 
 @router.get("/users/{userId}/tables/start-count-weekly")
@@ -200,12 +208,15 @@ async def get_user_start_count_weekly(
     now = datetime.utcnow()
     since = now - timedelta(days=days)
 
+    normalized_user_id = normalize_user_id(userId)
     pipeline = [
         {
             "$match": {
-                "userId": userId,
-                "changedAt": {"$gte": since},
-                "deltaStartCount": {"$gt": 0},
+                "$and": [
+                    user_id_filter(normalized_user_id),
+                    {"changedAt": {"$gte": since}},
+                    {"deltaStartCount": {"$gt": 0}},
+                ],
             }
         },
         {
@@ -222,7 +233,7 @@ async def get_user_start_count_weekly(
     change_events = int(result[0]["changeEvents"]) if result else 0
 
     return {
-        "userId": userId,
+        "userId": normalized_user_id,
         "days": days,
         "from": since,
         "to": now,
@@ -262,7 +273,12 @@ async def get_user_top_rated_tables(
     """
     # Exclude unrated entries (rating null) for top-rated selection
     # Sort strictly by rating desc (5 → 1)
-    top_states = list(db["user_table_state"].find({"userId": userId, "rating": {"$gte": 1, "$lte": 5}})
+    top_states = list(db["user_table_state"].find({
+        "$and": [
+            user_id_filter(userId),
+            {"rating": {"$gte": 1, "$lte": 5}},
+        ]
+    })
                       .sort("rating", -1)
                       .limit(limit))
 
@@ -280,7 +296,12 @@ async def get_user_recently_played_tables(
     """
     recent_states = list(
         db["user_table_state"]
-        .find({"userId": userId, "lastRun": {"$ne": None}})
+        .find({
+            "$and": [
+                user_id_filter(userId),
+                {"lastRun": {"$ne": None}},
+            ]
+        })
         .sort("lastRun", -1)
         .limit(limit)
     )
@@ -299,7 +320,12 @@ async def get_user_top_play_time_tables(
     """
     top_runtime_states = list(
         db["user_table_state"]
-        .find({"userId": userId, "runTime": {"$ne": None}})
+        .find({
+            "$and": [
+                user_id_filter(userId),
+                {"runTime": {"$ne": None}},
+            ]
+        })
         .sort("runTime", -1)
         .limit(limit)
     )
@@ -318,7 +344,12 @@ async def get_user_most_played_tables(
     """
     most_played_states = list(
         db["user_table_state"]
-        .find({"userId": userId, "startCount": {"$ne": None}})
+        .find({
+            "$and": [
+                user_id_filter(userId),
+                {"startCount": {"$ne": None}},
+            ]
+        })
         .sort("startCount", -1)
         .limit(limit)
     )
@@ -337,7 +368,7 @@ async def get_user_newly_added_tables(
     """
     user_states = list(
         db["user_table_state"]
-        .find({"userId": userId})
+        .find(user_id_filter(userId))
         .sort("createdAt", -1)
         .limit(limit)
     )
@@ -356,15 +387,13 @@ async def get_user_table_state(
 
     Returns the per-user metadata for a table including rating, lastRun, playTime, etc.
     """
-    user_state = db["user_table_state"].find_one({  # TODO: Collection structure may change
-        "userId": userId,
-        "vpsId": vpsId
-    })
+    normalized_user_id = normalize_user_id(userId)
+    user_state = db["user_table_state"].find_one(and_user_id_filter(normalized_user_id, {"vpsId": vpsId}))  # TODO: Collection structure may change
 
     if not user_state:
         raise HTTPException(
             status_code=404,
-            detail=f"User state not found for userId={userId}, vpsId={vpsId}"
+            detail=f"User state not found for userId={normalized_user_id}, vpsId={vpsId}"
         )
 
     return _map_user_states([user_state], db)[0]
@@ -385,7 +414,7 @@ async def get_user_all_tables(
     - offset: Number of results to skip (default 0)
     """
     user_states = list(db["user_table_state"].find(  # TODO: Collection structure may change
-        {"userId": userId}
+        user_id_filter(userId)
     ).skip(offset).limit(limit))
 
     return _map_user_states(user_states, db)
