@@ -272,15 +272,39 @@
             white-space: nowrap;
         }
 
-        .rating-star {
-            color: #facc15;
+        .rating-star-cell {
+            position: relative;
+            display: inline-block;
+            width: 0.95em;
+            height: 1em;
             line-height: 1;
+        }
+
+        .rating-star {
+            display: block;
             font-size: 0.95rem;
+            line-height: 1;
+        }
+
+        .rating-star.fill {
+            position: absolute;
+            left: 0;
+            top: 0;
+            overflow: hidden;
+            white-space: nowrap;
+            line-height: 1;
+            color: #facc15;
         }
 
         .rating-star.empty {
             color: var(--muted);
             opacity: 0.45;
+        }
+
+        .rating-value {
+            margin-left: 6px;
+            color: var(--muted);
+            font-size: 0.84em;
         }
 
         .rating-separator {
@@ -465,18 +489,21 @@
             return Number(value || 0).toLocaleString();
         }
 
-        function fmtRatingStars(value) {
+        function fmtRatingStars(value, options = {}) {
             if (value === null || value === undefined || value === "") return "-";
             const numeric = Number(value);
             if (!Number.isFinite(numeric)) return "-";
             const clamped = Math.max(0, Math.min(5, numeric));
-            const fullStars = Math.round(clamped);
+            const roundedToHalf = Math.round(clamped * 2) / 2;
+            const fullStars = Math.floor(roundedToHalf);
+            const hasHalf = roundedToHalf - fullStars >= 0.5;
             let stars = "";
             for (let i = 0; i < 5; i += 1) {
-                const cls = i < fullStars ? "rating-star" : "rating-star empty";
-                stars += `<span class="${cls}" aria-hidden="true">★</span>`;
+                const fillPercent = i < fullStars ? 100 : (i === fullStars && hasHalf ? 50 : 0);
+                stars += `<span class="rating-star-cell" aria-hidden="true"><span class="rating-star empty">★</span><span class="rating-star fill" style="width:${fillPercent}%">★</span></span>`;
             }
-            return `<span class="rating-stars" title="${escapeHtml(clamped.toFixed(2))} / 5" aria-label="${escapeHtml(clamped.toFixed(2))} out of 5 stars">${stars}</span>`;
+            const numericText = options.showNumeric ? ` <span class="rating-value">(${escapeHtml(clamped.toFixed(2))})</span>` : "";
+            return `<span class="rating-stars" title="${escapeHtml(clamped.toFixed(2))} / 5" aria-label="${escapeHtml(clamped.toFixed(2))} out of 5 stars">${stars}</span>${numericText}`;
         }
 
         function fmtTableName(row) {
@@ -652,7 +679,7 @@
             renderTable("topRatedTable",
                 [
                     { label: "Table", getter: r => linkTableName(fmtTableName(r), r.vpsId), html: true },
-                    { label: "Avg Rating", getter: r => fmtRatingStars(r.avgRating), html: true },
+                    { label: "Avg Rating", getter: r => fmtRatingStars(r.avgRating, { showNumeric: true }), html: true },
                     { label: "Rating Count", getter: r => r.ratingCount },
                     { label: "VPS ID", getter: r => linkVpsId(r.vpsId), html: true },
                 ],
