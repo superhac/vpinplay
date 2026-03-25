@@ -13,6 +13,41 @@ router = APIRouter(
 )
 
 
+def _coerce_non_negative_int(value) -> int:
+    """Coerce arbitrary payload values into non-negative ints for counters."""
+    try:
+        return max(0, int(value or 0))
+    except (TypeError, ValueError):
+        return 0
+
+
+def _parse_iso_datetime(value):
+    if not isinstance(value, str) or not value:
+        return None
+    try:
+        # Accept both "...Z" and offset-aware ISO strings.
+        return datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except ValueError:
+        return None
+
+
+def _merge_last_run(existing_value, incoming_value):
+    """Keep the newest non-null lastRun; fallback to incoming on parse ambiguity."""
+    if incoming_value is None:
+        return existing_value
+    if existing_value is None:
+        return incoming_value
+
+    existing_dt = _parse_iso_datetime(existing_value)
+    incoming_dt = _parse_iso_datetime(incoming_value)
+
+    if existing_dt and incoming_dt:
+        return incoming_value if incoming_dt >= existing_dt else existing_value
+
+    # If timestamps are present but not both parseable, prefer latest submitted value.
+    return incoming_value
+
+
 @router.get("/sync/last")
 async def get_last_global_sync(db: Database = Depends(get_db)):
     """
@@ -206,14 +241,18 @@ async def submit_sync(request: FullSyncRequest, db: Database = Depends(get_db)):
             )
             
             # Upsert user state document
+            incoming_start_count = _coerce_non_negative_int(table_payload.user.startCount)
+            incoming_run_time = _coerce_non_negative_int(table_payload.user.runTime)
+            incoming_last_run = table_payload.user.lastRun
+
             user_state_doc = {
                 "userId": user_id,
                 "userIdNormalized": user_id,
                 "vpsId": vps_id,
                 "rating": normalized_rating,
-                "lastRun": table_payload.user.lastRun,
-                "startCount": table_payload.user.startCount,
-                "runTime": table_payload.user.runTime,
+                "lastRun": incoming_last_run,
+                "startCount": incoming_start_count,
+                "runTime": incoming_run_time,
                 "alttitle": table_payload.vpinfe.alttitle,
                 "altvpsid": table_payload.vpinfe.altvpsid,
                 "lastSeenAt": received_at,
@@ -223,24 +262,32 @@ async def submit_sync(request: FullSyncRequest, db: Database = Depends(get_db)):
             existing_user_state = user_state_col.find_one(and_user_id_filter(user_id, {"vpsId": vps_id}))
             
             if existing_user_state:
+                prev_run_time = _coerce_non_negative_int(existing_user_state.get("runTime"))
+                prev_start_count = _coerce_non_negative_int(existing_user_state.get("startCount"))
+                merged_run_time = max(prev_run_time, incoming_run_time)
+                merged_start_count = max(prev_start_count, incoming_start_count)
+                merged_last_run = _merge_last_run(existing_user_state.get("lastRun"), incoming_last_run)
+
+                user_state_doc["runTime"] = merged_run_time
+                user_state_doc["startCount"] = merged_start_count
+                user_state_doc["lastRun"] = merged_last_run
+
                 # Check if anything changed
                 has_changes = (
                     existing_user_state.get("rating") != normalized_rating or
-                    existing_user_state.get("lastRun") != table_payload.user.lastRun or
-                    existing_user_state.get("startCount") != table_payload.user.startCount or
-                    existing_user_state.get("runTime") != table_payload.user.runTime or
+                    existing_user_state.get("lastRun") != merged_last_run or
+                    prev_start_count != merged_start_count or
+                    prev_run_time != merged_run_time or
                     existing_user_state.get("alttitle") != table_payload.vpinfe.alttitle or
                     existing_user_state.get("altvpsid") != table_payload.vpinfe.altvpsid
                 )
                 
                 if has_changes:
-                    prev_run_time = existing_user_state.get("runTime")
-                    new_run_time = table_payload.user.runTime
-                    prev_start_count = existing_user_state.get("startCount")
-                    new_start_count = table_payload.user.startCount
+                    new_run_time = merged_run_time
+                    new_start_count = merged_start_count
 
-                    delta_run_time = int(new_run_time or 0) - int(prev_run_time or 0)
-                    delta_start_count = int(new_start_count or 0) - int(prev_start_count or 0)
+                    delta_run_time = new_run_time - prev_run_time
+                    delta_start_count = new_start_count - prev_start_count
 
                     # Persist per-sync diff data so analytics can answer "what changed"
                     user_state_deltas_col.insert_one({
@@ -251,7 +298,7 @@ async def submit_sync(request: FullSyncRequest, db: Database = Depends(get_db)):
                         "prevRating": existing_user_state.get("rating"),
                         "newRating": normalized_rating,
                         "prevLastRun": existing_user_state.get("lastRun"),
-                        "newLastRun": table_payload.user.lastRun,
+                        "newLastRun": merged_last_run,
                         "prevStartCount": prev_start_count,
                         "newStartCount": new_start_count,
                         "deltaStartCount": delta_start_count,
