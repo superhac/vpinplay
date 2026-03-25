@@ -39,33 +39,33 @@ This will start:
 - `GET /api/v1/tables` - Get all table variation rows (paginated, default 50)
 - `GET /api/v1/tables/count` - Get total table counts (`totalTableRows` and `uniqueVpsIdCount`)
 - `GET /api/v1/tables/{vpsId}` - Get canonical table metadata
-- `GET /api/v1/tables/top-rated` - Get top tables by average rating across all users (default limit 5)
-- `GET /api/v1/tables/top-play-time` - Get top tables by cumulative `runTime` across all users (highest first, default limit 5)
-- `GET /api/v1/tables/top-variants` - Get top tables by total variant count (highest first, default limit 5)
+- `GET /api/v1/tables/top-rated` - Get top tables by average rating across all users (paginated via `limit` + `offset`, max 100 per request, default limit 5)
+- `GET /api/v1/tables/top-play-time` - Get top tables by cumulative `runTime` across all users (highest first, paginated via `limit` + `offset`, max 100 per request, default limit 5)
+- `GET /api/v1/tables/top-variants` - Get top tables by total variant count (highest first, paginated via `limit` + `offset`, max 100 per request, default limit 5)
 - `GET /api/v1/tables/activity-weekly` - Get cumulative global play activity from sync deltas for trailing N days (default `days=7`)
 - `GET /api/v1/tables/{vpsId}/rating-summary` - Get cumulative average rating + rating count for a specific table
-- `GET /api/v1/tables/newly-added` - Get cumulatively new tables seen globally (first time each `vpsId` was observed)
+- `GET /api/v1/tables/newly-added` - Get cumulatively new tables seen globally (first time each `vpsId` was observed, paginated via `limit` + `offset`)
 - `GET /api/v1/vpsdb/{vpsId}` - Get cached VPS DB selected fields for a specific `vpsId`
 - `GET /api/v1/vpsdb/status` - Get VPS DB background sync status
 
 ### User state queries
-- `GET /api/v1/users` - Get all registered userIds (paginated, default limit 100)
+- `GET /api/v1/users` - Get all registered userIds (paginated via `limit` + `offset`, max 100 per request)
 - `GET /api/v1/users/count` - Get total number of registered users
-- `GET /api/v1/users/top-activity` - Get top users by trailing N-day activity from sync deltas (`metric=startCountPlayed|runTimePlayed`, `days`, `limit`)
+- `GET /api/v1/users/top-activity` - Get top users by trailing N-day activity from sync deltas (`metric=startCountPlayed|runTimePlayed`, `days`, `limit`, `offset`; max 100 per request)
 - `GET /api/v1/users/{userId}/available` - Check if userId is available for registration
 - `GET /api/v1/users/{userId}/last-sync` - Get the user's last successful sync timestamp
 - `GET /api/v1/users/{userId}/tables/{vpsId}` - Get user state for a table
-- `GET /api/v1/users/{userId}/tables` - Get all tables for a user (paginated)
+- `GET /api/v1/users/{userId}/tables` - Get all tables for a user (paginated via `limit` + `offset`, max 100 per request)
 - `GET /api/v1/users/{userId}/tables/count` - Get total synced table count for a user (includes variations from last full sync, also returns unique canonical count)
 - `GET /api/v1/users/{userId}/tables/runtime-sum` - Get total runTime across all tables for a user
 - `GET /api/v1/users/{userId}/tables/runtime-weekly` - Get runtime played over trailing N days from sync deltas (default `days=7`)
 - `GET /api/v1/users/{userId}/tables/start-count-sum` - Get total startCount across all tables for a user
 - `GET /api/v1/users/{userId}/tables/start-count-weekly` - Get plays over trailing N days from sync deltas (default `days=7`)
-- `GET /api/v1/users/{userId}/tables/top-rated` - Get top N highest-rated tables for a user (default limit 5)
-- `GET /api/v1/users/{userId}/tables/recently-played` - Get most recently played tables for a user by `lastRun` (newest first, default limit 5)
-- `GET /api/v1/users/{userId}/tables/top-play-time` - Get top tables for a user by `runTime` (highest first, default limit 5)
-- `GET /api/v1/users/{userId}/tables/most-played` - Get most played tables for a user by `startCount` (highest first, default limit 1)
-- `GET /api/v1/users/{userId}/tables/newly-added` - Get newest tables added for a user by first-seen timestamp (default limit 5)
+- `GET /api/v1/users/{userId}/tables/top-rated` - Get top N highest-rated tables for a user (paginated via `limit` + `offset`, max 100 per request)
+- `GET /api/v1/users/{userId}/tables/recently-played` - Get most recently played tables for a user by `lastRun` (newest first, paginated via `limit` + `offset`, max 100 per request)
+- `GET /api/v1/users/{userId}/tables/top-play-time` - Get top tables for a user by `runTime` (highest first, paginated via `limit` + `offset`, max 100 per request)
+- `GET /api/v1/users/{userId}/tables/most-played` - Get most played tables for a user by `startCount` (highest first, paginated via `limit` + `offset`, max 100 per request)
+- `GET /api/v1/users/{userId}/tables/newly-added` - Get newest tables added for a user by first-seen timestamp (paginated via `limit` + `offset`, max 100 per request)
 
 All query responses that include `vpsId` now include a `vpsdb` object from the VPS DB cache when available. By default, it includes `name`, `authors`, `manufacturer`, and `year`.
 

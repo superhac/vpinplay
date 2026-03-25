@@ -19,6 +19,7 @@ router = APIRouter(
 @router.get("/tables/top-rated")
 async def get_global_top_rated_tables(
     limit: int = Query(5, ge=1, le=100),
+    offset: int = Query(0, ge=0),
     db: Database = Depends(get_db)
 ):
     """
@@ -34,6 +35,7 @@ async def get_global_top_rated_tables(
             }
         },
         {"$sort": {"avgRating": -1, "ratingCount": -1, "_id": 1}},
+        {"$skip": offset},
         {"$limit": limit}
     ]
 
@@ -83,7 +85,7 @@ async def get_global_table_rating_summary(vpsId: str, db: Database = Depends(get
 
 @router.get("/tables/newly-added")
 async def get_global_new_tables(
-    limit: int = Query(100, ge=1, le=1000),
+    limit: int = Query(100, ge=1, le=100),
     offset: int = Query(0, ge=0),
     db: Database = Depends(get_db)
 ):
@@ -124,6 +126,7 @@ async def get_global_new_tables(
 @router.get("/tables/top-play-time")
 async def get_global_top_play_time_tables(
     limit: int = Query(5, ge=1, le=100),
+    offset: int = Query(0, ge=0),
     db: Database = Depends(get_db)
 ):
     """
@@ -140,6 +143,7 @@ async def get_global_top_play_time_tables(
             }
         },
         {"$sort": {"runTimeTotal": -1, "startCountTotal": -1, "_id": 1}},
+        {"$skip": offset},
         {"$limit": limit}
     ]
 
@@ -159,6 +163,7 @@ async def get_global_top_play_time_tables(
 @router.get("/tables/top-variants")
 async def get_global_top_variant_tables(
     limit: int = Query(5, ge=1, le=100),
+    offset: int = Query(0, ge=0),
     db: Database = Depends(get_db)
 ):
     """
@@ -167,6 +172,7 @@ async def get_global_top_variant_tables(
     pipeline = [
         {"$group": {"_id": "$vpsId", "variationCount": {"$sum": 1}}},
         {"$sort": {"variationCount": -1, "_id": 1}},
+        {"$skip": offset},
         {"$limit": limit},
     ]
 
@@ -270,7 +276,7 @@ async def get_table_counts(db: Database = Depends(get_db)):
 
 @router.get("/tables")
 async def get_all_tables(
-    limit: int = Query(50, ge=1, le=200),
+    limit: int = Query(50, ge=1, le=100),
     offset: int = Query(0, ge=0),
     db: Database = Depends(get_db)
 ):

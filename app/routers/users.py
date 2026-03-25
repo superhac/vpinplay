@@ -15,7 +15,7 @@ router = APIRouter(
 
 @router.get("/users")
 async def get_all_user_ids(
-    limit: int = Query(100, ge=1, le=5000),
+    limit: int = Query(100, ge=1, le=100),
     offset: int = Query(0, ge=0),
     db: Database = Depends(get_db)
 ):
@@ -247,6 +247,7 @@ async def get_top_users_by_activity(
     metric: str = Query("startCountPlayed", pattern="^(startCountPlayed|runTimePlayed)$"),
     days: int = Query(7, ge=1, le=365),
     limit: int = Query(5, ge=1, le=100),
+    offset: int = Query(0, ge=0),
     db: Database = Depends(get_db)
 ):
     """
@@ -298,6 +299,7 @@ async def get_top_users_by_activity(
         },
         {"$match": {metric: {"$gt": 0}}},
         {"$sort": {metric: -1, "changeEvents": -1, "userId": 1}},
+        {"$skip": offset},
         {"$limit": limit},
     ]
 
@@ -319,6 +321,7 @@ async def get_top_users_by_activity(
         "from": since,
         "to": now,
         "limit": limit,
+        "offset": offset,
         "items": items,
     }
 
@@ -348,6 +351,7 @@ def _map_user_states(states: list[dict], db: Database) -> list[UserTableStateRes
 async def get_user_top_rated_tables(
     userId: str,
     limit: int = Query(5, ge=1, le=100),
+    offset: int = Query(0, ge=0),
     db: Database = Depends(get_db)
 ):
     """
@@ -362,6 +366,7 @@ async def get_user_top_rated_tables(
         ]
     })
                       .sort("rating", -1)
+                      .skip(offset)
                       .limit(limit))
 
     return _map_user_states(top_states, db)
@@ -371,6 +376,7 @@ async def get_user_top_rated_tables(
 async def get_user_recently_played_tables(
     userId: str,
     limit: int = Query(5, ge=1, le=100),
+    offset: int = Query(0, ge=0),
     db: Database = Depends(get_db)
 ):
     """
@@ -385,6 +391,7 @@ async def get_user_recently_played_tables(
             ]
         })
         .sort("lastRun", -1)
+        .skip(offset)
         .limit(limit)
     )
 
@@ -395,6 +402,7 @@ async def get_user_recently_played_tables(
 async def get_user_top_play_time_tables(
     userId: str,
     limit: int = Query(5, ge=1, le=100),
+    offset: int = Query(0, ge=0),
     db: Database = Depends(get_db)
 ):
     """
@@ -409,6 +417,7 @@ async def get_user_top_play_time_tables(
             ]
         })
         .sort("runTime", -1)
+        .skip(offset)
         .limit(limit)
     )
 
@@ -419,6 +428,7 @@ async def get_user_top_play_time_tables(
 async def get_user_most_played_tables(
     userId: str,
     limit: int = Query(1, ge=1, le=100),
+    offset: int = Query(0, ge=0),
     db: Database = Depends(get_db)
 ):
     """
@@ -433,6 +443,7 @@ async def get_user_most_played_tables(
             ]
         })
         .sort("startCount", -1)
+        .skip(offset)
         .limit(limit)
     )
 
@@ -443,6 +454,7 @@ async def get_user_most_played_tables(
 async def get_user_newly_added_tables(
     userId: str,
     limit: int = Query(5, ge=1, le=100),
+    offset: int = Query(0, ge=0),
     db: Database = Depends(get_db)
 ):
     """
@@ -452,6 +464,7 @@ async def get_user_newly_added_tables(
         db["user_table_state"]
         .find(user_id_filter(userId))
         .sort("createdAt", -1)
+        .skip(offset)
         .limit(limit)
     )
 
@@ -484,7 +497,7 @@ async def get_user_table_state(
 @router.get("/users/{userId}/tables", response_model=List[UserTableStateResponse])
 async def get_user_all_tables(
     userId: str,
-    limit: int = Query(100, ge=1, le=1000),
+    limit: int = Query(100, ge=1, le=100),
     offset: int = Query(0, ge=0),
     db: Database = Depends(get_db)
 ):
@@ -492,7 +505,7 @@ async def get_user_all_tables(
     Get all current table states for a user.
 
     Optional query parameters:
-    - limit: Maximum number of results (default 100, max 1000)
+    - limit: Maximum number of results (default 100, max 100)
     - offset: Number of results to skip (default 0)
     """
     user_states = list(db["user_table_state"].find(  # TODO: Collection structure may change

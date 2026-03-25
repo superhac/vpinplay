@@ -426,6 +426,8 @@
     <script>
         const API_BASE = "https://api.vpinplay.com:8888";
         const ALL_TABLES_PAGE_SIZE = 50;
+        const API_PAGE_LIMIT = 100;
+        const MAX_DASHBOARD_LIMIT = 100;
         const ENABLE_ALL_TABLES_PANEL = false;
         const TOP_PLAYER_DAYS = 7;
         const TOP_PLAYER_LIMIT = 5;
@@ -613,37 +615,68 @@
         }
 
         async function loadTopPlayerActivity(metric, days = TOP_PLAYER_DAYS, limit = TOP_PLAYER_LIMIT) {
-            const res = await api(`/api/v1/users/top-activity?metric=${encodeURIComponent(metric)}&days=${encodeURIComponent(days)}&limit=${encodeURIComponent(limit)}`);
+            const safeLimit = Math.max(1, Math.min(API_PAGE_LIMIT, Number(limit || TOP_PLAYER_LIMIT)));
+            const res = await api(`/api/v1/users/top-activity?metric=${encodeURIComponent(metric)}&days=${encodeURIComponent(days)}&limit=${encodeURIComponent(safeLimit)}`);
             return res.ok && Array.isArray(res.data?.items) ? res.data.items : [];
         }
 
+        function parseDashboardLimit() {
+            const raw = Number.parseInt(String(q("limitInput").value || "").trim(), 10);
+            if (!Number.isFinite(raw) || raw < 1) return 5;
+            return Math.min(raw, MAX_DASHBOARD_LIMIT);
+        }
+
+        async function fetchPaginatedRows(basePath, requestedLimit) {
+            const target = Math.max(1, Number(requestedLimit || 0));
+            let offset = 0;
+            let remaining = target;
+            const items = [];
+
+            while (remaining > 0) {
+                const pageLimit = Math.min(API_PAGE_LIMIT, remaining);
+                const joiner = basePath.includes("?") ? "&" : "?";
+                const res = await api(`${basePath}${joiner}limit=${encodeURIComponent(pageLimit)}&offset=${encodeURIComponent(offset)}`);
+                if (!res.ok || !Array.isArray(res.data)) return [];
+
+                const pageItems = res.data;
+                items.push(...pageItems);
+
+                if (pageItems.length < pageLimit) break;
+                offset += pageItems.length;
+                remaining = target - items.length;
+            }
+
+            return items.slice(0, target);
+        }
+
         async function refreshDashboard() {
-            const limit = q("limitInput").value.trim() || "5";
+            const limit = parseDashboardLimit();
+            q("limitInput").value = String(limit);
 
             const [
                 lastSyncRes,
-                topRatedRes,
-                topPlayTimeRes,
-                newlyAddedRes,
-                topVariantsRes,
                 vpsdbStatusRes,
                 weeklyActivityRes,
                 userCountRes,
                 tableCountRes,
                 topPlayerPlaysRows,
                 topPlayerRuntimeRows,
+                topRatedRows,
+                topPlayTimeRows,
+                newlyAddedRows,
+                topVariantsRows,
             ] = await Promise.all([
                 api("/api/v1/sync/last"),
-                api(`/api/v1/tables/top-rated?limit=${encodeURIComponent(limit)}`),
-                api(`/api/v1/tables/top-play-time?limit=${encodeURIComponent(limit)}`),
-                api(`/api/v1/tables/newly-added?limit=${encodeURIComponent(limit)}`),
-                api(`/api/v1/tables/top-variants?limit=${encodeURIComponent(limit)}`),
                 api("/api/v1/vpsdb/status"),
                 api("/api/v1/tables/activity-weekly?days=7"),
                 api("/api/v1/users/count"),
                 api("/api/v1/tables/count"),
                 loadTopPlayerActivity("startCountPlayed"),
                 loadTopPlayerActivity("runTimePlayed"),
+                fetchPaginatedRows("/api/v1/tables/top-rated", limit),
+                fetchPaginatedRows("/api/v1/tables/top-play-time", limit),
+                fetchPaginatedRows("/api/v1/tables/newly-added", limit),
+                fetchPaginatedRows("/api/v1/tables/top-variants", limit),
             ]);
 
             q("lastRefresh").textContent = `Last refresh: ${new Date().toLocaleString()}`;
@@ -651,9 +684,6 @@
             q("kpiLastSync").textContent = lastSyncRes.ok ? fmtDate(lastSyncRes.data.lastSyncAt) : "-";
             q("kpiLastSyncUser").textContent = `Last sync by user: ${lastSyncRes.ok ? (lastSyncRes.data.userId || "-") : "-"}`;
 
-            const topRatedRows = topRatedRes.ok && Array.isArray(topRatedRes.data) ? topRatedRes.data : [];
-            const newlyAddedRows = newlyAddedRes.ok && Array.isArray(newlyAddedRes.data) ? newlyAddedRes.data : [];
-            const topVariantsRows = topVariantsRes.ok && Array.isArray(topVariantsRes.data) ? topVariantsRes.data : [];
             q("kpiTotalTables").textContent = tableCountRes.ok
                 ? fmtNumber(tableCountRes.data.totalTableRows)
                 : "-";
@@ -686,7 +716,6 @@
                 topRatedRows
             );
 
-            const topPlayTimeRows = topPlayTimeRes.ok && Array.isArray(topPlayTimeRes.data) ? topPlayTimeRes.data : [];
             renderTable("topPlayTimeGlobalTable",
                 [
                     { label: "Table", getter: r => linkTableName(fmtTableName(r), r.vpsId), html: true },

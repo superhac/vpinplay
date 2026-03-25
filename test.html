@@ -229,8 +229,8 @@
                     <input type="text" id="userTableVpsId" placeholder="Enter VPS ID" value="lkSumsrF">
                 </div>
                 <div class="form-group">
-                    <label for="userLimit">Limit (max 1000):</label>
-                    <input type="number" id="userLimit" placeholder="100" value="100" min="1" max="1000">
+                    <label for="userLimit">Limit (max 100):</label>
+                    <input type="number" id="userLimit" placeholder="100" value="100" min="1" max="100">
                 </div>
                 <div class="form-group">
                     <label for="userOffset">Offset:</label>
@@ -284,6 +284,12 @@
             } catch (error) {
                 return { status: 0, error: error.message };
             }
+        }
+
+        function clampLimit(rawValue, fallback = 5) {
+            const parsed = Number.parseInt(String(rawValue ?? "").trim(), 10);
+            const safe = Number.isFinite(parsed) ? parsed : fallback;
+            return Math.max(1, Math.min(100, safe));
         }
 
         // Health check
@@ -344,7 +350,8 @@
 
         // Get global top-rated tables by cumulative average rating
         async function getGlobalTopRatedTables() {
-            const limit = document.getElementById('globalLimit').value.trim() || 5;
+            const limit = clampLimit(document.getElementById('globalLimit').value, 5);
+            document.getElementById('globalLimit').value = String(limit);
             const result = await makeApiCall(`/api/v1/tables/top-rated?limit=${encodeURIComponent(limit)}`);
 
             if (result.status === 200) {
@@ -358,7 +365,8 @@
 
         // Get global top play-time tables by cumulative runtime
         async function getGlobalTopPlayTimeTables() {
-            const limit = document.getElementById('globalLimit').value.trim() || 5;
+            const limit = clampLimit(document.getElementById('globalLimit').value, 5);
+            document.getElementById('globalLimit').value = String(limit);
             const result = await makeApiCall(`/api/v1/tables/top-play-time?limit=${encodeURIComponent(limit)}`);
 
             if (result.status === 200) {
@@ -389,7 +397,8 @@
 
         // Get globally newly-added tables (first seen each vpsId)
         async function getGlobalNewlyAddedTables() {
-            const limit = document.getElementById('globalLimit').value.trim() || 100;
+            const limit = clampLimit(document.getElementById('globalLimit').value, 100);
+            document.getElementById('globalLimit').value = String(limit);
             const result = await makeApiCall(`/api/v1/tables/newly-added?limit=${encodeURIComponent(limit)}`);
             if (result.status === 200) {
                 const count = result.data ? result.data.length : 0;
@@ -467,12 +476,17 @@
         // Get all user tables
         async function getAllUserTables() {
             const userId = document.getElementById('userQueryId').value.trim();
-            const limit = document.getElementById('userLimit').value.trim();
+            const rawLimit = document.getElementById('userLimit').value.trim();
+            const limit = rawLimit ? clampLimit(rawLimit, 100) : "";
             const offset = document.getElementById('userOffset').value.trim();
             
             if (!userId) {
                 showResult('table-result', '❌ Please enter a user ID', 'error');
                 return;
+            }
+
+            if (limit) {
+                document.getElementById('userLimit').value = String(limit);
             }
 
             let url = `/api/v1/users/${encodeURIComponent(userId)}/tables`;
@@ -544,7 +558,8 @@
         // Get top rated user tables
         async function getUserTopRatedTables() {
             const userId = document.getElementById('userQueryId').value.trim();
-            const limit = document.getElementById('userLimit').value.trim() || 5;
+            const limit = clampLimit(document.getElementById('userLimit').value, 5);
+            document.getElementById('userLimit').value = String(limit);
 
             if (!userId) {
                 showResult('table-result', '❌ Please enter a user ID', 'error');
@@ -564,7 +579,8 @@
         // Get recently played user tables
         async function getUserRecentlyPlayedTables() {
             const userId = document.getElementById('userQueryId').value.trim();
-            const limit = document.getElementById('userLimit').value.trim() || 5;
+            const limit = clampLimit(document.getElementById('userLimit').value, 5);
+            document.getElementById('userLimit').value = String(limit);
 
             if (!userId) {
                 showResult('table-result', '❌ Please enter a user ID', 'error');
@@ -584,7 +600,8 @@
         // Get top play-time user tables
         async function getUserTopPlayTimeTables() {
             const userId = document.getElementById('userQueryId').value.trim();
-            const limit = document.getElementById('userLimit').value.trim() || 5;
+            const limit = clampLimit(document.getElementById('userLimit').value, 5);
+            document.getElementById('userLimit').value = String(limit);
 
             if (!userId) {
                 showResult('table-result', '❌ Please enter a user ID', 'error');
@@ -604,7 +621,8 @@
         // Get most played user tables
         async function getUserMostPlayedTables() {
             const userId = document.getElementById('userQueryId').value.trim();
-            const limit = document.getElementById('userLimit').value.trim() || 1;
+            const limit = clampLimit(document.getElementById('userLimit').value, 1);
+            document.getElementById('userLimit').value = String(limit);
 
             if (!userId) {
                 showResult('table-result', '❌ Please enter a user ID', 'error');
@@ -624,7 +642,8 @@
         // Get newest tables added for a user
         async function getUserNewlyAddedTables() {
             const userId = document.getElementById('userQueryId').value.trim();
-            const limit = document.getElementById('userLimit').value.trim() || 5;
+            const limit = clampLimit(document.getElementById('userLimit').value, 5);
+            document.getElementById('userLimit').value = String(limit);
 
             if (!userId) {
                 showResult('table-result', '❌ Please enter a user ID', 'error');
