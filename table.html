@@ -208,6 +208,29 @@
 
         .muted { color: var(--muted); }
 
+        .rating-stars {
+            display: inline-flex;
+            align-items: center;
+            gap: 1px;
+            white-space: nowrap;
+        }
+
+        .rating-star {
+            color: #facc15;
+            line-height: 1;
+            font-size: 0.95rem;
+        }
+
+        .rating-star.empty {
+            color: var(--muted);
+            opacity: 0.45;
+        }
+
+        .rating-separator {
+            color: var(--muted);
+            margin: 0 6px;
+        }
+
         .variation-details {
             margin-top: 12px;
             display: grid;
@@ -373,6 +396,20 @@
             const year = row?.vpsdb?.year;
             const parts = [manufacturer, year].filter(v => v !== null && v !== undefined && String(v).trim() !== "");
             return parts.length ? `${name} (${parts.join(", ")})` : name;
+        }
+
+        function fmtRatingStars(value) {
+            if (value === null || value === undefined || value === "") return "-";
+            const numeric = Number(value);
+            if (!Number.isFinite(numeric)) return "-";
+            const clamped = Math.max(0, Math.min(5, numeric));
+            const fullStars = Math.round(clamped);
+            let stars = "";
+            for (let i = 0; i < 5; i += 1) {
+                const cls = i < fullStars ? "rating-star" : "rating-star empty";
+                stars += `<span class="${cls}" aria-hidden="true">★</span>`;
+            }
+            return `<span class="rating-stars" title="${escapeHtml(clamped.toFixed(2))} / 5" aria-label="${escapeHtml(clamped.toFixed(2))} out of 5 stars">${stars}</span>`;
         }
 
         function linkVpsId(vpsId) {
@@ -572,7 +609,7 @@
             renderTable("ratingSummaryTable",
                 [
                     { label: "Table", getter: r => fmtTableName(r) },
-                    { label: "Avg Rating", getter: r => r.avgRating ?? "-" },
+                    { label: "Avg Rating", getter: r => fmtRatingStars(r.avgRating), html: true },
                     { label: "Rating Count", getter: r => r.ratingCount ?? "-" },
                     { label: "VPS ID", getter: r => linkVpsId(r.vpsId), html: true },
                 ],
