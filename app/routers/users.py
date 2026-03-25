@@ -242,6 +242,87 @@ async def get_user_start_count_weekly(
     }
 
 
+@router.get("/users/top-activity")
+async def get_top_users_by_activity(
+    metric: str = Query("startCountPlayed", pattern="^(startCountPlayed|runTimePlayed)$"),
+    days: int = Query(7, ge=1, le=365),
+    limit: int = Query(5, ge=1, le=100),
+    db: Database = Depends(get_db)
+):
+    """
+    Get top users by trailing N-day activity from per-sync deltas.
+
+    `metric`:
+      - startCountPlayed: sum of positive deltaStartCount
+      - runTimePlayed: sum of positive deltaRunTime (minutes)
+    """
+    now = datetime.utcnow()
+    since = now - timedelta(days=days)
+
+    pipeline = [
+        {"$match": {"changedAt": {"$gte": since}}},
+        {
+            "$group": {
+                "_id": "$userId",
+                "startCountPlayed": {
+                    "$sum": {
+                        "$cond": [
+                            {"$gt": ["$deltaStartCount", 0]},
+                            "$deltaStartCount",
+                            0,
+                        ]
+                    }
+                },
+                "runTimePlayed": {
+                    "$sum": {
+                        "$cond": [
+                            {"$gt": ["$deltaRunTime", 0]},
+                            "$deltaRunTime",
+                            0,
+                        ]
+                    }
+                },
+                "changeEvents": {"$sum": 1},
+                "lastChangedAt": {"$max": "$changedAt"},
+            }
+        },
+        {
+            "$project": {
+                "_id": 0,
+                "userId": "$_id",
+                "startCountPlayed": 1,
+                "runTimePlayed": 1,
+                "changeEvents": 1,
+                "lastChangedAt": 1,
+            }
+        },
+        {"$match": {metric: {"$gt": 0}}},
+        {"$sort": {metric: -1, "changeEvents": -1, "userId": 1}},
+        {"$limit": limit},
+    ]
+
+    rows = list(db["user_table_state_deltas"].aggregate(pipeline))
+    items = [
+        {
+            "userId": row.get("userId"),
+            "startCountPlayed": int(row.get("startCountPlayed", 0)),
+            "runTimePlayed": int(row.get("runTimePlayed", 0)),
+            "changeEvents": int(row.get("changeEvents", 0)),
+            "lastChangedAt": row.get("lastChangedAt"),
+        }
+        for row in rows
+    ]
+
+    return {
+        "metric": metric,
+        "days": days,
+        "from": since,
+        "to": now,
+        "limit": limit,
+        "items": items,
+    }
+
+
 def _map_user_states(states: list[dict], db: Database) -> list[UserTableStateResponse]:
     response_rows = [
         {

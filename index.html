@@ -279,23 +279,33 @@
 
         <section class="grid-panels">
             <section class="panel">
-                <h3>Top Rated</h3>
+                <h3>Top Rated Tables</h3>
                 <table id="topRatedTable"></table>
             </section>
 
             <section class="panel">
-                <h3>Top Play Time</h3>
+                <h3>Top Table Play Time</h3>
                 <table id="topPlayTimeGlobalTable"></table>
             </section>
 
             <section class="panel">
-                <h3>Newly Added</h3>
+                <h3>Newly Added Tables</h3>
                 <table id="newlyAddedTable"></table>
             </section>
 
             <section class="panel">
                 <h3>Top Tables by Variants</h3>
                 <table id="topVariantsTable"></table>
+            </section>
+
+            <section class="panel">
+                <h3 id="topPlayerPlaysTitle">Top Player Plays (7d)</h3>
+                <table id="topPlayerPlaysTable"></table>
+            </section>
+
+            <section class="panel">
+                <h3 id="topPlayerPlaytimeTitle">Top Player Playtime (7d)</h3>
+                <table id="topPlayerPlaytimeTable"></table>
             </section>
         </section>
 
@@ -314,6 +324,8 @@
     <script>
         const API_BASE = "https://api.vpinplay.com:8888";
         const ALL_TABLES_PAGE_SIZE = 50;
+        const TOP_PLAYER_DAYS = 7;
+        const TOP_PLAYER_LIMIT = 5;
         let allTablesOffset = 0;
         let allTablesTotal = null;
 
@@ -447,6 +459,11 @@
             await loadAllTablesPage();
         }
 
+        async function loadTopPlayerActivity(metric, days = TOP_PLAYER_DAYS, limit = TOP_PLAYER_LIMIT) {
+            const res = await api(`/api/v1/users/top-activity?metric=${encodeURIComponent(metric)}&days=${encodeURIComponent(days)}&limit=${encodeURIComponent(limit)}`);
+            return res.ok && Array.isArray(res.data?.items) ? res.data.items : [];
+        }
+
         async function refreshDashboard() {
             const limit = q("limitInput").value.trim() || "5";
 
@@ -459,6 +476,8 @@
                 vpsdbStatusRes,
                 weeklyActivityRes,
                 userCountRes,
+                topPlayerPlaysRows,
+                topPlayerRuntimeRows,
             ] = await Promise.all([
                 api("/api/v1/sync/last"),
                 api(`/api/v1/tables/top-rated?limit=${encodeURIComponent(limit)}`),
@@ -468,6 +487,8 @@
                 api("/api/v1/vpsdb/status"),
                 api("/api/v1/tables/activity-weekly?days=7"),
                 api("/api/v1/users/count"),
+                loadTopPlayerActivity("startCountPlayed"),
+                loadTopPlayerActivity("runTimePlayed"),
             ]);
 
             q("lastRefresh").textContent = `Last refresh: ${new Date().toLocaleString()}`;
@@ -537,6 +558,27 @@
                     { label: "VPS ID", getter: r => linkVpsId(r.vpsId), html: true },
                 ],
                 topVariantsRows
+            );
+
+            q("topPlayerPlaysTitle").textContent = `Top Player Plays (${TOP_PLAYER_DAYS}d)`;
+            q("topPlayerPlaytimeTitle").textContent = `Top Player Playtime (${TOP_PLAYER_DAYS}d)`;
+
+            renderTable("topPlayerPlaysTable",
+                [
+                    { label: "User", getter: r => r.userId || "-" },
+                    { label: "Plays", getter: r => fmtNumber(r.startCountPlayed) },
+                    { label: "Events", getter: r => fmtNumber(r.changeEvents) },
+                ],
+                topPlayerPlaysRows
+            );
+
+            renderTable("topPlayerPlaytimeTable",
+                [
+                    { label: "User", getter: r => r.userId || "-" },
+                    { label: "Run Time", getter: r => `${fmtNumber(r.runTimePlayed)} min` },
+                    { label: "Events", getter: r => fmtNumber(r.changeEvents) },
+                ],
+                topPlayerRuntimeRows
             );
 
             await loadAllTablesPage();
