@@ -380,6 +380,12 @@
             return `<a href="https://virtualpinballspreadsheet.github.io/games?game=${encodeURIComponent(id)}" target="_blank" rel="noopener noreferrer">${escapeHtml(id)}</a>`;
         }
 
+        function linkUserId(userId) {
+            const id = String(userId || "").trim();
+            if (!id) return "-";
+            return `<a href="player.html?userid=${encodeURIComponent(id)}">${escapeHtml(id)}</a>`;
+        }
+
         async function api(path) {
             try {
                 const response = await fetch(`${API_BASE}${path}`);
@@ -565,18 +571,16 @@
 
             renderTable("topPlayerPlaysTable",
                 [
-                    { label: "User", getter: r => r.userId || "-" },
+                    { label: "User", getter: r => linkUserId(r.userId), html: true },
                     { label: "Plays", getter: r => fmtNumber(r.startCountPlayed) },
-                    { label: "Events", getter: r => fmtNumber(r.changeEvents) },
                 ],
                 topPlayerPlaysRows
             );
 
             renderTable("topPlayerPlaytimeTable",
                 [
-                    { label: "User", getter: r => r.userId || "-" },
+                    { label: "User", getter: r => linkUserId(r.userId), html: true },
                     { label: "Run Time", getter: r => `${fmtNumber(r.runTimePlayed)} min` },
-                    { label: "Events", getter: r => fmtNumber(r.changeEvents) },
                 ],
                 topPlayerRuntimeRows
             );
