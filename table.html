@@ -624,28 +624,13 @@
             return out;
         }
         
-        function chooseBaselineVariation(rows) {
-            const ts = (row) => {
-                const raw = row?.createdAt || row?.updatedAt || row?.lastSeenAt;
-                const d = new Date(raw || 0);
-                return Number.isNaN(d.getTime()) ? Number.MAX_SAFE_INTEGER : d.getTime();
-            };
-            return [...rows].sort((a, b) => {
-                const ta = ts(a);
-                const tb = ts(b);
-                if (ta !== tb) return ta - tb;
-                const fa = String(a?.vpxFile?.filename || "");
-                const fb = String(b?.vpxFile?.filename || "");
-                return fa.localeCompare(fb);
-            })[0];
-        }
-        
         function renderDerivativeDifferences(rows) {
             const container = q("derivativeDifferencesDetails");
             const title = q("derivativeDifferencesTitle");
             const count = Array.isArray(rows) ? rows.length : 0;
+            const comparisonCount = count > 1 ? (count * (count - 1)) / 2 : 0;
             if (title) {
-                title.textContent = `Derivative Differences (${Math.max(0, count - 1)})`;
+                title.textContent = `Derivative Differences (${comparisonCount} comparisons)`;
             }
             
             if (!rows || rows.length === 0) {
@@ -657,9 +642,7 @@
                 return;
             }
             
-            const baseline = chooseBaselineVariation(rows);
-            const baselineMap = buildDerivativeComparableMap(baseline);
-            const allKeys = new Set(Object.keys(baselineMap));
+            const allKeys = new Set();
             const rowMaps = rows.map(row => {
                 const map = buildDerivativeComparableMap(row);
                 Object.keys(map).forEach(key => allKeys.add(key));
@@ -678,48 +661,52 @@
                 </div>
             `;
             
-            const baselineFilename = baseline?.vpxFile?.filename || "Unknown file";
             const chips = varyingKeys.length
                 ? `<div class="chips">${varyingKeys.map(key => `<span class="chip">${escapeHtml(key)}</span>`).join("")}</div>`
                 : `<div class="muted">No field-level metadata differences detected.</div>`;
             
             let html = `
                 <article class="variation-card">
-                    <div class="variation-title">Baseline (first seen): ${escapeHtml(baselineFilename)}</div>
+                    <div class="variation-title">Pairwise Comparison Across All Variations</div>
                     <div class="variation-subtitle">Compared by: vpxFile fields, ROM, alt title, alt VPS ID</div>
                     ${chips}
                 </article>
             `;
             
-            rows
-                .filter(row => row !== baseline)
-                .forEach(row => {
-                    const currentMap = buildDerivativeComparableMap(row);
-                    const changedKeys = varyingKeys.filter(key => (currentMap[key] ?? "") !== (baselineMap[key] ?? ""));
-                    const filename = row?.vpxFile?.filename || "Unknown file";
+            for (let i = 0; i < rowMaps.length; i += 1) {
+                for (let j = i + 1; j < rowMaps.length; j += 1) {
+                    const left = rowMaps[i];
+                    const right = rowMaps[j];
+                    const leftName = left.row?.vpxFile?.filename || `Variation ${i + 1}`;
+                    const rightName = right.row?.vpxFile?.filename || `Variation ${j + 1}`;
+                    const changedKeys = varyingKeys.filter(key => (left.map[key] ?? "") !== (right.map[key] ?? ""));
                     const changedFields = changedKeys.length
                         ? changedKeys.map(key => {
-                            const current = currentMap[key] ?? "";
+                            const leftValue = left.map[key] ?? "";
+                            const rightValue = right.map[key] ?? "";
                             return field(
                                 key,
-                                `${escapeHtml(current || "(empty)")} <span class="muted">(baseline: ${escapeHtml((baselineMap[key] ?? "") || "(empty)")})</span>`,
+                                `${escapeHtml(leftValue || "(empty)")} <span class="muted">vs</span> ${escapeHtml(rightValue || "(empty)")}`,
                                 true
                             );
                         }).join("")
-                        : `<div class="muted">No differences from baseline in compared fields.</div>`;
-                    
+                        : `<div class="muted">No differences between these two variations in compared fields.</div>`;
+
                     html += `
                         <article class="variation-card">
-                            <div class="variation-title">${escapeHtml(filename)}</div>
-                            <div class="variation-subtitle">${changedKeys.length} differing field${changedKeys.length === 1 ? "" : "s"} from baseline</div>
+                            <div class="variation-title">${escapeHtml(leftName)} vs ${escapeHtml(rightName)}</div>
+                            <div class="variation-subtitle">${changedKeys.length} differing field${changedKeys.length === 1 ? "" : "s"}</div>
                             <div class="variation-grid">
-                                ${field("submittedBy", fmtSubmitters(row?.submittedByUserIdsNormalized), true)}
-                                ${field("createdAt", fmtDate(row?.createdAt))}
+                                ${field("leftSubmittedBy", fmtSubmitters(left.row?.submittedByUserIdsNormalized), true)}
+                                ${field("rightSubmittedBy", fmtSubmitters(right.row?.submittedByUserIdsNormalized), true)}
+                                ${field("leftCreatedAt", fmtDate(left.row?.createdAt))}
+                                ${field("rightCreatedAt", fmtDate(right.row?.createdAt))}
                                 ${changedFields}
                             </div>
                         </article>
                     `;
-                });
+                }
+            }
             
             container.innerHTML = html;
         }
