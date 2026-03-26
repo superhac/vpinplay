@@ -423,6 +423,8 @@ async def get_table(vpsId: str, db: Database = Depends(get_db)):
             "vpsId": table["vpsId"],
             "rom": table.get("rom"),
             "vpxFile": table["vpxFile"],
+            "submittedByUserIdsNormalized": table.get("submittedByUserIdsNormalized", []),
+            "firstSeenByUserIdNormalized": table.get("firstSeenByUserIdNormalized"),
             "alttitle": variation_alt_map.get(
                 json.dumps(table["vpxFile"], sort_keys=True, separators=(",", ":")),
                 {},

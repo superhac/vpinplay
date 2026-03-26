@@ -96,6 +96,8 @@ class GlobalTableResponse(BaseModel):
     vpsId: str
     rom: Optional[str] = None
     vpxFile: VPXFilePayload
+    submittedByUserIdsNormalized: Optional[List[str]] = None
+    firstSeenByUserIdNormalized: Optional[str] = None
     alttitle: Optional[str] = None
     altvpsid: Optional[str] = None
     vpsdb: Optional[dict[str, Any]] = None

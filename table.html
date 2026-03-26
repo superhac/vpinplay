@@ -456,6 +456,16 @@
             return `<a href="player.html?userid=${encodeURIComponent(id)}">${escapeHtml(id)}</a>`;
         }
 
+        function fmtSubmitters(submitters) {
+            if (!Array.isArray(submitters) || submitters.length === 0) {
+                return '<span class="muted">Unknown</span>';
+            }
+            return submitters
+                .filter(v => String(v || "").trim() !== "")
+                .map(v => linkUserId(v))
+                .join(", ");
+        }
+
         async function api(path) {
             try {
                 const response = await fetch(`${API_BASE}${path}`);
@@ -515,6 +525,8 @@
                 `;
 
                 const priorityOrder = [
+                    "submittedByUserIdsNormalized",
+                    "firstSeenByUserIdNormalized",
                     "vpsdb.name",
                     "vpsdb.manufacturer",
                     "vpsdb.year",
@@ -531,12 +543,18 @@
                 ];
 
                 const flatFields = flattenObject(row)
+                    .filter(item => item.key !== "submittedByUserIdsNormalized")
                     .map(item => {
                         const raw = item.value;
                         const isDateField = /(At|Run)$/i.test(item.key);
                         const isVpsIdField = /(^|\.)(vpsId)$/i.test(item.key);
+                        const isUserField = /(firstSeenByUserIdNormalized)$/i.test(item.key);
                         const rendered = isDateField ? fmtDate(raw) : (raw ?? "-");
-                        return { key: item.key, value: rendered, html: isVpsIdField ? linkVpsId(raw) : null };
+                        return {
+                            key: item.key,
+                            value: rendered,
+                            html: isVpsIdField ? linkVpsId(raw) : (isUserField ? linkUserId(raw) : null)
+                        };
                     });
 
                 const priorityMap = new Map(priorityOrder.map((k, i) => [k, i]));
@@ -553,6 +571,7 @@
                         <div class="variation-title">${escapeHtml(filename)}</div>
                         <div class="variation-grid">
                             ${field("tableLabel", fmtTableName(row))}
+                            ${field("submittedBy", fmtSubmitters(row?.submittedByUserIdsNormalized), true)}
                             ${fieldsHtml}
                         </div>
                     </article>
