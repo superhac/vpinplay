@@ -98,7 +98,9 @@ const before = {
   userTableState: db.user_table_state.countDocuments(userFilter),
   userTableStateDeltas: db.user_table_state_deltas.countDocuments(userFilter),
   userTableRatings: db.user_table_ratings.countDocuments(userFilter),
-  tablesWithOwnershipTag: db.tables.countDocuments({ submittedByUserIdsNormalized: user }),
+  tablesWithOwnershipTag: db.tables.countDocuments({
+    submittedByUserIdsNormalized: { \$regex: '^' + escapeRegex(user) + '\$', \$options: 'i' },
+  }),
 };
 
 const deleted = {
@@ -108,10 +110,37 @@ const deleted = {
   userTableRatings: db.user_table_ratings.deleteMany(userFilter).deletedCount,
 };
 
+const tableRowsOwnedByUser = db.tables
+  .find(
+    {
+      submittedByUserIdsNormalized: { \$regex: '^' + escapeRegex(user) + '\$', \$options: 'i' },
+    },
+    { _id: 1 }
+  )
+  .toArray()
+  .map((doc) => doc._id);
+
 const ownershipRemoved = db.tables.updateMany(
-  { submittedByUserIdsNormalized: user },
-  { \$pull: { submittedByUserIdsNormalized: user } }
+  {
+    submittedByUserIdsNormalized: { \$regex: '^' + escapeRegex(user) + '\$', \$options: 'i' },
+  },
+  {
+    \$pull: {
+      submittedByUserIdsNormalized: {
+        \$regex: '^' + escapeRegex(user) + '\$',
+        \$options: 'i',
+      },
+    },
+  }
 ).modifiedCount;
+
+const tableRowsWithoutSubmittersDeleted = db.tables.deleteMany({
+  _id: { \$in: tableRowsOwnedByUser },
+  \$or: [
+    { submittedByUserIdsNormalized: { \$exists: false } },
+    { submittedByUserIdsNormalized: { \$size: 0 } },
+  ],
+}).deletedCount;
 
 const activeVpsIds = db.user_table_state.distinct('vpsId');
 const orphanedTableRowsDeleted = db.tables.deleteMany({
@@ -124,6 +153,7 @@ printjson({
   deleted,
   tables: {
     ownershipRemoved,
+    tableRowsWithoutSubmittersDeleted,
     orphanedTableRowsDeleted,
     activeVpsIdCount: activeVpsIds.length,
   },

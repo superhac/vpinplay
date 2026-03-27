@@ -159,6 +159,12 @@ Delete a user and their submitted records (maintenance script):
 ./scripts/purge_user_and_submissions.sh cabinet_1 --yes
 ```
 
+Delete table variation rows submitted by `Unknown` (maintenance script):
+
+```bash
+./scripts/purge_unknown_submitter_variations.sh --yes
+```
+
 ## Testing
 
 ### Web Interface
