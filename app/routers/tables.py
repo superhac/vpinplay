@@ -419,22 +419,71 @@ async def get_all_tables(
 async def get_vpsid_by_filehash(filehash: str, db: Database = Depends(get_db)):
     """
     Resolve a VPS ID by VPX file hash (`vpxFile.filehash`).
+    Also returns `altvpsid` when present on any matching table variation.
     """
     clean_hash = filehash.strip()
     if clean_hash == "":
-        return {"filehash": filehash, "vpsId": None}
+        return {"filehash": filehash, "vpsId": None, "altvpsid": None}
 
-    row = (
+    matching_tables = list(
         db["tables"]
-        .find({"vpxFile.filehash": clean_hash}, {"_id": 0, "vpsId": 1, "updatedAt": 1})
+        .find({"vpxFile.filehash": clean_hash}, {"_id": 0, "vpsId": 1, "updatedAt": 1, "vpxFile": 1})
         .sort("updatedAt", -1)
-        .limit(1)
     )
-    items = list(row)
-    if not items:
-        return {"filehash": clean_hash, "vpsId": None}
+    if not matching_tables:
+        return {"filehash": clean_hash, "vpsId": None, "altvpsid": None}
 
-    return {"filehash": clean_hash, "vpsId": items[0].get("vpsId")}
+    matched_vps_ids = [row.get("vpsId") for row in matching_tables if row.get("vpsId")]
+    vpx_signatures = [
+        json.dumps(row["vpxFile"], sort_keys=True, separators=(",", ":"))
+        for row in matching_tables
+        if isinstance(row.get("vpxFile"), dict)
+    ]
+
+    altvpsid = None
+
+    # Prefer variation-level altvpsid rows tied to matching VPX signatures.
+    if matched_vps_ids and vpx_signatures:
+        rating_rows = (
+            db["user_table_ratings"]
+            .find(
+                {
+                    "vpsId": {"$in": matched_vps_ids},
+                    "vpxFileSignature": {"$in": vpx_signatures},
+                },
+                {"_id": 0, "altvpsid": 1, "updatedAt": 1},
+            )
+            .sort("updatedAt", -1)
+            .limit(50)
+        )
+        for row in rating_rows:
+            value = row.get("altvpsid")
+            if isinstance(value, str) and value.strip():
+                altvpsid = value
+                break
+
+    # Fallback for older data paths where altvpsid only exists in user table state.
+    if altvpsid is None and matched_vps_ids:
+        state_rows = (
+            db["user_table_state"]
+            .find(
+                {"vpsId": {"$in": matched_vps_ids}},
+                {"_id": 0, "altvpsid": 1, "updatedAt": 1},
+            )
+            .sort("updatedAt", -1)
+            .limit(50)
+        )
+        for row in state_rows:
+            value = row.get("altvpsid")
+            if isinstance(value, str) and value.strip():
+                altvpsid = value
+                break
+
+    return {
+        "filehash": clean_hash,
+        "vpsId": matching_tables[0].get("vpsId"),
+        "altvpsid": altvpsid,
+    }
 
 
 @router.get("/tables/{vpsId}", response_model=List[GlobalTableResponse])

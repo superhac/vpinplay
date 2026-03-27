@@ -38,7 +38,7 @@ This will start:
 ### Table queries
 - `GET /api/v1/tables` - Get all table variation rows (paginated, default 50)
 - `GET /api/v1/tables/count` - Get total table counts (`totalTableRows` and `uniqueVpsIdCount`)
-- `GET /api/v1/tables/by-filehash/{filehash}` - Resolve a matching `vpsId` from `vpxFile.filehash` (returns `vpsId: null` when no match exists)
+- `GET /api/v1/tables/by-filehash/{filehash}` - Resolve a matching `vpsId` from `vpxFile.filehash`; also returns `altvpsid` if set on any matching table row (returns `vpsId: null` when no match exists)
 - `GET /api/v1/tables/{vpsId}` - Get canonical table metadata
 - `GET /api/v1/tables/top-rated` - Get top tables by average rating across all users (paginated via `limit` + `offset`, max 100 per request, default limit 5)
 - `GET /api/v1/tables/top-play-time` - Get top tables by cumulative `runTime` across all users (highest first, paginated via `limit` + `offset`, max 100 per request, default limit 5)
