@@ -45,6 +45,7 @@ This will start:
 - `GET /api/v1/tables/top-variants` - Get top tables by total variant count (highest first, paginated via `limit` + `offset`, max 100 per request, default limit 5)
 - `GET /api/v1/tables/activity-weekly` - Get cumulative global play activity from sync deltas for trailing N days (default `days=7`)
 - `GET /api/v1/tables/{vpsId}/rating-summary` - Get cumulative average rating + rating count for a specific table
+- `GET /api/v1/tables/{vpsId}/cumulative-rating` - Get cumulative average rating (`cumulativeRating`) + rating count for a specific table
 - `GET /api/v1/tables/newly-added` - Get cumulatively new tables seen globally (first time each `vpsId` was observed, paginated via `limit` + `offset`)
 - `GET /api/v1/vpsdb/{vpsId}` - Get cached VPS DB selected fields for a specific `vpsId`
 - `GET /api/v1/vpsdb/status` - Get VPS DB background sync status

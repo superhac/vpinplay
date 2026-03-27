@@ -83,6 +83,41 @@ async def get_global_table_rating_summary(vpsId: str, db: Database = Depends(get
     return enrich_with_vpsdb(response, db)[0]
 
 
+@router.get("/tables/{vpsId}/cumulative-rating")
+async def get_global_table_cumulative_rating(vpsId: str, db: Database = Depends(get_db)):
+    """
+    Get cumulative average rating for a specific table across all users.
+    Returns `cumulativeRating` plus `ratingCount`.
+    """
+    pipeline = [
+        {"$match": {"vpsId": vpsId, "rating": {"$gte": 1, "$lte": 5}}},
+        {
+            "$group": {
+                "_id": "$vpsId",
+                "avgRating": {"$avg": "$rating"},
+                "ratingCount": {"$sum": 1}
+            }
+        }
+    ]
+
+    results = list(db["user_table_ratings"].aggregate(pipeline))
+    if not results:
+        response = [{
+            "vpsId": vpsId,
+            "cumulativeRating": None,
+            "ratingCount": 0,
+        }]
+        return enrich_with_vpsdb(response, db)[0]
+
+    row = results[0]
+    response = [{
+        "vpsId": row["_id"],
+        "cumulativeRating": round(float(row["avgRating"]), 3),
+        "ratingCount": int(row["ratingCount"]),
+    }]
+    return enrich_with_vpsdb(response, db)[0]
+
+
 @router.get("/tables/{vpsId}/user-ratings")
 async def get_table_user_ratings(vpsId: str, db: Database = Depends(get_db)):
     """
