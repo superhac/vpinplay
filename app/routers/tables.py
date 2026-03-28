@@ -1,4 +1,5 @@
 import json
+import re
 
 from fastapi import APIRouter, Depends, Query
 from typing import List
@@ -394,6 +395,102 @@ async def get_all_tables(
     response = [
         {
             "vpsId": row.get("vpsId"),
+            "filename": row.get("vpxFile", {}).get("filename"),
+            "filehash": row.get("vpxFile", {}).get("filehash"),
+            "createdAt": row.get("createdAt"),
+            "updatedAt": row.get("updatedAt"),
+        }
+        for row in rows
+    ]
+    items = enrich_with_vpsdb(response, db)
+    return {
+        "items": items,
+        "pagination": {
+            "limit": limit,
+            "offset": offset,
+            "returned": len(items),
+            "total": total,
+            "hasNext": (offset + len(items)) < total,
+            "hasPrev": offset > 0,
+        },
+    }
+
+
+@router.get("/tables/by-rom/{rom}")
+async def get_tables_by_rom(
+    rom: str,
+    limit: int = Query(50, ge=1, le=100),
+    offset: int = Query(0, ge=0),
+    db: Database = Depends(get_db)
+):
+    """
+    Find table variation rows by ROM name (case-insensitive exact match).
+    """
+    clean_rom = rom.strip()
+    if clean_rom == "":
+        return {
+            "items": [],
+            "pagination": {
+                "limit": limit,
+                "offset": offset,
+                "returned": 0,
+                "total": 0,
+                "hasNext": False,
+                "hasPrev": offset > 0,
+            },
+        }
+
+    rom_filter = {
+        "$or": [
+            {"rom": {"$regex": f"^{re.escape(clean_rom)}$", "$options": "i"}},
+            {"vpxFile.rom": {"$regex": f"^{re.escape(clean_rom)}$", "$options": "i"}},
+        ]
+    }
+    total = db["tables"].count_documents(rom_filter)
+    pipeline = [
+        {"$match": rom_filter},
+        {
+            "$lookup": {
+                "from": "vpsdb_aux",
+                "localField": "vpsId",
+                "foreignField": "_id",
+                "as": "vpsdbDoc",
+            }
+        },
+        {
+            "$addFields": {
+                "sortName": {
+                    "$let": {
+                        "vars": {"firstVpsdb": {"$arrayElemAt": ["$vpsdbDoc", 0]}},
+                        "in": {
+                            "$toLower": {
+                                "$ifNull": ["$$firstVpsdb.data.name", ""]
+                            }
+                        },
+                    }
+                }
+            }
+        },
+        {"$sort": {"sortName": 1, "vpsId": 1, "updatedAt": -1}},
+        {"$skip": offset},
+        {"$limit": limit},
+        {
+            "$project": {
+                "vpsId": 1,
+                "rom": 1,
+                "vpxFile.filehash": 1,
+                "vpxFile.filename": 1,
+                "createdAt": 1,
+                "updatedAt": 1,
+            }
+        },
+    ]
+    rows = list(db["tables"].aggregate(pipeline))
+
+    response = [
+        {
+            "vpsId": row.get("vpsId"),
+            "rom": row.get("rom") or row.get("vpxFile", {}).get("rom"),
             "filename": row.get("vpxFile", {}).get("filename"),
             "filehash": row.get("vpxFile", {}).get("filehash"),
             "createdAt": row.get("createdAt"),
