@@ -424,7 +424,7 @@
                 <input id="vpsIdInput" type="text" placeholder="Filter to one vpsId" onkeydown="if(event.key==='Enter'){refreshDashboard();}">
             </div>
             <button class="btn" onclick="refreshDashboard()">Apply</button>
-            <div class="controls-note">This page reads user table state, keeps only entries with a `score` object, and then renders both dynamic fields and raw JSON so arbitrary payload shapes stay inspectable.</div>
+            <div class="controls-note">This page reads user table state, keeps only entries with a user.score payload, and matches key casing case-insensitively.</div>
             <div id="status" class="status">Ready.</div>
         </section>
 
@@ -554,6 +554,22 @@
             return out;
         }
 
+        function getCaseInsensitiveValue(obj, key) {
+            if (!obj || typeof obj !== "object" || Array.isArray(obj)) return undefined;
+            const target = String(key).toLowerCase();
+            const match = Object.keys(obj).find(k => String(k).toLowerCase() === target);
+            return match ? obj[match] : undefined;
+        }
+
+        function getScorePayload(row) {
+            const user = getCaseInsensitiveValue(row, "user");
+            const score = getCaseInsensitiveValue(user, "score");
+            if (score && typeof score === "object" && !Array.isArray(score)) {
+                return score;
+            }
+            return null;
+        }
+
         function fmtTableName(row) {
             const name = row?.vpsdb?.name || row?.vpsId || "Unknown Table";
             const manufacturer = row?.vpsdb?.manufacturer;
@@ -652,7 +668,7 @@
             rows.forEach(row => {
                 tableSet.add(row.vpsId);
 
-                const score = row.score || {};
+                const score = getScorePayload(row) || {};
                 flattenObject(score).forEach(item => {
                     keyCounts.set(item.key, (keyCounts.get(item.key) || 0) + 1);
                 });
@@ -706,9 +722,10 @@
             }
 
             const cards = rows.map(row => {
-                const flatScore = flattenObject(row.score || {});
-                const scoreType = row?.score?.score_type ? String(row.score.score_type) : "Score Payload";
-                const primaryValue = row?.score?.value;
+                const score = getScorePayload(row) || {};
+                const flatScore = flattenObject(score);
+                const scoreType = score?.score_type ? String(score.score_type) : "Score Payload";
+                const primaryValue = score?.value;
                 const valueBadge = primaryValue === null || primaryValue === undefined || primaryValue === ""
                     ? escapeHtml(scoreType)
                     : `${escapeHtml(scoreType)}: ${escapeHtml(fmtNumber(primaryValue))}`;
@@ -738,7 +755,7 @@
                         </div>
                         <div style="margin-top:12px;">
                             <div class="score-label" style="margin-bottom:8px;">Raw Score JSON</div>
-                            <pre>${escapeHtml(JSON.stringify(row.score || {}, null, 2))}</pre>
+                            <pre>${escapeHtml(JSON.stringify(score, null, 2))}</pre>
                         </div>
                     </article>
                 `;
@@ -754,9 +771,9 @@
             renderTable("scoreOverviewTable", [
                 { label: "Table", getter: row => fmtTableName(row) },
                 { label: "VPS ID", getter: row => linkVpsId(row.vpsId), html: true },
-                { label: "Score Type", getter: row => row?.score?.score_type || "-" },
-                { label: "Value", getter: row => fmtNumber(row?.score?.value) },
-                { label: "ROM", getter: row => row?.score?.resolved_rom || row?.score?.rom || row?.vpsdb?.name || "-" },
+                { label: "Score Type", getter: row => getScorePayload(row)?.score_type || "-" },
+                { label: "Value", getter: row => fmtNumber(getScorePayload(row)?.value) },
+                { label: "ROM", getter: row => getScorePayload(row)?.resolved_rom || getScorePayload(row)?.rom || row?.vpsdb?.name || "-" },
                 { label: "Updated", getter: row => fmtDate(row.updatedAt) },
             ], rows.slice(0, 12));
         }
@@ -792,11 +809,11 @@
             }
 
             const filteredRows = result.rows
-                .filter(row => row && row.score && typeof row.score === "object" && !Array.isArray(row.score))
+                .filter(row => !!getScorePayload(row))
                 .filter(row => !vpsIdFilter || String(row.vpsId || "").trim() === vpsIdFilter)
                 .sort((a, b) => {
-                    const aValue = Number(a?.score?.value);
-                    const bValue = Number(b?.score?.value);
+                    const aValue = Number(getScorePayload(a)?.value);
+                    const bValue = Number(getScorePayload(b)?.value);
                     if (Number.isFinite(aValue) && Number.isFinite(bValue) && aValue !== bValue) {
                         return bValue - aValue;
                     }
