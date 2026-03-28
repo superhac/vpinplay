@@ -779,7 +779,7 @@
                 { label: "VPS ID", getter: row => linkVpsId(row.vpsId), html: true },
                 { label: "Score Type", getter: row => getScorePayload(row)?.score_type || "-" },
                 { label: "Value", getter: row => fmtNumber(getScorePayload(row)?.value) },
-                { label: "ROM", getter: row => getScorePayload(row)?.resolved_rom || getScorePayload(row)?.rom || row?.vpsdb?.name || "-" },
+                { label: "ROM", getter: row => getScorePayload(row)?.rom || getScorePayload(row)?.resolved_rom || row?.vpsdb?.name || "-" },
                 { label: "Updated", getter: row => fmtDate(row.updatedAt) },
             ], rows.slice(0, 12));
         }
