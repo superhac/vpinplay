@@ -348,6 +348,39 @@ def _map_user_states(states: list[dict], db: Database) -> list[UserTableStateRes
     return [UserTableStateResponse(**row) for row in enriched]
 
 
+@router.get("/users/tables/with-score", response_model=List[UserTableStateResponse])
+async def get_all_users_tables_with_score(
+    vpsId: str = Query(..., min_length=1, description="Filter to a specific VPS ID"),
+    limit: int = Query(100, ge=1, le=100),
+    offset: int = Query(0, ge=0),
+    db: Database = Depends(get_db)
+):
+    """
+    Get all user table states with a submitted score payload for one specific table.
+
+    Required query parameters:
+    - vpsId: Canonical VPS table ID to filter on
+
+    Optional query parameters:
+    - limit: Maximum number of results (default 100, max 100)
+    - offset: Number of results to skip (default 0)
+    """
+    user_states = list(
+        db["user_table_state"]
+        .find({
+            "$and": [
+                {"vpsId": vpsId},
+                {"score": {"$type": "object"}},
+            ]
+        })
+        .sort([("updatedAt", -1), ("userId", 1)])
+        .skip(offset)
+        .limit(limit)
+    )
+
+    return _map_user_states(user_states, db)
+
+
 @router.get("/users/{userId}/tables/top-rated", response_model=List[UserTableStateResponse])
 async def get_user_top_rated_tables(
     userId: str,
@@ -465,6 +498,36 @@ async def get_user_newly_added_tables(
         db["user_table_state"]
         .find(user_id_filter(userId))
         .sort("createdAt", -1)
+        .skip(offset)
+        .limit(limit)
+    )
+
+    return _map_user_states(user_states, db)
+
+
+@router.get("/users/{userId}/tables/with-score", response_model=List[UserTableStateResponse])
+async def get_user_tables_with_score(
+    userId: str,
+    limit: int = Query(100, ge=1, le=100),
+    offset: int = Query(0, ge=0),
+    db: Database = Depends(get_db)
+):
+    """
+    Get all current table states for a user where a score payload has been submitted.
+
+    Optional query parameters:
+    - limit: Maximum number of results (default 100, max 100)
+    - offset: Number of results to skip (default 0)
+    """
+    user_states = list(
+        db["user_table_state"]
+        .find({
+            "$and": [
+                user_id_filter(userId),
+                {"score": {"$type": "object"}},
+            ]
+        })
+        .sort("updatedAt", -1)
         .skip(offset)
         .limit(limit)
     )

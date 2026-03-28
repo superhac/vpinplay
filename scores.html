@@ -417,14 +417,14 @@
         <section class="controls">
             <div class="field">
                 <label for="userIdInput">User ID</label>
-                <input id="userIdInput" type="text" value="cabinet_1" placeholder="Enter userId" onkeydown="if(event.key==='Enter'){refreshDashboard();}">
+                <input id="userIdInput" type="text" value="cabinet_1" placeholder="Enter userId for per-user score view" onkeydown="if(event.key==='Enter'){refreshDashboard();}">
             </div>
             <div class="field">
-                <label for="vpsIdInput">Optional VPS ID Filter</label>
-                <input id="vpsIdInput" type="text" placeholder="Filter to one vpsId" onkeydown="if(event.key==='Enter'){refreshDashboard();}">
+                <label for="vpsIdInput">Optional VPS ID</label>
+                <input id="vpsIdInput" type="text" placeholder="Show this table across all users" onkeydown="if(event.key==='Enter'){refreshDashboard();}">
             </div>
             <button class="btn" onclick="refreshDashboard()">Apply</button>
-            <div class="controls-note">This page reads user table state from the API response, prefers the returned `score` field, and falls back to `user.score` when present. Key casing is matched case-insensitively.</div>
+            <div class="controls-note">Without a VPS ID, this page loads scored tables for one user. When a VPS ID is provided, it uses the cross-user scored-table query for that specific table.</div>
             <div id="status" class="status">Ready.</div>
         </section>
 
@@ -622,11 +622,27 @@
             }
         }
 
-        async function fetchAllUserTables(userId) {
+        async function fetchRowsWithUserScore(userId) {
             const allRows = [];
 
             for (let offset = 0; ; offset += PAGE_SIZE) {
-                const result = await api(`/api/v1/users/${encodeURIComponent(userId)}/tables?limit=${PAGE_SIZE}&offset=${offset}`);
+                const result = await api(`/api/v1/users/${encodeURIComponent(userId)}/tables/with-score?limit=${PAGE_SIZE}&offset=${offset}`);
+                if (!result.ok || !Array.isArray(result.data)) {
+                    return { ok: false, rows: allRows, status: result.status, error: result.data?.error || "Request failed" };
+                }
+
+                allRows.push(...result.data);
+                if (result.data.length < PAGE_SIZE) {
+                    return { ok: true, rows: allRows };
+                }
+            }
+        }
+
+        async function fetchRowsWithScoreForVpsId(vpsId) {
+            const allRows = [];
+
+            for (let offset = 0; ; offset += PAGE_SIZE) {
+                const result = await api(`/api/v1/users/tables/with-score?vpsId=${encodeURIComponent(vpsId)}&limit=${PAGE_SIZE}&offset=${offset}`);
                 if (!result.ok || !Array.isArray(result.data)) {
                     return { ok: false, rows: allRows, status: result.status, error: result.data?.error || "Request failed" };
                 }
@@ -791,8 +807,8 @@
             setParams(userId, vpsIdFilter);
             q("lastRefresh").textContent = `Last refresh: ${new Date().toLocaleString()}`;
 
-            if (!userId) {
-                setStatus("Enter a userId to load scored table state.");
+            if (!vpsIdFilter && !userId) {
+                setStatus("Enter a userId, or enter a VPS ID to view scored rows across all users.");
                 renderOverview([]);
                 renderKeyChips([]);
                 renderScoreCards([]);
@@ -803,11 +819,18 @@
                 return;
             }
 
-            setStatus(`Loading scored tables for ${userId}...`);
-            const result = await fetchAllUserTables(userId);
+            const usingVpsIdQuery = !!vpsIdFilter;
+            setStatus(
+                usingVpsIdQuery
+                    ? `Loading scored rows for ${vpsIdFilter} across all users...`
+                    : `Loading scored tables for ${userId}...`
+            );
+            const result = usingVpsIdQuery
+                ? await fetchRowsWithScoreForVpsId(vpsIdFilter)
+                : await fetchRowsWithUserScore(userId);
 
             if (!result.ok) {
-                setStatus(`Failed to load user tables (${result.status || "network"}).`);
+                setStatus(`Failed to load scored rows (${result.status || "network"}).`);
                 renderOverview([]);
                 renderKeyChips([]);
                 renderScoreCards([]);
@@ -816,7 +839,6 @@
 
             const filteredRows = result.rows
                 .filter(row => !!getScorePayload(row))
-                .filter(row => !vpsIdFilter || String(row.vpsId || "").trim() === vpsIdFilter)
                 .sort((a, b) => {
                     const aValue = Number(getScorePayload(a)?.value);
                     const bValue = Number(getScorePayload(b)?.value);
@@ -836,8 +858,15 @@
             renderKeyChips(summary.keyCounts);
             renderScoreCards(filteredRows);
 
-            const filterText = vpsIdFilter ? ` for ${vpsIdFilter}` : "";
-            setStatus(`Loaded ${filteredRows.length} scored table entr${filteredRows.length === 1 ? "y" : "ies"} for ${userId}${filterText}.`);
+            if (usingVpsIdQuery) {
+                setStatus(
+                    `Loaded ${filteredRows.length} scored row${filteredRows.length === 1 ? "" : "s"} for ${vpsIdFilter} across all users.`
+                );
+            } else {
+                setStatus(
+                    `Loaded ${filteredRows.length} scored table entr${filteredRows.length === 1 ? "y" : "ies"} for ${userId}.`
+                );
+            }
         }
 
         document.addEventListener("DOMContentLoaded", () => {

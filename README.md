@@ -69,6 +69,8 @@ This will start:
 - `GET /api/v1/users/{userId}/tables/top-play-time` - Get top tables for a user by `runTime` (highest first, paginated via `limit` + `offset`, max 100 per request)
 - `GET /api/v1/users/{userId}/tables/most-played` - Get most played tables for a user by `startCount` (highest first, paginated via `limit` + `offset`, max 100 per request)
 - `GET /api/v1/users/{userId}/tables/newly-added` - Get newest tables added for a user by first-seen timestamp (paginated via `limit` + `offset`, max 100 per request)
+- `GET /api/v1/users/{userId}/tables/with-score` - Get only tables for a user that currently have a submitted `score` payload (paginated via `limit` + `offset`, max 100 per request)
+- `GET /api/v1/users/tables/with-score?vpsId=...` - Get all user table-state rows with a submitted `score` payload for one specific `vpsId` (paginated via `limit` + `offset`, max 100 per request)
 
 All query responses that include `vpsId` now include a `vpsdb` object from the VPS DB cache when available. By default, it includes `name`, `authors`, `manufacturer`, and `year`.
 
@@ -162,6 +164,18 @@ Query user table state:
 
 ```bash
 curl http://localhost:8888/api/v1/users/cabinet_1/tables/lkSumsrF
+```
+
+Query all user tables with scores:
+
+```bash
+curl http://localhost:8888/api/v1/users/cabinet_1/tables/with-score
+```
+
+Query scored rows for one table across all users:
+
+```bash
+curl "http://localhost:8888/api/v1/users/tables/with-score?vpsId=lkSumsrF"
 ```
 
 Check if userId is available:
