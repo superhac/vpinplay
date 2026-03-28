@@ -135,6 +135,21 @@ curl -X POST http://localhost:8888/api/v1/sync \
   -d @sync_payload.json
 ```
 
+Each table entry in the sync payload may also include an optional `Score` object with arbitrary keys, for example:
+
+```json
+{
+  "Score": {
+    "rom": "alpok_b6",
+    "resolved_rom": "alpok_l2",
+    "score_type": "HIGH SCORE",
+    "value": 1000000
+  }
+}
+```
+
+When present, `Score` is stored on the user's table state and returned by the user table query endpoints.
+
 Query a table:
 
 ```bash

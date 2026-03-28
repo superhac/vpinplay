@@ -335,6 +335,7 @@ def _map_user_states(states: list[dict], db: Database) -> list[UserTableStateRes
             "lastRun": state.get("lastRun"),
             "startCount": state.get("startCount", 0),
             "runTime": state.get("runTime", 0),
+            "score": state.get("score"),
             "alttitle": state.get("alttitle"),
             "altvpsid": state.get("altvpsid"),
             "createdAt": state.get("createdAt"),

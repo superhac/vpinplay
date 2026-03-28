@@ -48,6 +48,11 @@ def _merge_last_run(existing_value, incoming_value):
     return incoming_value
 
 
+def _normalize_score_payload(value):
+    """Accept only object-like score payloads; ignore invalid shapes."""
+    return value if isinstance(value, dict) else None
+
+
 @router.get("/sync/last")
 async def get_last_global_sync(db: Database = Depends(get_db)):
     """
@@ -249,6 +254,7 @@ async def submit_sync(request: FullSyncRequest, db: Database = Depends(get_db)):
             incoming_start_count = _coerce_non_negative_int(table_payload.user.startCount)
             incoming_run_time = _coerce_non_negative_int(table_payload.user.runTime)
             incoming_last_run = table_payload.user.lastRun
+            incoming_score = _normalize_score_payload(table_payload.score)
 
             user_state_doc = {
                 "userId": user_id,
@@ -258,6 +264,7 @@ async def submit_sync(request: FullSyncRequest, db: Database = Depends(get_db)):
                 "lastRun": incoming_last_run,
                 "startCount": incoming_start_count,
                 "runTime": incoming_run_time,
+                "score": incoming_score,
                 "alttitle": table_payload.vpinfe.alttitle,
                 "altvpsid": table_payload.vpinfe.altvpsid,
                 "lastSeenAt": received_at,
@@ -283,6 +290,7 @@ async def submit_sync(request: FullSyncRequest, db: Database = Depends(get_db)):
                     existing_user_state.get("lastRun") != merged_last_run or
                     prev_start_count != merged_start_count or
                     prev_run_time != merged_run_time or
+                    existing_user_state.get("score") != incoming_score or
                     existing_user_state.get("alttitle") != table_payload.vpinfe.alttitle or
                     existing_user_state.get("altvpsid") != table_payload.vpinfe.altvpsid
                 )
@@ -310,6 +318,8 @@ async def submit_sync(request: FullSyncRequest, db: Database = Depends(get_db)):
                         "prevRunTime": prev_run_time,
                         "newRunTime": new_run_time,
                         "deltaRunTime": delta_run_time,
+                        "prevScore": existing_user_state.get("score"),
+                        "newScore": incoming_score,
                         "prevAlttitle": existing_user_state.get("alttitle"),
                         "newAlttitle": table_payload.vpinfe.alttitle,
                         "prevAltvpsid": existing_user_state.get("altvpsid"),

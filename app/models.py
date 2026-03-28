@@ -1,6 +1,6 @@
 from typing import Optional, List, Union, Any
 from datetime import datetime
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, ConfigDict
 from app.userid import normalize_user_id
 
 
@@ -77,10 +77,13 @@ class ClientInfo(BaseModel):
 
 # Individual table in sync payload
 class TableSyncPayload(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+
     info: TableInfoPayload
     user: UserStatePayload
     vpxFile: VPXFilePayload
     vpinfe: VPinPlayPayload
+    score: Optional[dict[str, Any]] = Field(None, alias="Score")
 
 
 # Full sync request
@@ -114,6 +117,7 @@ class UserTableStateResponse(BaseModel):
     lastRun: Optional[str] = None
     startCount: int
     runTime: int
+    score: Optional[dict[str, Any]] = None
     alttitle: Optional[str] = None
     altvpsid: Optional[str] = None
     vpsdb: Optional[dict[str, Any]] = None
