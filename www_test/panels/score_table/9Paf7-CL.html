@@ -119,38 +119,46 @@
 
   .afm-header-copy {
     min-width: 0;
+    align-self: stretch;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
   }
 
   .afm-header h2 {
     margin: 0;
-    font-size: 1.45rem;
+    font-size: clamp(2rem, 3.8vw, 3rem);
+    line-height: 1.02;
+    letter-spacing: 0.01em;
   }
 
   .afm-title-row {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    gap: 12px;
-    margin-bottom: 6px;
+    gap: 14px;
+    margin-bottom: 10px;
   }
 
   .afm-meta {
     color: var(--afm-muted);
-    font-size: 0.92rem;
+    font-size: 1rem;
+    font-weight: 600;
   }
 
   .afm-subhead {
     color: var(--afm-muted);
-    font-size: 0.95rem;
-    font-weight: 600;
-    margin-bottom: 6px;
+    font-size: 1.15rem;
+    font-weight: 700;
+    margin-bottom: 10px;
   }
 
   .afm-rating {
     display: inline-flex;
     align-items: center;
     gap: 8px;
-    min-height: 1.25rem;
+    min-height: 1.6rem;
+    font-size: 1.2rem;
   }
 
   .rating-stars {
@@ -163,14 +171,14 @@
   .rating-star-cell {
     position: relative;
     display: inline-block;
-    width: 0.95em;
-    height: 1em;
+    width: 1.05em;
+    height: 1.1em;
     line-height: 1;
   }
 
   .rating-star {
     display: block;
-    font-size: 0.95rem;
+    font-size: 1.15rem;
     line-height: 1;
   }
 
@@ -190,9 +198,10 @@
   }
 
   .rating-value {
-    margin-left: 6px;
+    margin-left: 8px;
     color: var(--afm-muted);
-    font-size: 0.84em;
+    font-size: 0.92em;
+    font-weight: 700;
   }
 
   .afm-badge {
@@ -410,6 +419,14 @@
   @media (max-width: 520px) {
     .afm-stats {
       grid-template-columns: 1fr;
+    }
+
+    .afm-subhead {
+      font-size: 1rem;
+    }
+
+    .afm-meta {
+      font-size: 0.92rem;
     }
   }
 </style>
