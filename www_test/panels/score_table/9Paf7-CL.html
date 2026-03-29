@@ -9,6 +9,7 @@
         <div class="afm-header-copy">
           <div class="afm-kicker">Attack from Mars</div>
           <h2>Global Score Panel</h2>
+          <div class="afm-subhead" id="afm-subhead"></div>
           <div class="afm-meta" id="afm-meta">Waiting for global score data.</div>
         </div>
       </div>
@@ -109,6 +110,13 @@
   .afm-meta {
     color: var(--afm-muted);
     font-size: 0.92rem;
+  }
+
+  .afm-subhead {
+    color: var(--afm-muted);
+    font-size: 0.95rem;
+    font-weight: 600;
+    margin-bottom: 6px;
   }
 
   .afm-badge {
@@ -339,6 +347,21 @@
     if (!value) return "Unknown";
     const dt = new Date(value);
     return Number.isNaN(dt.getTime()) ? "Unknown" : dt.toLocaleString();
+  }
+
+  function buildTableSubtitle(rows) {
+    const firstVpsdb = rows
+      .map(row => row?.vpsdb)
+      .find(vpsdb => vpsdb && typeof vpsdb === "object");
+
+    const manufacturer = typeof firstVpsdb?.manufacturer === "string"
+      ? firstVpsdb.manufacturer.trim()
+      : "";
+    const year = firstVpsdb?.year === null || firstVpsdb?.year === undefined
+      ? ""
+      : String(firstVpsdb.year).trim();
+
+    return [manufacturer, year].filter(Boolean).join(" • ");
   }
 
   function scoreText(entry) {
@@ -579,6 +602,12 @@
     if (!rows.length) {
       setStatus("No Attack from Mars score rows were found.", "error");
       return;
+    }
+
+    const subhead = q("afm-subhead");
+    if (subhead) {
+      subhead.textContent = buildTableSubtitle(rows);
+      subhead.hidden = !subhead.textContent;
     }
 
     const initialsMaps = await buildInitialsMaps(rows);
