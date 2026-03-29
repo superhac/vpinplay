@@ -17,7 +17,33 @@
       </div>
     </div>
 
-    <div class="afm-status" id="afm-status">Ready.</div>
+    <div class="afm-status" id="afm-status" hidden>Ready.</div>
+
+    <div class="afm-stats" id="afm-stats">
+      <section class="afm-stat-card">
+        <div class="afm-stat-label">Total Table Plays</div>
+        <div class="afm-stat-value" id="afm-stat-starts-total">-</div>
+        <div class="afm-stat-sub">Sum of startCount</div>
+      </section>
+
+      <section class="afm-stat-card">
+        <div class="afm-stat-label">Total Play Time</div>
+        <div class="afm-stat-value" id="afm-stat-runtime-total">-</div>
+        <div class="afm-stat-sub">Sum of runTime</div>
+      </section>
+
+      <section class="afm-stat-card">
+        <div class="afm-stat-label">This Week Play Time</div>
+        <div class="afm-stat-value" id="afm-stat-runtime-week">-</div>
+        <div class="afm-stat-sub">Last 7 days (delta)</div>
+      </section>
+
+      <section class="afm-stat-card">
+        <div class="afm-stat-label">This Week Plays</div>
+        <div class="afm-stat-value" id="afm-stat-starts-week">-</div>
+        <div class="afm-stat-sub">Last 7 days (delta)</div>
+      </section>
+    </div>
 
     <div class="afm-grid" id="afm-grid" hidden>
       <section class="afm-card afm-card-hero" id="afm-grand-card">
@@ -191,6 +217,42 @@
     font-weight: 700;
   }
 
+  .afm-stats {
+    margin-bottom: 14px;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 12px;
+  }
+
+  .afm-stat-card {
+    border: 1px solid rgba(84, 138, 212, 0.45);
+    border-radius: 16px;
+    background: rgba(19, 33, 58, 0.92);
+    padding: 14px 16px 15px;
+    box-shadow: inset 0 1px 0 rgba(140, 190, 255, 0.04);
+  }
+
+  .afm-stat-label {
+    color: #9ec6ff;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-size: 0.78rem;
+    margin-bottom: 10px;
+  }
+
+  .afm-stat-value {
+    font-size: 2rem;
+    line-height: 1.05;
+    font-weight: 900;
+    color: #f4f8ff;
+    margin-bottom: 8px;
+  }
+
+  .afm-stat-sub {
+    color: var(--afm-muted);
+    font-size: 0.94rem;
+  }
+
   .afm-grid {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -323,6 +385,10 @@
       height: 141px;
     }
 
+    .afm-stats {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
     .afm-grid {
       grid-template-columns: 1fr;
     }
@@ -338,6 +404,12 @@
 
     .afm-grand-score {
       font-size: 1.3rem;
+    }
+  }
+
+  @media (max-width: 520px) {
+    .afm-stats {
+      grid-template-columns: 1fr;
     }
   }
 </style>
@@ -372,6 +444,7 @@
   function setStatus(message, tone = "info") {
     const el = q("afm-status");
     if (!el) return;
+    el.hidden = false;
     el.textContent = message;
     if (tone === "error") {
       el.style.color = "var(--afm-danger)";
@@ -382,6 +455,12 @@
     el.style.color = "var(--afm-accent)";
     el.style.borderColor = "rgba(114, 231, 255, 0.24)";
     el.style.background = "rgba(114, 231, 255, 0.12)";
+  }
+
+  function clearStatus() {
+    const el = q("afm-status");
+    if (!el) return;
+    el.hidden = true;
   }
 
   function fmtNumber(value) {
@@ -590,6 +669,11 @@
       }));
   }
 
+  function setStatValue(id, value) {
+    const el = q(id);
+    if (el) el.textContent = value;
+  }
+
   async function loadPanel() {
     setStatus(`Loading global score data for ${PANEL_VPS_ID}...`);
     const [bestEverResult, ratingResult, activityResult, weeklyActivityResult] = await Promise.all([
@@ -657,7 +741,11 @@
     const startCountTotal = activityResult.ok ? Number(activityResult.data?.startCountTotal || 0) : 0;
     const runTimeWeek = weeklyActivityResult.ok ? Number(weeklyActivityResult.data?.runTimePlayed || 0) : 0;
     const startCountWeek = weeklyActivityResult.ok ? Number(weeklyActivityResult.data?.startCountPlayed || 0) : 0;
-    setStatus(`Runtime: ${fmtNumber(runTimeTotal)} min (7d ${fmtNumber(runTimeWeek)} min) | Start Count: ${fmtNumber(startCountTotal)} (7d ${fmtNumber(startCountWeek)})`);
+    setStatValue("afm-stat-starts-total", fmtNumber(startCountTotal));
+    setStatValue("afm-stat-runtime-total", `${fmtNumber(runTimeTotal)} min`);
+    setStatValue("afm-stat-runtime-week", `${fmtNumber(runTimeWeek)} min`);
+    setStatValue("afm-stat-starts-week", fmtNumber(startCountWeek));
+    clearStatus();
   }
 
   loadPanel();
