@@ -127,12 +127,6 @@
     min-height: 1.25rem;
   }
 
-  .afm-rating-count {
-    color: var(--afm-muted);
-    font-size: 0.84rem;
-    font-weight: 700;
-  }
-
   .rating-stars {
     display: inline-flex;
     align-items: center;
@@ -353,7 +347,7 @@
   const PANEL_VPS_ID = "9Paf7-CL";
   const DEFAULT_API_BASE = "https://api.vpinplay.com:8888";
   const PAGE_SIZE = 100;
-  const RANKED_SECTION_LIMIT = 5;
+  const RANKED_SECTION_LIMIT = 4;
 
   function q(id) {
     return document.getElementById(id);
@@ -714,10 +708,9 @@
     const rating = q("afm-rating");
     if (rating) {
       const cumulativeRating = ratingResult.ok ? ratingResult.data?.cumulativeRating : null;
-      const ratingCount = ratingResult.ok ? Number(ratingResult.data?.ratingCount || 0) : 0;
       rating.innerHTML = cumulativeRating
-        ? `${fmtRatingStars(cumulativeRating, { showNumeric: true })}<span class="afm-rating-count">${escapeHtml(String(ratingCount))}</span>`
-        : `<span class="afm-rating-count">No ratings</span>`;
+        ? fmtRatingStars(cumulativeRating, { showNumeric: true })
+        : `No ratings`;
     }
 
     const initialsMaps = await buildInitialsMaps(rows);
