@@ -374,12 +374,26 @@
     return groups;
   }
 
-  function scoreOwnerLabel(entry, fallbackUserId = "") {
-    if (entry && entry.initials && fallbackUserId) return fallbackUserId;
-    return entry?.userId || entry?.userid || entry?.initials || fallbackUserId || "-";
+  function scoreOwnerLabel(entry, replacement) {
+    const entryInitials = typeof entry?.initials === "string" ? entry.initials.trim() : "";
+    const entryUserId = typeof entry?.userId === "string"
+      ? entry.userId.trim()
+      : (typeof entry?.userid === "string" ? entry.userid.trim() : "");
+
+    if (
+      replacement &&
+      replacement.initials &&
+      replacement.userId &&
+      entryInitials &&
+      entryInitials.toUpperCase() === replacement.initials.toUpperCase()
+    ) {
+      return replacement.userId;
+    }
+
+    return entryUserId || entryInitials || "-";
   }
 
-  function renderGrandChampion(entry, fallbackUserId = "") {
+  function renderGrandChampion(entry, replacement = null) {
     const host = q("afm-grand-body");
     if (!host) return;
     if (!entry) {
@@ -391,13 +405,13 @@
     host.className = "";
     host.innerHTML = `
       <div class="afm-grand-wrap">
-        <div class="afm-grand-initials">${scoreOwnerLabel(entry, fallbackUserId)}</div>
+        <div class="afm-grand-initials">${scoreOwnerLabel(entry, replacement)}</div>
         <div class="afm-grand-score">${scoreText(entry)}</div>
       </div>
     `;
   }
 
-  function renderRankedList(hostId, entries, fallbackUserId = "") {
+  function renderRankedList(hostId, entries, replacement = null) {
     const host = q(hostId);
     if (!host) return;
     if (!entries.length) {
@@ -410,7 +424,7 @@
         ${entries.map(entry => `
           <div class="afm-row">
             <div class="afm-rank">${entry.rank === null || entry.rank === undefined ? "CHAMP" : `#${entry.rank}`}</div>
-            <div class="afm-initials">${scoreOwnerLabel(entry, fallbackUserId)}</div>
+            <div class="afm-initials">${scoreOwnerLabel(entry, replacement)}</div>
             <div class="afm-value">${scoreText(entry)}</div>
           </div>
         `).join("")}
@@ -418,7 +432,7 @@
     `;
   }
 
-  function renderSpecial(hostId, entry, fallbackUserId = "") {
+  function renderSpecial(hostId, entry, replacement = null) {
     const host = q(hostId);
     if (!host) return;
     if (!entry) {
@@ -430,7 +444,7 @@
     const detail = scoreText(entry);
     host.innerHTML = `
       <div class="afm-extra">
-        <div class="afm-pill">${scoreOwnerLabel(entry, fallbackUserId)}</div>
+        <div class="afm-pill">${scoreOwnerLabel(entry, replacement)}</div>
         ${detail ? `<div class="afm-detail">${detail}</div>` : ""}
         ${extraLines.length && entry.score != null
           ? extraLines.map(line => `<div class="afm-subtle">${line}</div>`).join("")
@@ -464,6 +478,11 @@
     return api(path);
   }
 
+  async function fetchUserInitials(userId) {
+    const path = `/api/v1/users/${encodeURIComponent(userId)}/initials`;
+    return api(path);
+  }
+
   async function loadPanel() {
     const userId = getUserId();
     q("afm-user-badge").textContent = userId || "No User";
@@ -474,13 +493,17 @@
     }
 
     setStatus(`Loading score data for ${userId}...`);
-    const result = await fetchScoreRow(userId);
-    if (!result.ok || !Array.isArray(result.data)) {
-      setStatus(`Failed to load score data (${result.status || "network"}).`, "error");
+    const [scoreResult, initialsResult] = await Promise.all([
+      fetchScoreRow(userId),
+      fetchUserInitials(userId),
+    ]);
+
+    if (!scoreResult.ok || !Array.isArray(scoreResult.data)) {
+      setStatus(`Failed to load score data (${scoreResult.status || "network"}).`, "error");
       return;
     }
 
-    const row = result.data.find(item => item && String(item.vpsId || "") === PANEL_VPS_ID);
+    const row = scoreResult.data.find(item => item && String(item.vpsId || "") === PANEL_VPS_ID);
     const score = row ? getScorePayload(row) : null;
     const entries = Array.isArray(score?.entries) ? score.entries : [];
 
@@ -490,12 +513,18 @@
     }
 
     const groups = groupEntries(entries);
-    const scoreUserId = String(row.userId || row.userid || userId || "").trim();
-    renderGrandChampion((groups.get("GRAND CHAMPION") || [])[0] || null, scoreUserId);
-    renderRankedList("afm-highest-body", groups.get("HIGHEST SCORES") || [], scoreUserId);
-    renderRankedList("afm-buyin-body", groups.get("BUY-IN HIGHEST SCORES") || [], scoreUserId);
-    renderSpecial("afm-martian-body", (groups.get("MARTIAN CHAMPION") || [])[0] || null, scoreUserId);
-    renderSpecial("afm-ruler-body", (groups.get("RULER OF THE UNIVERSE") || [])[0] || null, scoreUserId);
+    const replacement = initialsResult.ok && initialsResult.data
+      ? {
+          userId: String(initialsResult.data.userId || userId || "").trim(),
+          initials: String(initialsResult.data.initials || "").trim(),
+        }
+      : null;
+
+    renderGrandChampion((groups.get("GRAND CHAMPION") || [])[0] || null, replacement);
+    renderRankedList("afm-highest-body", groups.get("HIGHEST SCORES") || [], replacement);
+    renderRankedList("afm-buyin-body", groups.get("BUY-IN HIGHEST SCORES") || [], replacement);
+    renderSpecial("afm-martian-body", (groups.get("MARTIAN CHAMPION") || [])[0] || null, replacement);
+    renderSpecial("afm-ruler-body", (groups.get("RULER OF THE UNIVERSE") || [])[0] || null, replacement);
 
     const grid = q("afm-grid");
     if (grid) grid.hidden = false;
