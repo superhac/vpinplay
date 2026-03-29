@@ -519,7 +519,9 @@
             const tableRows = Array.isArray(rows) ? rows : [];
             for (const row of tableRows) {
                 const vpsdbName = row?.vpsdb?.name;
-                if (typeof vpsdbName === "string" && vpsdbName.trim()) return vpsdbName.trim();
+                if (typeof vpsdbName === "string" && vpsdbName.trim()) {
+                    return fmtTableName(row);
+                }
             }
             for (const row of tableRows) {
                 const altTitle = row?.alttitle;
