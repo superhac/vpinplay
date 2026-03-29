@@ -640,8 +640,7 @@
       .filter(Boolean)
       .sort((a, b) => String(b).localeCompare(String(a)))[0];
 
-    const distinctUsers = new Set(items.map(item => item.userId).filter(Boolean)).size;
-    q("afm-meta").textContent = `Historical matched entries: ${items.length} | Users: ${distinctUsers} | Latest update: ${fmtUpdatedAt(latestUpdatedAt)}`;
+    q("afm-meta").textContent = `Latest update: ${fmtUpdatedAt(latestUpdatedAt)}`;
     setStatus(`Loaded ${entries.length} historical best-ever matched entr${entries.length === 1 ? "y" : "ies"}.`);
   }
 
