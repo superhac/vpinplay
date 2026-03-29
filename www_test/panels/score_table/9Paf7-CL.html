@@ -32,16 +32,6 @@
         <div class="afm-card-title">Buy-In Highest Scores</div>
         <div id="afm-buyin-body"></div>
       </section>
-
-      <section class="afm-card">
-        <div class="afm-card-title">Martian Champion</div>
-        <div id="afm-martian-body"></div>
-      </section>
-
-      <section class="afm-card">
-        <div class="afm-card-title">Ruler Of The Universe</div>
-        <div id="afm-ruler-body"></div>
-      </section>
     </div>
   </div>
 </div>
@@ -451,27 +441,6 @@
     `;
   }
 
-  function renderSpecial(hostId, entry) {
-    const host = q(hostId);
-    if (!host) return;
-    if (!entry) {
-      host.innerHTML = `<div class="afm-empty">No entry available.</div>`;
-      return;
-    }
-
-    const extraLines = Array.isArray(entry.extra_lines) ? entry.extra_lines : [];
-    const detail = scoreText(entry);
-    host.innerHTML = `
-      <div class="afm-extra">
-        <div class="afm-pill">${scoreOwnerLabel(entry)}</div>
-        ${detail ? `<div class="afm-detail">${detail}</div>` : ""}
-        ${extraLines.length && entry.score != null
-          ? extraLines.map(line => `<div class="afm-subtle">${line}</div>`).join("")
-          : ""}
-      </div>
-    `;
-  }
-
   function getCaseInsensitiveValue(obj, key) {
     if (!obj || typeof obj !== "object" || Array.isArray(obj)) return undefined;
     const wanted = String(key).toLowerCase();
@@ -624,8 +593,6 @@
     renderGrandChampion((groups.get("GRAND CHAMPION") || [])[0] || null);
     renderRankedList("afm-highest-body", (groups.get("HIGHEST SCORES") || []).slice(0, RANKED_SECTION_LIMIT));
     renderRankedList("afm-buyin-body", (groups.get("BUY-IN HIGHEST SCORES") || []).slice(0, RANKED_SECTION_LIMIT));
-    renderSpecial("afm-martian-body", (groups.get("MARTIAN CHAMPION") || [])[0] || null);
-    renderSpecial("afm-ruler-body", (groups.get("RULER OF THE UNIVERSE") || [])[0] || null);
 
     const grid = q("afm-grid");
     if (grid) grid.hidden = false;
