@@ -31,6 +31,8 @@ jobs:
       - name: Prepare Pages artifact
         run: |
           cp CNAME www/CNAME
+          rm -rf www/www_test
+          cp -R www_test www/www_test
           touch www/.nojekyll
 
       - name: Upload www as artifact
