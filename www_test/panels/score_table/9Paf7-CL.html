@@ -346,7 +346,7 @@
 (() => {
   const PANEL_VPS_ID = "9Paf7-CL";
   const DEFAULT_API_BASE = "https://api.vpinplay.com:8888";
-  const PAGE_SIZE = 100;
+  const PAGE_SIZE = 500;
   const RANKED_SECTION_LIMIT = 4;
 
   function q(id) {
@@ -416,10 +416,6 @@
       ? ` <span class="rating-value">(${escapeHtml(clamped.toFixed(2))})</span>`
       : "";
     return `<span class="rating-stars" title="${escapeHtml(clamped.toFixed(2))} / 5" aria-label="${escapeHtml(clamped.toFixed(2))} out of 5 stars">${stars}</span>${numericText}`;
-  }
-
-  function normalizeInitials(value) {
-    return typeof value === "string" ? value.trim().toUpperCase() : "";
   }
 
   function fmtUpdatedAt(value) {
@@ -543,23 +539,6 @@
     `;
   }
 
-  function getCaseInsensitiveValue(obj, key) {
-    if (!obj || typeof obj !== "object" || Array.isArray(obj)) return undefined;
-    const wanted = String(key).toLowerCase();
-    const matched = Object.keys(obj).find(k => String(k).toLowerCase() === wanted);
-    return matched ? obj[matched] : undefined;
-  }
-
-  function getScorePayload(row) {
-    const direct = getCaseInsensitiveValue(row, "score");
-    if (direct && typeof direct === "object" && !Array.isArray(direct)) return direct;
-
-    const user = getCaseInsensitiveValue(row, "user");
-    const nested = getCaseInsensitiveValue(user, "score");
-    if (nested && typeof nested === "object" && !Array.isArray(nested)) return nested;
-    return null;
-  }
-
   async function api(path) {
     try {
       const response = await fetch(`${getApiBase()}${path}`);
@@ -570,22 +549,18 @@
     }
   }
 
-  async function fetchAllScoreRows() {
-    const rows = [];
+  async function fetchBestEverScoreItems() {
+    const items = [];
     for (let offset = 0; ; offset += PAGE_SIZE) {
-      const result = await api(`/api/v1/users/tables/with-score?vpsId=${encodeURIComponent(PANEL_VPS_ID)}&limit=${PAGE_SIZE}&offset=${offset}`);
-      if (!result.ok || !Array.isArray(result.data)) {
-        return { ok: false, status: result.status, error: result.data?.error || "Request failed", rows };
+      const result = await api(`/api/v1/users/scores/best-ever?vpsId=${encodeURIComponent(PANEL_VPS_ID)}&limit=${PAGE_SIZE}&offset=${offset}`);
+      const pageItems = Array.isArray(result.data?.items) ? result.data.items : null;
+      if (!result.ok || !pageItems) {
+        return { ok: false, status: result.status, error: result.data?.error || "Request failed", items };
       }
-      rows.push(...result.data);
-      if (result.data.length < PAGE_SIZE) break;
+      items.push(...pageItems);
+      if (pageItems.length < PAGE_SIZE) break;
     }
-    return { ok: true, rows };
-  }
-
-  async function fetchUserInitials(userId) {
-    const path = `/api/v1/users/${encodeURIComponent(userId)}/initials`;
-    return api(path);
+    return { ok: true, items };
   }
 
   async function fetchCumulativeRating() {
@@ -593,112 +568,44 @@
     return api(path);
   }
 
-  async function buildInitialsMaps(rows) {
-    const uniqueUserIds = [...new Set(
-      rows
-        .map(row => typeof row?.userId === "string" ? row.userId.trim() : "")
-        .filter(Boolean)
-    )];
-
-    const initialsByUserId = new Map();
-    const userIdsByInitials = new Map();
-
-    const results = await Promise.all(uniqueUserIds.map(userId => fetchUserInitials(userId)));
-    results.forEach((result, index) => {
-      const userId = uniqueUserIds[index];
-      if (!result.ok || !result.data) return;
-      const initials = normalizeInitials(result.data.initials);
-      if (!initials) return;
-      initialsByUserId.set(userId, initials);
-      if (!userIdsByInitials.has(initials)) userIdsByInitials.set(initials, []);
-      userIdsByInitials.get(initials).push(userId);
-    });
-
-    return { initialsByUserId, userIdsByInitials };
-  }
-
-  function resolveMatchedUserId(entry, rowUserId, initialsMaps) {
-    const entryInitials = normalizeInitials(entry?.initials);
-    if (!entryInitials) return "";
-
-    const rowInitials = normalizeInitials(initialsMaps.initialsByUserId.get(rowUserId));
-    if (rowUserId && rowInitials && rowInitials === entryInitials) {
-      return rowUserId;
-    }
-
-    const matches = initialsMaps.userIdsByInitials.get(entryInitials) || [];
-    if (matches.length === 1) return matches[0];
-    return "";
-  }
-
-  function extractEntries(rows, initialsMaps) {
-    const extracted = [];
-    rows.forEach(row => {
-      const score = getScorePayload(row);
-      const entries = Array.isArray(score?.entries) ? score.entries : [];
-      entries.forEach((entry) => {
-        if (!entry || typeof entry !== "object") return;
-        const matchedUserId = resolveMatchedUserId(entry, row.userId, initialsMaps);
-        if (!matchedUserId) return;
-        extracted.push({
-          ...entry,
-          matchedUserId,
-          rowUserId: row.userId,
-          updatedAt: row.updatedAt || null,
-        });
-      });
-    });
-    return extracted;
-  }
-
-  function dedupeEntries(entries) {
-    const byKey = new Map();
-
-    entries.forEach((entry) => {
-      const key = JSON.stringify([
-        String(entry?.section || "").trim(),
-        entry?.rank ?? null,
-        normalizeInitials(entry?.initials),
-        numericScore(entry),
-        entry?.value_suffix ?? null,
-        Array.isArray(entry?.extra_lines) ? entry.extra_lines : [],
-      ]);
-
-      const existing = byKey.get(key);
-      if (!existing || compareEntries(entry, existing) < 0) {
-        byKey.set(key, entry);
-      }
-    });
-
-    return [...byKey.values()];
+  function normalizeBestEverItems(items) {
+    return items
+      .filter(item => item && item.score && typeof item.score === "object")
+      .map(item => ({
+        ...item.score,
+        matchedUserId: typeof item.userId === "string" ? item.userId : "",
+        updatedAt: item.updatedAt || null,
+        vpsdb: item.vpsdb,
+        tableTitle: item.tableTitle,
+      }));
   }
 
   async function loadPanel() {
     setStatus(`Loading global score data for ${PANEL_VPS_ID}...`);
-    const [scoreRowsResult, ratingResult] = await Promise.all([
-      fetchAllScoreRows(),
+    const [bestEverResult, ratingResult] = await Promise.all([
+      fetchBestEverScoreItems(),
       fetchCumulativeRating(),
     ]);
 
-    if (!scoreRowsResult.ok) {
-      setStatus(`Failed to load score data (${scoreRowsResult.status || "network"}).`, "error");
+    if (!bestEverResult.ok) {
+      setStatus(`Failed to load score data (${bestEverResult.status || "network"}).`, "error");
       return;
     }
 
-    const rows = scoreRowsResult.rows.filter(item => item && String(item.vpsId || "") === PANEL_VPS_ID);
-    if (!rows.length) {
-      setStatus("No Attack from Mars score rows were found.", "error");
+    const items = bestEverResult.items.filter(item => item && String(item.vpsId || "") === PANEL_VPS_ID);
+    if (!items.length) {
+      setStatus("No historical matched score entries were found for Attack from Mars.", "error");
       return;
     }
 
     const subhead = q("afm-subhead");
     if (subhead) {
-      subhead.textContent = buildTableSubtitle(rows);
+      subhead.textContent = buildTableSubtitle(items);
       subhead.hidden = !subhead.textContent;
     }
 
-    const vpsdb = rows
-      .map(row => row?.vpsdb)
+    const vpsdb = items
+      .map(item => item?.vpsdb)
       .find(item => item && typeof item === "object");
     const title = q("afm-title");
     if (title && typeof vpsdb?.name === "string" && vpsdb.name.trim()) {
@@ -713,11 +620,10 @@
         : `No ratings`;
     }
 
-    const initialsMaps = await buildInitialsMaps(rows);
-    const entries = dedupeEntries(extractEntries(rows, initialsMaps));
+    const entries = normalizeBestEverItems(items);
 
     if (!entries.length) {
-      setStatus("No matched score entries were found for Attack from Mars.", "error");
+      setStatus("No historical matched score entries were found for Attack from Mars.", "error");
       return;
     }
 
@@ -729,13 +635,14 @@
     const grid = q("afm-grid");
     if (grid) grid.hidden = false;
 
-    const latestUpdatedAt = rows
-      .map(row => row.updatedAt)
+    const latestUpdatedAt = items
+      .map(item => item.updatedAt)
       .filter(Boolean)
       .sort((a, b) => String(b).localeCompare(String(a)))[0];
 
-    q("afm-meta").textContent = `Rows: ${rows.length} | Users: ${initialsMaps.initialsByUserId.size} | Latest update: ${fmtUpdatedAt(latestUpdatedAt)}`;
-    setStatus(`Loaded ${entries.length} matched score entr${entries.length === 1 ? "y" : "ies"} across ${rows.length} scored row${rows.length === 1 ? "" : "s"}.`);
+    const distinctUsers = new Set(items.map(item => item.userId).filter(Boolean)).size;
+    q("afm-meta").textContent = `Historical matched entries: ${items.length} | Users: ${distinctUsers} | Latest update: ${fmtUpdatedAt(latestUpdatedAt)}`;
+    setStatus(`Loaded ${entries.length} historical best-ever matched entr${entries.length === 1 ? "y" : "ies"}.`);
   }
 
   loadPanel();

@@ -501,6 +501,57 @@ def _build_extracted_score_items(state: dict, normalized_user_id: str, initials:
     return items
 
 
+def _score_item_numeric_value(item: dict) -> float | None:
+    score = ((item or {}).get("score") or {})
+    value = _get_case_insensitive_value(score, "score")
+    try:
+        numeric = float(value)
+    except (TypeError, ValueError):
+        return None
+    return numeric if numeric == numeric else None
+
+
+def _score_item_sort_key(item: dict):
+    numeric_value = _score_item_numeric_value(item)
+    updated_at = item.get("updatedAt")
+    return (
+        -(numeric_value if numeric_value is not None else float("-inf")),
+        str(updated_at or ""),
+        str(item.get("userId") or ""),
+    )
+
+
+def _best_score_item_key(item: dict) -> tuple[str, str, str]:
+    score = ((item or {}).get("score") or {})
+    return (
+        str(item.get("userId") or "").strip().lower(),
+        str(item.get("vpsId") or "").strip(),
+        str(_get_case_insensitive_value(score, "section") or item.get("label") or "").strip().lower(),
+    )
+
+
+def _pick_better_score_item(existing: dict | None, candidate: dict) -> dict:
+    if existing is None:
+        return candidate
+
+    existing_numeric = _score_item_numeric_value(existing)
+    candidate_numeric = _score_item_numeric_value(candidate)
+
+    if candidate_numeric is not None and existing_numeric is not None and candidate_numeric != existing_numeric:
+        return candidate if candidate_numeric > existing_numeric else existing
+    if candidate_numeric is not None and existing_numeric is None:
+        return candidate
+    if candidate_numeric is None and existing_numeric is not None:
+        return existing
+
+    existing_updated_at = str(existing.get("updatedAt") or "")
+    candidate_updated_at = str(candidate.get("updatedAt") or "")
+    if candidate_updated_at != existing_updated_at:
+        return candidate if candidate_updated_at > existing_updated_at else existing
+
+    return candidate if str(candidate.get("userId") or "") < str(existing.get("userId") or "") else existing
+
+
 @router.get("/users/tables/with-score", response_model=List[UserTableStateResponse])
 async def get_all_users_tables_with_score(
     vpsId: str = Query(..., min_length=1, description="Filter to a specific VPS ID"),
@@ -584,6 +635,123 @@ async def get_all_users_latest_matching_scores(
         "limit": limit,
         "offset": offset,
         "returned": len(paged_items),
+        "items": paged_items,
+    }
+
+
+@router.get("/users/scores/best-ever")
+async def get_all_users_best_ever_matching_scores(
+    vpsId: str = Query(..., min_length=1, description="Required VPS ID filter"),
+    limit: int = Query(100, ge=1, le=500),
+    offset: int = Query(0, ge=0),
+    db: Database = Depends(get_db)
+):
+    """
+    Get the best historical extracted score entries for one table across all users,
+    where each score entry's initials match that submitting user's registered initials.
+
+    History is sourced from the current user table state plus score snapshots stored in
+    per-sync deltas. Results are consolidated down to each user's best entry per section.
+    """
+    client_rows = list(
+        db["client_registry"].find({}, {"_id": 0, "userId": 1, "userIdNormalized": 1, "initials": 1})
+    )
+    initials_by_user_id = {}
+    for client in client_rows:
+        normalized_user_id = normalize_user_id(client.get("userIdNormalized") or client.get("userId") or "")
+        initials = str(client.get("initials") or "").strip()
+        if normalized_user_id and initials:
+            initials_by_user_id[normalized_user_id] = initials
+
+    extracted_items = []
+
+    current_states = list(
+        db["user_table_state"].find(
+            {
+                "$and": [
+                    {"vpsId": vpsId},
+                    {"score": {"$type": "object"}},
+                ]
+            },
+            {
+                "_id": 0,
+                "userId": 1,
+                "userIdNormalized": 1,
+                "vpsId": 1,
+                "score": 1,
+                "alttitle": 1,
+                "updatedAt": 1,
+            },
+        )
+    )
+    for state in current_states:
+        normalized_user_id = normalize_user_id(state.get("userIdNormalized") or state.get("userId") or "")
+        initials = initials_by_user_id.get(normalized_user_id)
+        if not normalized_user_id or not initials:
+            continue
+        extracted_items.extend(_build_extracted_score_items(state, normalized_user_id, initials))
+
+    delta_rows = list(
+        db["user_table_state_deltas"].find(
+            {
+                "$and": [
+                    {"vpsId": vpsId},
+                    {
+                        "$or": [
+                            {"newScore": {"$type": "object"}},
+                            {"prevScore": {"$type": "object"}},
+                        ]
+                    },
+                ]
+            },
+            {
+                "_id": 0,
+                "userId": 1,
+                "userIdNormalized": 1,
+                "vpsId": 1,
+                "prevScore": 1,
+                "newScore": 1,
+                "changedAt": 1,
+            },
+        )
+    )
+    for delta in delta_rows:
+        normalized_user_id = normalize_user_id(delta.get("userIdNormalized") or delta.get("userId") or "")
+        initials = initials_by_user_id.get(normalized_user_id)
+        if not normalized_user_id or not initials:
+            continue
+
+        for score_field in ("prevScore", "newScore"):
+            score_payload = delta.get(score_field)
+            if not isinstance(score_payload, dict):
+                continue
+            extracted_items.extend(_build_extracted_score_items(
+                {
+                    "userId": normalized_user_id,
+                    "vpsId": vpsId,
+                    "score": score_payload,
+                    "updatedAt": delta.get("changedAt"),
+                    "alttitle": None,
+                },
+                normalized_user_id,
+                initials,
+            ))
+
+    best_by_key: dict[tuple[str, str, str], dict] = {}
+    for item in extracted_items:
+        key = _best_score_item_key(item)
+        best_by_key[key] = _pick_better_score_item(best_by_key.get(key), item)
+
+    consolidated_items = list(best_by_key.values())
+    consolidated_items.sort(key=_score_item_sort_key)
+    paged_items = enrich_with_vpsdb(consolidated_items[offset:offset + limit], db)
+    paged_items = _enrich_extracted_scores_with_table_titles(paged_items, db)
+    return {
+        "vpsId": vpsId,
+        "limit": limit,
+        "offset": offset,
+        "returned": len(paged_items),
+        "total": len(consolidated_items),
         "items": paged_items,
     }
 
