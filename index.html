@@ -509,6 +509,44 @@
             return "-";
         }
 
+        function cleanTableFilename(filename) {
+            const text = String(filename || "").trim();
+            if (!text) return "";
+            return text.toLowerCase().endsWith(".vpx") ? text.slice(0, -4) : text;
+        }
+
+        function resolveLatestScoreTableTitle(vpsId, rows) {
+            const tableRows = Array.isArray(rows) ? rows : [];
+            for (const row of tableRows) {
+                const vpsdbName = row?.vpsdb?.name;
+                if (typeof vpsdbName === "string" && vpsdbName.trim()) return vpsdbName.trim();
+            }
+            for (const row of tableRows) {
+                const altTitle = row?.alttitle;
+                if (typeof altTitle === "string" && altTitle.trim()) return altTitle.trim();
+            }
+            for (const row of tableRows) {
+                const cleaned = cleanTableFilename(row?.vpxFile?.filename);
+                if (cleaned) return cleaned;
+            }
+            return String(vpsId || "").trim() || "Unknown Table";
+        }
+
+        async function fetchLatestScoreTitleMap(rows) {
+            const ids = [...new Set((Array.isArray(rows) ? rows : []).map(row => String(row?.vpsId || "").trim()).filter(Boolean))];
+            if (!ids.length) return {};
+
+            const responses = await Promise.all(ids.map(vpsId => api(`/api/v1/tables/${encodeURIComponent(vpsId)}`)));
+            const titleMap = {};
+
+            ids.forEach((vpsId, index) => {
+                const res = responses[index];
+                titleMap[vpsId] = resolveLatestScoreTableTitle(vpsId, res.ok ? res.data : []);
+            });
+
+            return titleMap;
+        }
+
         function fmtRatingStars(value, options = {}) {
             if (value === null || value === undefined || value === "") return "-";
             const numeric = Number(value);
@@ -785,15 +823,20 @@
                 topPlayerRuntimeRows
             );
 
+            const latestScoreRows = latestScoresRes.ok && Array.isArray(latestScoresRes.data?.items)
+                ? latestScoresRes.data.items
+                : [];
+            const latestScoreTitleMap = await fetchLatestScoreTitleMap(latestScoreRows);
+
             renderTable("latestScoresTable",
                 [
                     { label: "User", getter: r => linkUserId(r.userId), html: true },
-                    { label: "Table", getter: r => linkTableName(r.tableTitle || fmtTableName(r), r.vpsId), html: true },
+                    { label: "Table", getter: r => linkTableName(latestScoreTitleMap[r.vpsId] || String(r.vpsId || "").trim() || "Unknown Table", r.vpsId), html: true },
                     { label: "Label", getter: r => r.label || "-" },
                     { label: "Score", getter: r => fmtScoreValue(r.score) },
                     { label: "Updated", getter: r => fmtDate(r.updatedAt) },
                 ],
-                latestScoresRes.ok && Array.isArray(latestScoresRes.data?.items) ? latestScoresRes.data.items : []
+                latestScoreRows
             );
 
             if (ENABLE_ALL_TABLES_PANEL) {
