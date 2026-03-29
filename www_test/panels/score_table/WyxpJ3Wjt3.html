@@ -386,7 +386,10 @@
   const PANEL_VPS_ID = "WyxpJ3Wjt3";
   const DEFAULT_API_BASE = "https://api.vpinplay.com:8888";
   const PAGE_SIZE = 500;
-  const RANKED_SECTION_LIMIT = 4;
+  const SECTION_LIMITS = {
+    HighScore: 5,
+    Stat: 17,
+  };
 
   function q(id) {
     return document.getElementById(id);
@@ -586,6 +589,11 @@
     if (el) el.textContent = text;
   }
 
+  function getSectionLimit(sectionName) {
+    if (!sectionName) return 5;
+    return SECTION_LIMITS[sectionName] || 5;
+  }
+
   async function api(path) {
     try {
       const response = await fetch(`${getApiBase()}${path}`);
@@ -699,10 +707,10 @@
     setSectionTitle("afm-highest-title", listSectionOne || "Scores");
     setSectionTitle("afm-buyin-title", listSectionTwo || "More Scores");
     const listOneEntries = listSectionOne
-      ? (groups.get(listSectionOne) || []).slice(0, RANKED_SECTION_LIMIT)
+      ? (groups.get(listSectionOne) || []).slice(0, getSectionLimit(listSectionOne))
       : [];
     const listTwoEntries = listSectionTwo
-      ? (groups.get(listSectionTwo) || []).slice(0, RANKED_SECTION_LIMIT)
+      ? (groups.get(listSectionTwo) || []).slice(0, getSectionLimit(listSectionTwo))
       : [];
     renderRankedList("afm-highest-body", listOneEntries);
     renderRankedList("afm-buyin-body", listTwoEntries);
