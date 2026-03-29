@@ -46,22 +46,25 @@
       </section>
     </div>
 
-    <div class="afm-grid" id="afm-grid" hidden>
-      <section class="afm-card afm-card-hero" id="afm-grand-card">
-        <div class="afm-card-title">Grand Champion</div>
-        <div id="afm-grand-body" class="afm-hero-empty">No grand champion entry found.</div>
-      </section>
+    <section class="afm-scoreboard-shell" id="afm-grid" hidden>
+      <div class="afm-scoreboard-title">Scoreboard</div>
+      <div class="afm-grid">
+        <section class="afm-card afm-card-hero" id="afm-grand-card">
+          <div class="afm-card-title">Grand Champion</div>
+          <div id="afm-grand-body" class="afm-hero-empty">No grand champion entry found.</div>
+        </section>
 
-      <section class="afm-card">
-        <div class="afm-card-title">Highest Scores</div>
-        <div id="afm-highest-body"></div>
-      </section>
+        <section class="afm-card">
+          <div class="afm-card-title">Highest Scores</div>
+          <div id="afm-highest-body"></div>
+        </section>
 
-      <section class="afm-card">
-        <div class="afm-card-title">Buy-In Highest Scores</div>
-        <div id="afm-buyin-body"></div>
-      </section>
-    </div>
+        <section class="afm-card">
+          <div class="afm-card-title">Buy-In Highest Scores</div>
+          <div id="afm-buyin-body"></div>
+        </section>
+      </div>
+    </section>
   </div>
 </div>
 
@@ -276,6 +279,22 @@
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 14px;
+  }
+
+  .afm-scoreboard-shell {
+    border: 1px solid rgba(84, 138, 212, 0.45);
+    border-radius: 18px;
+    background: rgba(10, 22, 40, 0.78);
+    padding: 14px;
+  }
+
+  .afm-scoreboard-title {
+    color: #9ec6ff;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    font-size: 0.84rem;
+    font-weight: 800;
+    margin-bottom: 12px;
   }
 
   .afm-card {
