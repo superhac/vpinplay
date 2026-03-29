@@ -419,6 +419,24 @@ def _score_entry_label(score_payload: dict, entry: dict) -> str:
     return "Score"
 
 
+def _build_extracted_score_items(state: dict, normalized_user_id: str, initials: str) -> list[dict]:
+    score_payload = _get_score_payload(state)
+    if not score_payload:
+        return []
+
+    items = []
+    for entry in _extract_matching_score_entries(score_payload, initials):
+        items.append({
+            "userId": normalized_user_id,
+            "initials": initials,
+            "vpsId": state.get("vpsId"),
+            "label": _score_entry_label(score_payload, entry),
+            "updatedAt": state.get("updatedAt"),
+            "score": entry,
+        })
+    return items
+
+
 @router.get("/users/tables/with-score", response_model=List[UserTableStateResponse])
 async def get_all_users_tables_with_score(
     vpsId: str = Query(..., min_length=1, description="Filter to a specific VPS ID"),
@@ -450,6 +468,59 @@ async def get_all_users_tables_with_score(
     )
 
     return _map_user_states(user_states, db)
+
+
+@router.get("/users/scores/latest")
+async def get_all_users_latest_matching_scores(
+    vpsId: str | None = Query(None, min_length=1, description="Optional VPS ID filter"),
+    limit: int = Query(100, ge=1, le=100),
+    offset: int = Query(0, ge=0),
+    db: Database = Depends(get_db)
+):
+    """
+    Get the latest extracted score entries across all users where each score entry's
+    initials match that submitting user's registered initials.
+
+    Optional query parameters:
+    - vpsId: Restrict results to one canonical VPS table ID
+    - limit: Maximum number of extracted score entries (default 100, max 100)
+    - offset: Number of extracted score entries to skip (default 0)
+    """
+    client_rows = list(
+        db["client_registry"].find({}, {"_id": 0, "userId": 1, "userIdNormalized": 1, "initials": 1})
+    )
+    initials_by_user_id = {}
+    for client in client_rows:
+        normalized_user_id = normalize_user_id(client.get("userIdNormalized") or client.get("userId") or "")
+        initials = str(client.get("initials") or "").strip()
+        if normalized_user_id and initials:
+            initials_by_user_id[normalized_user_id] = initials
+
+    query = {"score": {"$type": "object"}}
+    if vpsId:
+        query = {"$and": [query, {"vpsId": vpsId}]}
+
+    user_states = list(
+        db["user_table_state"]
+        .find(query)
+        .sort([("updatedAt", -1), ("userId", 1), ("vpsId", 1)])
+    )
+
+    extracted_items = []
+    for state in user_states:
+        normalized_user_id = normalize_user_id(state.get("userIdNormalized") or state.get("userId") or "")
+        initials = initials_by_user_id.get(normalized_user_id)
+        if not normalized_user_id or not initials:
+            continue
+        extracted_items.extend(_build_extracted_score_items(state, normalized_user_id, initials))
+
+    paged_items = extracted_items[offset:offset + limit]
+    return {
+        "limit": limit,
+        "offset": offset,
+        "returned": len(paged_items),
+        "items": paged_items,
+    }
 
 
 @router.get("/users/{userId}/tables/top-rated", response_model=List[UserTableStateResponse])
@@ -666,19 +737,7 @@ async def get_user_latest_matching_scores(
 
     extracted_items = []
     for state in user_states:
-        score_payload = _get_score_payload(state)
-        if not score_payload:
-            continue
-
-        for entry in _extract_matching_score_entries(score_payload, initials):
-            extracted_items.append({
-                "userId": normalized_user_id,
-                "initials": initials,
-                "vpsId": state.get("vpsId"),
-                "label": _score_entry_label(score_payload, entry),
-                "updatedAt": state.get("updatedAt"),
-                "score": entry,
-            })
+        extracted_items.extend(_build_extracted_score_items(state, normalized_user_id, initials))
 
     paged_items = extracted_items[offset:offset + limit]
     return {

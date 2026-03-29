@@ -584,7 +584,44 @@ Optional query parameters:
 }
 ```
 
-### 10.10 Optional get recent changes
+### 10.10 Get latest matching extracted score entries across all users
+
+**GET** `/api/v1/users/scores/latest`
+
+Returns extracted score entries across all users, but only where a score entry's `initials`
+matches the registered initials for that row's user. Results are ordered by latest table-state update first.
+
+Optional query parameters:
+
+- `vpsId`
+- `limit`
+- `offset`
+
+#### Response example
+
+```json
+{
+  "limit": 100,
+  "offset": 0,
+  "returned": 2,
+  "items": [
+    {
+      "userId": "cabinet_1",
+      "initials": "CH",
+      "vpsId": "9Paf7-CL",
+      "label": "GRAND CHAMPION",
+      "updatedAt": "2026-03-23T15:00:00Z",
+      "score": {
+        "initials": "CH",
+        "section": "GRAND CHAMPION",
+        "score": 123456789
+      }
+    }
+  ]
+}
+```
+
+### 10.11 Optional get recent changes
 
 **GET** `/api/v1/changes`
 

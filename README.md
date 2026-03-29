@@ -72,6 +72,7 @@ This will start:
 - `GET /api/v1/users/{userId}/tables/newly-added` - Get newest tables added for a user by first-seen timestamp (paginated via `limit` + `offset`, max 100 per request)
 - `GET /api/v1/users/{userId}/tables/with-score` - Get only tables for a user that currently have a submitted `score` payload; also supports optional `vpsId` filtering (paginated via `limit` + `offset`, max 100 per request)
 - `GET /api/v1/users/{userId}/scores/latest` - Get the latest extracted score entries for a user, but only where the score entry initials match that user's registered initials (also supports optional `vpsId`, paginated via `limit` + `offset`, max 100 per request)
+- `GET /api/v1/users/scores/latest` - Get the latest extracted score entries across all users, but only where each score entry initials match that submitting user's registered initials (also supports optional `vpsId`, paginated via `limit` + `offset`, max 100 per request)
 - `GET /api/v1/users/tables/with-score?vpsId=...` - Get all user table-state rows with a submitted `score` payload for one specific `vpsId` (paginated via `limit` + `offset`, max 100 per request)
 
 All query responses that include `vpsId` now include a `vpsdb` object from the VPS DB cache when available. By default, it includes `name`, `authors`, `manufacturer`, and `year`.
@@ -198,6 +199,18 @@ Optional one-table filter:
 
 ```bash
 curl "http://localhost:8888/api/v1/users/cabinet_1/scores/latest?vpsId=lkSumsrF"
+```
+
+Query the latest extracted score entries across all users where each entry initials match that user's registered initials:
+
+```bash
+curl "http://localhost:8888/api/v1/users/scores/latest"
+```
+
+Optional one-table filter:
+
+```bash
+curl "http://localhost:8888/api/v1/users/scores/latest?vpsId=lkSumsrF"
 ```
 
 Check if userId is available:
