@@ -754,14 +754,24 @@
     const groups = groupEntries(entries);
     const orderedSections = getPreferredSectionOrder(groups);
     const heroSection = orderedSections[0] || null;
+    const heroEntries = heroSection ? (groups.get(heroSection) || []) : [];
+    const heroEntry = heroEntries[0] || null;
+    const remainingHeroEntries = heroEntries.slice(1);
     const listSectionOne = orderedSections[1] || null;
     const listSectionTwo = orderedSections[2] || null;
 
-    renderGrandChampion(heroSection ? (groups.get(heroSection) || [])[0] || null : null);
-    setSectionTitle("afm-highest-title", listSectionOne || "Scores");
-    setSectionTitle("afm-buyin-title", listSectionTwo || "More Scores");
-    renderRankedList("afm-highest-body", listSectionOne ? (groups.get(listSectionOne) || []).slice(0, RANKED_SECTION_LIMIT) : []);
-    renderRankedList("afm-buyin-body", listSectionTwo ? (groups.get(listSectionTwo) || []).slice(0, RANKED_SECTION_LIMIT) : []);
+    const listOneEntries = listSectionOne
+      ? (groups.get(listSectionOne) || []).slice(0, RANKED_SECTION_LIMIT)
+      : remainingHeroEntries.slice(0, RANKED_SECTION_LIMIT);
+    const listTwoEntries = listSectionTwo
+      ? (groups.get(listSectionTwo) || []).slice(0, RANKED_SECTION_LIMIT)
+      : (listSectionOne ? [] : remainingHeroEntries.slice(RANKED_SECTION_LIMIT, RANKED_SECTION_LIMIT * 2));
+
+    renderGrandChampion(heroEntry);
+    setSectionTitle("afm-highest-title", listSectionOne || (heroSection || "Scores"));
+    setSectionTitle("afm-buyin-title", listSectionTwo || (listTwoEntries.length ? `${heroSection || "Scores"} More` : "More Scores"));
+    renderRankedList("afm-highest-body", listOneEntries);
+    renderRankedList("afm-buyin-body", listTwoEntries);
 
     const grid = q("afm-grid");
     if (grid) grid.hidden = false;
