@@ -7,8 +7,9 @@
           src="https://github.com/superhac/vpinmediadb/raw/refs/heads/main/9Paf7-CL/1k/bg.png"
           alt="Attack from Mars backglass art">
         <div class="afm-header-copy">
-          <div class="afm-title-row">
-            <h2 id="afm-title">Attack from Mars</h2>
+          <h2 id="afm-title">Attack from Mars</h2>
+          <div class="afm-rating-row">
+            <div class="afm-rating-label">Rating</div>
             <div id="afm-rating" class="afm-rating">-</div>
           </div>
           <div class="afm-subhead" id="afm-subhead"></div>
@@ -132,12 +133,20 @@
     letter-spacing: 0.01em;
   }
 
-  .afm-title-row {
+  .afm-rating-row {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
     gap: 14px;
     margin-bottom: 10px;
+  }
+
+  .afm-rating-label {
+    color: #9ec6ff;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-size: 0.82rem;
+    font-weight: 800;
   }
 
   .afm-meta {
