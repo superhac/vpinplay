@@ -480,7 +480,7 @@
       return bMatched - aMatched;
     }
 
-    return String(b?.updatedAt || "").localeCompare(String(a?.updatedAt || ""));
+    return String(a?.updatedAt || "").localeCompare(String(b?.updatedAt || ""));
   }
 
   function groupEntries(entries) {

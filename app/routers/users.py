@@ -557,7 +557,7 @@ def _pick_better_score_item(existing: dict | None, candidate: dict) -> dict:
     existing_updated_at = str(existing.get("updatedAt") or "")
     candidate_updated_at = str(candidate.get("updatedAt") or "")
     if candidate_updated_at != existing_updated_at:
-        return candidate if candidate_updated_at > existing_updated_at else existing
+        return candidate if candidate_updated_at < existing_updated_at else existing
 
     return candidate if str(candidate.get("userId") or "") < str(existing.get("userId") or "") else existing
 
@@ -661,7 +661,12 @@ async def get_all_users_best_ever_matching_scores(
     where each score entry's initials match that submitting user's registered initials.
 
     History is sourced from the current user table state plus score snapshots stored in
-    per-sync deltas. Results are consolidated down to each user's best entry per section.
+    per-sync deltas. Results are consolidated down to each user's best historical entries
+    for that table while deduping exact repeats across syncs.
+
+    Tie-breaks:
+    - Higher numeric score wins
+    - If scores are equal, the older historical record wins
     """
     client_rows = list(
         db["client_registry"].find({}, {"_id": 0, "userId": 1, "userIdNormalized": 1, "initials": 1})
