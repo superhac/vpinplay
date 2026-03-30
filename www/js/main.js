@@ -149,7 +149,7 @@ function linkVpsId(vpsId) {
 function linkUserId(userId) {
     const id = String(userId || "").trim();
     if (!id) return "-";
-    return `<a href="player.html?userid=${encodeURIComponent(id)}">${escapeHtml(id)}</a>`;
+    return `<a href="players.html?userid=${encodeURIComponent(id)}">${escapeHtml(id)}</a>`;
 }
 
 async function api(path) {
