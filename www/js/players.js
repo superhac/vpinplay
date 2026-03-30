@@ -214,7 +214,7 @@ async function refreshDashboard() {
       `/api/v1/users/${encodeURIComponent(currentUserId)}/tables/recently-played?limit=5`,
     ),
     api(
-      `/api/v1/users/${encodeURIComponent(currentUserId)}/tables/top-play-time?limit=5`,
+      `/api/v1/users/${encodeURIComponent(currentUserId)}/tables/top-play-time?limit=5&offset=0`,
     ),
     api(
       `/api/v1/users/${encodeURIComponent(currentUserId)}/tables/most-played?limit=5`,
@@ -270,14 +270,10 @@ async function refreshDashboard() {
         getter: (r) => linkTableName(fmtTableName(r), r.vpsId),
         html: true,
       },
-      { label: "Last Run", getter: (r) => fmtDate(r.lastRun) },
-      {
-        label: "Mine / Avg Rating",
-        getter: (r) => fmtUserOverGlobalRating(r, globalAvgRatingMap),
-        html: true,
-      },
+      { label: "Run Time", getter: (r) => fmtRuntime(r.runTime) },
+      { label: "Starts", getter: (r) => fmtNumber(r.startCount) },
     ],
-    recentRes.ok ? recentRes.data : [],
+    topPlaytimeRes.ok ? topPlaytimeRes.data : [],
   );
 
   const isCarousel = currentViewMode === "carousel";
