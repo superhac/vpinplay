@@ -129,11 +129,9 @@
   font-size: 0.9rem;
 }
 
-.panel-embed-frame {
+.panel-embed-body {
   width: 100%;
-  height: 420px;
   border-radius: 12px;
-  border: 0;
   background: transparent;
   display: block;
 }

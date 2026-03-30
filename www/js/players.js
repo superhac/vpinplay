@@ -1,85 +1,42 @@
 let currentUserId = null;
 let currentViewMode = "table";
 
-function resizeEmbedFrame() {
-  const frame = q("scoreUserPanelFrame");
-  if (!frame) return;
+async function loadEmbeddedPanel() {
+  const host = q("scoreUserPanelEmbed");
+  if (!host) return;
+
+  const src = host.dataset.panelSrc;
+  if (!src) return;
 
   try {
-    const doc = frame.contentDocument || frame.contentWindow?.document;
-    if (!doc || !doc.body || !doc.documentElement) return;
-
-    const panel =
-      doc.getElementById("afm-score-panel") ||
-      doc.querySelector(".afm-score-panel") ||
-      doc.body.firstElementChild;
-    const shell = doc.querySelector(".afm-shell");
-
-    const contentHeight = Math.max(
-      panel?.scrollHeight || 0,
-      panel?.offsetHeight || 0,
-      panel?.getBoundingClientRect?.().height || 0,
-      shell?.scrollHeight || 0,
-      shell?.offsetHeight || 0,
-      shell?.getBoundingClientRect?.().height || 0,
-    );
-
-    const fallbackHeight = Math.max(
-      doc.body.scrollHeight,
-      doc.body.offsetHeight,
-      doc.documentElement.scrollHeight,
-      doc.documentElement.offsetHeight,
-    );
-
-    const nextHeight = contentHeight || fallbackHeight;
-    frame.style.height = `${Math.ceil(nextHeight + 24)}px`;
-  } catch {
-    // Ignore cross-document sizing issues if the frame origin changes.
-  }
-}
-
-function scheduleEmbedFrameResizes() {
-  const delays = [0, 50, 150, 300, 600, 1000, 1500, 2200];
-  delays.forEach((delay) => {
-    window.setTimeout(resizeEmbedFrame, delay);
-  });
-}
-
-function initEmbedFrameSizing() {
-  const frame = q("scoreUserPanelFrame");
-  if (!frame) return;
-
-  const handleFrameReady = () => {
-    scheduleEmbedFrameResizes();
-
-    try {
-      const win = frame.contentWindow;
-      win?.addEventListener("resize", resizeEmbedFrame);
-
-      if (
-        typeof ResizeObserver !== "undefined" &&
-        frame.contentDocument?.documentElement
-      ) {
-        const observer = new ResizeObserver(() => resizeEmbedFrame());
-        const panel =
-          frame.contentDocument.getElementById("afm-score-panel") ||
-          frame.contentDocument.querySelector(".afm-score-panel") ||
-          frame.contentDocument.body;
-        observer.observe(panel);
-      }
-    } catch {
-      // Ignore cross-document sizing issues if the frame origin changes.
+    const response = await fetch(src);
+    if (!response.ok) {
+      host.innerHTML = `<div class="muted">Failed to load embedded panel (${response.status}).</div>`;
+      return;
     }
-  };
 
-  frame.addEventListener("load", handleFrameReady);
+    const html = await response.text();
+    const template = document.createElement("template");
+    template.innerHTML = html;
 
-  try {
-    if (frame.contentDocument?.readyState === "complete") {
-      handleFrameReady();
-    }
-  } catch {
-    // Ignore cross-document sizing issues if the frame origin changes.
+    host.replaceChildren();
+
+    const fragment = template.content;
+    const scripts = [...fragment.querySelectorAll("script")];
+    scripts.forEach((script) => script.remove());
+
+    host.appendChild(fragment.cloneNode(true));
+
+    scripts.forEach((oldScript) => {
+      const newScript = document.createElement("script");
+      [...oldScript.attributes].forEach((attr) => {
+        newScript.setAttribute(attr.name, attr.value);
+      });
+      newScript.textContent = oldScript.textContent;
+      host.appendChild(newScript);
+    });
+  } catch (error) {
+    host.innerHTML = `<div class="muted">Failed to load embedded panel: ${escapeHtml(error.message || "unknown error")}</div>`;
   }
 }
 
@@ -493,7 +450,7 @@ function applyUserId() {
 function init() {
   initTheme();
   initViewMode();
-  initEmbedFrameSizing();
+  loadEmbeddedPanel();
   const params = new URLSearchParams(window.location.search);
   const userId = params.get("userid");
 
