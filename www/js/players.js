@@ -1,6 +1,48 @@
 let currentUserId = null;
 let currentViewMode = "table";
 
+function resizeEmbedFrame() {
+  const frame = q("scoreUserPanelFrame");
+  if (!frame) return;
+
+  try {
+    const doc = frame.contentDocument || frame.contentWindow?.document;
+    if (!doc || !doc.body || !doc.documentElement) return;
+
+    frame.style.height = "0px";
+    const nextHeight = Math.max(
+      doc.body.scrollHeight,
+      doc.body.offsetHeight,
+      doc.documentElement.scrollHeight,
+      doc.documentElement.offsetHeight,
+    );
+    frame.style.height = `${Math.ceil(nextHeight)}px`;
+  } catch {
+    // Ignore cross-document sizing issues if the frame origin changes.
+  }
+}
+
+function initEmbedFrameSizing() {
+  const frame = q("scoreUserPanelFrame");
+  if (!frame) return;
+
+  frame.addEventListener("load", () => {
+    resizeEmbedFrame();
+
+    try {
+      const win = frame.contentWindow;
+      win?.addEventListener("resize", resizeEmbedFrame);
+
+      if (typeof ResizeObserver !== "undefined" && frame.contentDocument?.body) {
+        const observer = new ResizeObserver(() => resizeEmbedFrame());
+        observer.observe(frame.contentDocument.body);
+      }
+    } catch {
+      // Ignore cross-document sizing issues if the frame origin changes.
+    }
+  });
+}
+
 function handleSetupSubmit(event) {
   event.preventDefault();
   applyUserId();
@@ -411,6 +453,7 @@ function applyUserId() {
 function init() {
   initTheme();
   initViewMode();
+  initEmbedFrameSizing();
   const params = new URLSearchParams(window.location.search);
   const userId = params.get("userid");
 

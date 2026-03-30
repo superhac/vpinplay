@@ -131,7 +131,9 @@
 
 .panel-embed-frame {
   width: 100%;
-  min-height: 980px;
+  height: 420px;
   border-radius: 12px;
+  border: 0;
   background: transparent;
+  display: block;
 }
