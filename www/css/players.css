@@ -2,6 +2,33 @@
    Player Dashboard Page Specific Styles
    ============================================ */
 
+body {
+  background: #0a0518;
+}
+
+body::before {
+  background-image:
+    linear-gradient(0deg, rgba(0, 217, 255, 0.2) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 217, 255, 0.2) 1px, transparent 1px);
+  background-size: 40px 40px;
+  opacity: 0.3;
+}
+
+body::after {
+  background:
+    radial-gradient(ellipse at top, rgba(180, 41, 249, 0.15), transparent 60%),
+    radial-gradient(
+      ellipse at bottom right,
+      rgba(255, 10, 120, 0.1),
+      transparent 50%
+    ),
+    radial-gradient(
+      ellipse at bottom left,
+      rgba(0, 217, 255, 0.1),
+      transparent 50%
+    );
+}
+
 /* Setup section */
 .setup {
   margin-top: 18px;
