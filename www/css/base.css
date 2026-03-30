@@ -699,6 +699,7 @@ tbody tr:hover td {
   width: 0.95em;
   height: 1em;
   line-height: 1;
+  isolation: isolate;
 }
 
 .rating-star {
@@ -711,14 +712,19 @@ tbody tr:hover td {
   position: absolute;
   left: 0;
   top: 0;
+  z-index: 1;
   overflow: hidden;
+  display: block;
   white-space: nowrap;
   line-height: 1;
   color: var(--neon-yellow);
+  text-shadow: var(--glow-yellow);
   filter: drop-shadow(0 0 3px var(--neon-yellow));
 }
 
 .rating-star.empty {
+  position: relative;
+  z-index: 0;
   color: var(--ink-muted);
   opacity: 0.45;
 }

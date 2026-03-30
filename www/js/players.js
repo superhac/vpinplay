@@ -171,72 +171,6 @@ function renderCarousel(elId, rows, options = {}) {
   el.innerHTML = html;
 }
 
-function setUserStatus(availableResponse) {
-  const el = q("userStatus");
-  if (!availableResponse.ok) {
-    el.className = "status bad";
-    el.textContent = "Could not verify user availability";
-    return;
-  }
-
-  const available = !!availableResponse.data.available;
-  if (available) {
-    el.className = "status warn";
-    el.textContent = "User ID is currently available (no registered sync yet)";
-  } else {
-    el.className = "status ok";
-    el.textContent = "User ID is registered";
-  }
-}
-
-function buildSpotlightRows(
-  userLastSync,
-  runtimeSum,
-  runtimeWeek,
-  startCountSum,
-  startsWeek,
-  mostPlayed,
-) {
-  const rows = [];
-  if (userLastSync?.ok) {
-    rows.push({
-      metric: "Last Sync",
-      value: escapeHtml(fmtDate(userLastSync.data.lastSyncAt)),
-    });
-  }
-  if (runtimeSum?.ok) {
-    rows.push({
-      metric: "Runtime Sum",
-      value: escapeHtml(fmtRuntime(runtimeSum.data.runTimeTotal)),
-    });
-  }
-  if (runtimeWeek?.ok) {
-    rows.push({
-      metric: "This Week Runtime",
-      value: escapeHtml(fmtRuntime(runtimeWeek.data.runTimePlayed)),
-    });
-  }
-  if (startCountSum?.ok) {
-    rows.push({
-      metric: "Start Count Sum",
-      value: escapeHtml(fmtNumber(startCountSum.data.startCountTotal)),
-    });
-  }
-  if (startsWeek?.ok) {
-    rows.push({
-      metric: "This Week Plays",
-      value: escapeHtml(fmtNumber(startsWeek.data.startCountPlayed)),
-    });
-  }
-  if (mostPlayed?.ok && Array.isArray(mostPlayed.data) && mostPlayed.data[0]) {
-    rows.push({
-      metric: "Most Played Table",
-      value: `${linkTableName(fmtTableName(mostPlayed.data[0]), mostPlayed.data[0].vpsId)} (${escapeHtml(fmtNumber(mostPlayed.data[0].startCount))} starts)`,
-    });
-  }
-  return rows;
-}
-
 async function refreshDashboard() {
   if (!currentUserId) return;
 
@@ -246,7 +180,6 @@ async function refreshDashboard() {
   q("userBadge").textContent = `userid=${currentUserId}`;
 
   const [
-    availableRes,
     lastSyncRes,
     countRes,
     runtimeSumRes,
@@ -260,7 +193,6 @@ async function refreshDashboard() {
     userNewlyAddedRes,
     latestSubmittedScoresRes,
   ] = await Promise.all([
-    api(`/api/v1/users/${encodeURIComponent(currentUserId)}/available`),
     api(`/api/v1/users/${encodeURIComponent(currentUserId)}/last-sync`),
     api(`/api/v1/users/${encodeURIComponent(currentUserId)}/tables/count`),
     api(
@@ -304,8 +236,6 @@ async function refreshDashboard() {
     rowsNeedingGlobalRating,
   );
 
-  setUserStatus(availableRes);
-
   const totalStarts = startCountSumRes.ok
     ? Number(startCountSumRes.data.startCountTotal || 0)
     : 0;
@@ -335,17 +265,19 @@ async function refreshDashboard() {
   renderTable(
     "spotlightTable",
     [
-      { label: "Metric", getter: (r) => r.metric },
-      { label: "Value", getter: (r) => r.value, html: true },
+      {
+        label: "Table",
+        getter: (r) => linkTableName(fmtTableName(r), r.vpsId),
+        html: true,
+      },
+      { label: "Last Run", getter: (r) => fmtDate(r.lastRun) },
+      {
+        label: "Mine / Avg Rating",
+        getter: (r) => fmtUserOverGlobalRating(r, globalAvgRatingMap),
+        html: true,
+      },
     ],
-    buildSpotlightRows(
-      lastSyncRes,
-      runtimeSumRes,
-      runtimeWeekRes,
-      startCountSumRes,
-      startCountWeekRes,
-      mostPlayedRes,
-    ),
+    recentRes.ok ? recentRes.data : [],
   );
 
   const isCarousel = currentViewMode === "carousel";
