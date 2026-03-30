@@ -1,19 +1,24 @@
 @import url("https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@400;600;700&display=swap");
-@import url("./base.css");
 
 .afm-score-panel {
-  --afm-surface: var(--surface);
-  --afm-surface-2: var(--surface-2);
-  --afm-surface-soft: var(--surface-soft);
-  --afm-line: var(--line);
-  --afm-ink: var(--ink);
-  --afm-muted: var(--ink-muted);
-  --afm-accent: var(--neon-cyan);
-  --afm-accent-2: var(--neon-purple);
-  --afm-warn: var(--warn);
-  --afm-danger: var(--bad);
-  --afm-shadow: var(--shadow);
-  --afm-shadow-intense: var(--shadow-intense);
+  --afm-surface: var(--surface, #1a0f35);
+  --afm-surface-2: var(--surface-2, #251447);
+  --afm-surface-soft: var(--surface-soft, #2a1a4a);
+  --afm-line: var(--line, #3d2461);
+  --afm-ink: var(--ink, #e8d5ff);
+  --afm-muted: var(--ink-muted, #b89dd9);
+  --afm-accent: var(--neon-cyan, #00d9ff);
+  --afm-accent-2: var(--neon-purple, #b429f9);
+  --afm-warn: var(--warn, #ffd93d);
+  --afm-danger: var(--bad, #ff0a78);
+  --afm-shadow: var(--shadow, 0 2px 8px rgba(180, 41, 249, 0.2));
+  --afm-shadow-intense: var(--shadow-intense, 0 2px 8px rgba(180, 41, 249, 0.35));
+  --afm-radius: var(--radius, 12px);
+  --afm-bg-secondary: var(--bg-secondary, #150a2e);
+  --afm-glow-cyan: var(--glow-cyan, 0 0 4px rgba(0, 217, 255, 0.5), 0 0 8px rgba(0, 217, 255, 0.3));
+  --afm-glow-purple: var(--glow-purple, 0 0 4px rgba(180, 41, 249, 0.5), 0 0 8px rgba(180, 41, 249, 0.3));
+  --afm-glow-yellow: var(--glow-yellow, 0 0 2px rgba(255, 217, 61, 0.4));
+  --afm-neon-pink: var(--neon-pink, #ff0a78);
   position: relative;
   color: var(--afm-ink);
   font-family: "Orbitron", "Rajdhani", "Exo 2", "Segoe UI", sans-serif;
@@ -31,7 +36,7 @@
 .afm-shell {
   position: relative;
   background: var(--afm-surface);
-  border-radius: var(--radius);
+  border-radius: var(--afm-radius);
   box-shadow: var(--afm-shadow-intense);
   padding: 18px;
   overflow: hidden;
@@ -48,9 +53,9 @@
   height: 1px;
   background: linear-gradient(
     90deg,
-    var(--neon-pink),
-    var(--neon-purple),
-    var(--neon-cyan)
+    var(--afm-neon-pink),
+    var(--afm-accent-2),
+    var(--afm-accent)
   );
   opacity: 0.3;
   pointer-events: none;
@@ -81,7 +86,7 @@
   box-shadow:
     0 0 0 1px rgba(180, 41, 249, 0.18),
     0 10px 32px rgba(0, 0, 0, 0.35);
-  background: var(--bg-secondary);
+  background: var(--afm-bg-secondary);
 }
 
 .afm-header-copy {
@@ -99,7 +104,7 @@
   line-height: 1.02;
   letter-spacing: 0.03em;
   color: var(--afm-ink);
-  text-shadow: var(--glow-cyan);
+  text-shadow: var(--afm-glow-cyan);
 }
 
 .afm-rating-row {
@@ -181,7 +186,7 @@
   white-space: nowrap;
   line-height: 1;
   color: var(--afm-warn);
-  text-shadow: var(--glow-yellow);
+  text-shadow: var(--afm-glow-yellow);
 }
 
 .rating-star.empty {
@@ -209,7 +214,7 @@
   color: var(--afm-accent);
   font-weight: 800;
   font-size: 0.8rem;
-  box-shadow: var(--glow-cyan);
+  box-shadow: var(--afm-glow-cyan);
 }
 
 .afm-status {
@@ -221,7 +226,7 @@
   color: var(--afm-accent);
   font-size: 0.9rem;
   font-weight: 700;
-  box-shadow: var(--glow-cyan);
+  box-shadow: var(--afm-glow-cyan);
 }
 
 .afm-stats {
@@ -236,7 +241,7 @@
 .afm-card {
   position: relative;
   background: var(--afm-surface);
-  border-radius: var(--radius);
+  border-radius: var(--afm-radius);
   box-shadow: var(--afm-shadow);
 }
 
@@ -250,7 +255,7 @@
   font-weight: 900;
   color: var(--afm-ink);
   margin-bottom: 8px;
-  text-shadow: var(--glow-purple);
+  text-shadow: var(--afm-glow-purple);
 }
 
 .afm-stat-sub {
@@ -270,13 +275,14 @@
 
 .afm-scoreboard-title {
   color: var(--neon-purple);
+  color: var(--afm-accent-2);
   text-transform: uppercase;
   letter-spacing: 0.08em;
   font-size: 1.68rem;
   font-weight: 900;
   margin-bottom: 12px;
   text-align: center;
-  text-shadow: var(--glow-purple);
+  text-shadow: var(--afm-glow-purple);
 }
 
 .afm-card {
@@ -303,7 +309,7 @@
   font-weight: 900;
   letter-spacing: 0.08em;
   color: var(--afm-accent);
-  text-shadow: var(--glow-cyan);
+  text-shadow: var(--afm-glow-cyan);
 }
 
 .afm-grand-score {
@@ -332,7 +338,7 @@
   font-weight: 800;
   font-size: 0.82rem;
   text-transform: uppercase;
-  text-shadow: var(--glow-cyan);
+  text-shadow: var(--afm-glow-cyan);
 }
 
 .afm-initials {
