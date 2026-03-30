@@ -70,24 +70,32 @@
 
 <style>
   .afm-score-panel {
-    --afm-bg: linear-gradient(180deg, #08111d 0%, #13233a 55%, #08111d 100%);
-    --afm-surface: rgba(11, 23, 39, 0.9);
-    --afm-surface-soft: rgba(18, 34, 55, 0.82);
-    --afm-line: rgba(107, 191, 255, 0.2);
-    --afm-ink: #e8f6ff;
-    --afm-muted: #9cc4dd;
-    --afm-accent: #72e7ff;
-    --afm-accent-2: #ffcc66;
-    --afm-danger: #ff8f8f;
-    --afm-shadow: 0 18px 48px rgba(0, 0, 0, 0.35);
+    --afm-bg: #f5f7fb;
+    --afm-surface: #ffffff;
+    --afm-surface-soft: #f1f6ff;
+    --afm-line: #dbe3f0;
+    --afm-ink: #1b2a41;
+    --afm-muted: #63738d;
+    --afm-accent: #1d4ed8;
+    --afm-accent-2: #0f766e;
+    --afm-danger: #b91c1c;
+    --afm-hero-a: #0f766e;
+    --afm-hero-b: #1d4ed8;
+    --afm-hero-border: rgba(255, 255, 255, 0.18);
+    --afm-shadow: 0 12px 32px rgba(15, 23, 42, 0.08);
     font-family: "Avenir Next", "Montserrat", "Segoe UI", sans-serif;
     color: var(--afm-ink);
   }
 
+  .afm-score-panel,
+  .afm-score-panel * {
+    font-family: inherit;
+  }
+
   .afm-shell {
     background:
-      radial-gradient(700px 260px at 0% 0%, rgba(114, 231, 255, 0.14), transparent 60%),
-      radial-gradient(700px 260px at 100% 0%, rgba(255, 204, 102, 0.16), transparent 60%),
+      radial-gradient(900px 420px at -10% -10%, rgba(14, 123, 108, 0.15), transparent 60%),
+      radial-gradient(900px 420px at 110% -15%, rgba(29, 78, 216, 0.14), transparent 65%),
       var(--afm-bg);
     border: 1px solid var(--afm-line);
     border-radius: 20px;
@@ -116,9 +124,9 @@
     height: 141px;
     object-fit: cover;
     border-radius: 18px;
-    border: 1px solid rgba(107, 191, 255, 0.22);
-    box-shadow: 0 14px 36px rgba(0, 0, 0, 0.28);
-    background: rgba(8, 17, 29, 0.6);
+    border: 1px solid var(--afm-line);
+    box-shadow: 0 12px 32px rgba(15, 23, 42, 0.12);
+    background: var(--afm-surface-soft);
   }
 
   .afm-header-copy {
@@ -135,6 +143,7 @@
     font-size: clamp(2rem, 3.8vw, 3rem);
     line-height: 1.02;
     letter-spacing: 0.01em;
+    color: var(--afm-ink);
   }
 
   .afm-rating-row {
@@ -146,7 +155,7 @@
   }
 
   .afm-rating-label {
-    color: #9ec6ff;
+    color: var(--afm-muted);
     text-transform: uppercase;
     letter-spacing: 0.08em;
     font-size: 0.82rem;
@@ -202,7 +211,7 @@
     overflow: hidden;
     white-space: nowrap;
     line-height: 1;
-    color: #facc15;
+    color: var(--afm-accent-2);
   }
 
   .rating-star.empty {
@@ -218,8 +227,8 @@
   }
 
   .afm-badge {
-    border: 1px solid rgba(255, 204, 102, 0.4);
-    background: rgba(255, 204, 102, 0.14);
+    border: 1px solid rgba(15, 118, 110, 0.22);
+    background: rgba(15, 118, 110, 0.1);
     color: var(--afm-accent-2);
     border-radius: 999px;
     padding: 8px 12px;
@@ -232,8 +241,8 @@
     margin-bottom: 14px;
     border-radius: 12px;
     padding: 10px 12px;
-    background: rgba(114, 231, 255, 0.12);
-    border: 1px solid rgba(114, 231, 255, 0.24);
+    background: rgba(29, 78, 216, 0.08);
+    border: 1px solid rgba(29, 78, 216, 0.16);
     color: var(--afm-accent);
     font-size: 0.9rem;
     font-weight: 700;
@@ -247,15 +256,15 @@
   }
 
   .afm-stat-card {
-    border: 1px solid rgba(84, 138, 212, 0.45);
+    border: 1px solid var(--afm-line);
     border-radius: 16px;
-    background: rgba(19, 33, 58, 0.92);
+    background: var(--afm-surface);
     padding: 14px 16px 15px;
-    box-shadow: inset 0 1px 0 rgba(140, 190, 255, 0.04);
+    box-shadow: var(--afm-shadow);
   }
 
   .afm-stat-label {
-    color: #9ec6ff;
+    color: var(--afm-muted);
     text-transform: uppercase;
     letter-spacing: 0.08em;
     font-size: 0.78rem;
@@ -266,7 +275,7 @@
     font-size: 2rem;
     line-height: 1.05;
     font-weight: 900;
-    color: #f4f8ff;
+    color: var(--afm-ink);
     margin-bottom: 8px;
   }
 
@@ -282,14 +291,15 @@
   }
 
   .afm-scoreboard-shell {
-    border: 1px solid rgba(84, 138, 212, 0.45);
+    border: 1px solid var(--afm-line);
     border-radius: 18px;
-    background: rgba(10, 22, 40, 0.78);
+    background: var(--afm-surface);
     padding: 14px;
+    box-shadow: var(--afm-shadow);
   }
 
   .afm-scoreboard-title {
-    color: #9ec6ff;
+    color: var(--afm-accent);
     text-transform: uppercase;
     letter-spacing: 0.1em;
     font-size: 1.68rem;
@@ -309,7 +319,7 @@
   .afm-card-hero {
     grid-column: 1 / -1;
     background:
-      linear-gradient(135deg, rgba(114, 231, 255, 0.08), rgba(255, 204, 102, 0.1)),
+      linear-gradient(135deg, rgba(15, 118, 110, 0.08), rgba(29, 78, 216, 0.1)),
       var(--afm-surface);
   }
 
@@ -359,7 +369,7 @@
     align-items: center;
     padding: 10px 12px;
     border-radius: 12px;
-    border: 1px solid rgba(107, 191, 255, 0.14);
+    border: 1px solid var(--afm-line);
     background: var(--afm-surface-soft);
   }
 
@@ -395,8 +405,8 @@
     align-items: center;
     border-radius: 999px;
     padding: 6px 10px;
-    border: 1px solid rgba(255, 204, 102, 0.32);
-    background: rgba(255, 204, 102, 0.12);
+    border: 1px solid rgba(15, 118, 110, 0.22);
+    background: rgba(15, 118, 110, 0.1);
     color: var(--afm-accent-2);
     font-weight: 800;
     font-size: 0.8rem;
@@ -495,13 +505,13 @@
     el.textContent = message;
     if (tone === "error") {
       el.style.color = "var(--afm-danger)";
-      el.style.borderColor = "rgba(255, 143, 143, 0.28)";
-      el.style.background = "rgba(255, 143, 143, 0.12)";
+      el.style.borderColor = "rgba(185, 28, 28, 0.18)";
+      el.style.background = "rgba(185, 28, 28, 0.08)";
       return;
     }
     el.style.color = "var(--afm-accent)";
-    el.style.borderColor = "rgba(114, 231, 255, 0.24)";
-    el.style.background = "rgba(114, 231, 255, 0.12)";
+    el.style.borderColor = "rgba(29, 78, 216, 0.16)";
+    el.style.background = "rgba(29, 78, 216, 0.08)";
   }
 
   function clearStatus() {
