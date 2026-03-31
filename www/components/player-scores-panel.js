@@ -339,13 +339,56 @@ class PlayerScoresPanel extends HTMLElement {
 
   getScorePayload(row) {
     const direct = this.getCaseInsensitiveValue(row, "score");
-    if (direct && typeof direct === "object" && !Array.isArray(direct))
+    if (!direct) return null;
+
+    if (direct && typeof direct === "object" && Array.isArray(direct.entries)) {
       return direct;
+    }
+
+    if (direct && typeof direct === "object" && !Array.isArray(direct)) {
+      const scoreType = direct.score_type || direct.section || "HIGHEST SCORE";
+      const scoreValue = direct.value ?? direct.score ?? null;
+
+      return {
+        entries: [
+          {
+            section: scoreType,
+            score: scoreValue,
+            value_suffix: direct.value_suffix || "",
+            extra_lines: direct.extra_lines || [],
+            initials: row.userId || "",
+            userId: row.userId || "",
+            rank: null,
+          },
+        ],
+      };
+    }
 
     const user = this.getCaseInsensitiveValue(row, "user");
     const nested = this.getCaseInsensitiveValue(user, "score");
-    if (nested && typeof nested === "object" && !Array.isArray(nested))
-      return nested;
+    if (nested && typeof nested === "object" && !Array.isArray(nested)) {
+      if (Array.isArray(nested.entries)) {
+        return nested;
+      }
+
+      const scoreType = nested.score_type || nested.section || "HIGHEST SCORE";
+      const scoreValue = nested.value ?? nested.score ?? null;
+
+      return {
+        entries: [
+          {
+            section: scoreType,
+            score: scoreValue,
+            value_suffix: nested.value_suffix || "",
+            extra_lines: nested.extra_lines || [],
+            initials: row.userId || "",
+            userId: row.userId || "",
+            rank: null,
+          },
+        ],
+      };
+    }
+
     return null;
   }
 
