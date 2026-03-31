@@ -108,6 +108,23 @@ function fmtRuntime(minutes) {
   return `${n} min`;
 }
 
+function fmtLatestScoreValue(score) {
+    if (!score || typeof score !== "object") return "-";
+    const numericValue = score.value ?? score.score;
+    if (
+        numericValue !== null &&
+        numericValue !== undefined &&
+        numericValue !== ""
+    ) {
+        const base = fmtNumber(numericValue);
+        return score.value_suffix ? `${base} ${score.value_suffix}` : base;
+    }
+    if (Array.isArray(score.extra_lines) && score.extra_lines.length) {
+        return score.extra_lines.join(" | ");
+    }
+    return "-";
+}
+
 function fmtRatingStars(value, options = {}) {
     if (value === null || value === undefined || value === "") return "-";
     const numeric = Number(value);

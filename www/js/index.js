@@ -16,6 +16,7 @@ async function refreshDashboard() {
     topPlayTimeRows,
     newlyAddedRows,
     topVariantsRows,
+    latestSubmittedScoresRows,
   ] = await Promise.all([
     api("/api/v1/sync/last"),
     api("/api/v1/vpsdb/status"),
@@ -28,6 +29,7 @@ async function refreshDashboard() {
     fetchPaginatedRows("/api/v1/tables/top-play-time", limit),
     fetchPaginatedRows("/api/v1/tables/newly-added", limit),
     fetchPaginatedRows("/api/v1/tables/top-variants", limit),
+    fetchLatestSubmittedScores(limit),
   ]);
 
   q("kpiLastSync").textContent = lastSyncRes.ok
@@ -158,6 +160,26 @@ async function refreshDashboard() {
     topPlayerRuntimeRows,
   );
 
+  renderTable(
+    "latestSubmittedScoresTable",
+    [
+      {
+        label: "Table",
+        getter: (r) =>
+          linkTableName(
+            r.tableTitle || r.vpsdb?.name || "Unknown Table",
+            r.vpsId,
+          ),
+        html: true,
+      },
+      { label: "User", getter: (r) => linkUserId(r.userId), html: true },
+      { label: "Label", getter: (r) => r.label || "-" },
+      { label: "Score", getter: (r) => fmtLatestScoreValue(r.score) },
+      { label: "Updated", getter: (r) => fmtDate(r.updatedAt) },
+    ],
+    latestSubmittedScoresRows,
+  );
+
   if (ENABLE_ALL_TABLES_PANEL) {
     await loadAllTablesPage();
   }
@@ -180,3 +202,11 @@ document.addEventListener("DOMContentLoaded", () => {
   }
   refreshDashboard();
 });
+
+async function fetchLatestSubmittedScores(limit) {
+  const safeLimit = Math.max(1, Math.min(API_PAGE_LIMIT, Number(limit || 0) || 5));
+  const res = await api(
+    `/api/v1/users/scores/latest?limit=${encodeURIComponent(safeLimit)}&offset=0`,
+  );
+  return res.ok && Array.isArray(res.data?.items) ? res.data.items : [];
+}

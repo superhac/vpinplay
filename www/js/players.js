@@ -122,23 +122,6 @@ function getCardImageUrl(vpsId) {
   return `https://github.com/superhac/vpinmediadb/raw/refs/heads/main/${encodeURIComponent(vpsId)}/cab.png`;
 }
 
-function fmtLatestScoreValue(score) {
-  if (!score || typeof score !== "object") return "-";
-  const numericValue = score.value ?? score.score;
-  if (
-    numericValue !== null &&
-    numericValue !== undefined &&
-    numericValue !== ""
-  ) {
-    const base = fmtNumber(numericValue);
-    return score.value_suffix ? `${base} ${score.value_suffix}` : base;
-  }
-  if (Array.isArray(score.extra_lines) && score.extra_lines.length) {
-    return score.extra_lines.join(" | ");
-  }
-  return "-";
-}
-
 function renderCarousel(elId, rows, options = {}) {
   const el = q(elId);
   if (!rows || rows.length === 0) {
