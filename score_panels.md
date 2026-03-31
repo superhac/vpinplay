@@ -50,6 +50,7 @@ In practice:
 - If the JSON has `GRAND CHAMPION` plus one ranked section, use `vZDUDUii` as the simplest base
 - If the JSON has several custom sections, use `9Paf7-CL` as the richer base
 - If the sections are dynamic or not yet known, `WyxpJ3Wjt3` can be a good flexible `score_table` base
+- If the JSON is a single-value score with no `entries` array, use `fz-KTflv` as the base
 
 ## Creating a New `score_table` Panel
 
@@ -64,6 +65,7 @@ Usually copy one of:
 - `www/panels/score_table/vZDUDUii.html` for simple two-section boards
 - `www/panels/score_table/9Paf7-CL.html` for `GRAND CHAMPION` plus multiple ranked sections
 - `www/panels/score_table/WyxpJ3Wjt3.html` for dynamic section-title handling
+- `www/panels/score_table/fz-KTflv.html` for `score.value` / single-value score types
 
 ### 2. Update the VPS ID
 
@@ -76,6 +78,23 @@ const PANEL_VPS_ID = "<NEW_VPSID>";
 ### 3. Map the JSON Sections to Cards
 
 Read `Score.entries` from the JSON blob and list unique `section` values.
+
+If the JSON does not have an `entries` array and instead looks like this:
+
+```json
+{
+  "score_type": "HIGHEST SCORE",
+  "value": 42520
+}
+```
+
+then do not use section grouping. Use the `fz-KTflv` pattern instead:
+
+- one card
+- title from `score.score_type`
+- value from `score.value`
+- in `score_table`, render a ranked user list by sorting all matched rows on `score.value`
+- in `score_user`, render the user’s single value in a hero card
 
 Example:
 
@@ -158,6 +177,7 @@ Usually copy one of:
 
 - `www/panels/score_user/vZDUDUii.html` for simple `Grand Champion` + `Highest Scores`
 - `www/panels/score_user/9Paf7-CL.html` for tables with several sections
+- `www/panels/score_user/fz-KTflv.html` for `score.value` / single-value score types
 
 ### 2. Update the VPS ID
 
@@ -310,6 +330,8 @@ When given a JSON score blob, use this guide:
   Consider the `WyxpJ3Wjt3` pattern for `score_table`
 - One-off stat sections:
   Use a `renderSpecial(...)`-style card in `score_user`
+- No `entries`, only `score_type` and `value`:
+  Use the `fz-KTflv` pattern
 
 ## Common Things to Change
 
@@ -370,6 +392,7 @@ If no special instruction is given:
 
 - use `vZDUDUii` as the base for simple new scoreboards
 - use `9Paf7-CL` as the base for complex multi-section scoreboards
+- use `fz-KTflv` as the base for single-value score types
 - always use VPSDB name as the visible title in `score_user`
 - always include rating, manufacturer, year, and last update in `score_user`
 - always hide success status bars after the panel loads

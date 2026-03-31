@@ -1,0 +1,175 @@
+<link rel="stylesheet" href="../../css/score-table-panel.css">
+
+<div id="afm-score-panel" class="afm-score-panel">
+  <div class="afm-shell">
+    <div class="afm-status" id="afm-status" hidden>Ready.</div>
+
+    <section class="afm-scoreboard-shell" id="afm-grid" hidden>
+      <div class="afm-scoreboard-title">Scoreboard</div>
+      <div class="afm-grid">
+        <section class="afm-card">
+          <div class="afm-card-title" id="afm-score-title">Highest Score</div>
+          <div id="afm-score-body"></div>
+        </section>
+      </div>
+    </section>
+  </div>
+</div>
+
+<script>
+(() => {
+  const PANEL_VPS_ID = "fz-KTflv";
+  const DEFAULT_API_BASE = "https://api.vpinplay.com:8888";
+  const PAGE_SIZE = 500;
+  const SCORE_LIMIT = 5;
+
+  function q(id) {
+    return document.getElementById(id);
+  }
+
+  function getParams() {
+    const params = new URLSearchParams(window.location.search);
+    return {
+      apiBase: (params.get("apibase") || params.get("apiBase") || "").trim(),
+    };
+  }
+
+  function getApiBase() {
+    const params = getParams();
+    if (params.apiBase) return params.apiBase.replace(/\/$/, "");
+    if (window.VPINPLAY_PANEL_CONFIG && typeof window.VPINPLAY_PANEL_CONFIG.apiBase === "string") {
+      return window.VPINPLAY_PANEL_CONFIG.apiBase.replace(/\/$/, "");
+    }
+    return DEFAULT_API_BASE;
+  }
+
+  function setStatus(message, tone = "info") {
+    const el = q("afm-status");
+    if (!el) return;
+    el.hidden = false;
+    el.textContent = message;
+    if (tone === "error") {
+      el.style.color = "var(--afm-danger)";
+      el.style.borderColor = "rgba(255, 10, 120, 0.24)";
+      el.style.background = "rgba(255, 10, 120, 0.12)";
+      return;
+    }
+    el.style.color = "var(--afm-accent)";
+    el.style.borderColor = "rgba(0, 217, 255, 0.2)";
+    el.style.background = "rgba(0, 217, 255, 0.08)";
+  }
+
+  function clearStatus() {
+    const el = q("afm-status");
+    if (!el) return;
+    el.hidden = true;
+    el.textContent = "";
+  }
+
+  function fmtNumber(value) {
+    const num = Number(value);
+    return Number.isFinite(num) ? num.toLocaleString() : "-";
+  }
+
+  function getScoreValue(score) {
+    const num = Number(score?.value);
+    return Number.isFinite(num) ? num : null;
+  }
+
+  function getScoreText(score) {
+    const value = getScoreValue(score);
+    return value === null ? "-" : fmtNumber(value);
+  }
+
+  function getScoreTitle(score) {
+    const raw = String(score?.score_type || "Score").trim();
+    return raw
+      .toLowerCase()
+      .replace(/\b\w/g, (char) => char.toUpperCase());
+  }
+
+  function compareScores(a, b) {
+    const aValue = getScoreValue(a?.score);
+    const bValue = getScoreValue(b?.score);
+    if (aValue !== null && bValue !== null && aValue !== bValue) {
+      return bValue - aValue;
+    }
+    if (aValue !== null && bValue === null) return -1;
+    if (aValue === null && bValue !== null) return 1;
+    return String(b?.updatedAt || "").localeCompare(String(a?.updatedAt || ""));
+  }
+
+  function renderScoreList(items) {
+    const host = q("afm-score-body");
+    if (!host) return;
+    if (!items.length) {
+      host.innerHTML = `<div class="afm-empty">No entries available.</div>`;
+      return;
+    }
+
+    host.innerHTML = `
+      <div class="afm-list">
+        ${items.map((item, index) => `
+          <div class="afm-row">
+            <div class="afm-rank">#${index + 1}</div>
+            <div class="afm-initials">${typeof item.userId === "string" ? item.userId : "-"}</div>
+            <div class="afm-value">${getScoreText(item.score)}</div>
+          </div>
+        `).join("")}
+      </div>
+    `;
+  }
+
+  async function api(path) {
+    try {
+      const response = await fetch(`${getApiBase()}${path}`);
+      const data = await response.json().catch(() => ([]));
+      return { ok: response.ok, status: response.status, data };
+    } catch (error) {
+      return { ok: false, status: 0, data: { error: error.message } };
+    }
+  }
+
+  async function fetchBestEverScoreItems() {
+    const items = [];
+    for (let offset = 0; ; offset += PAGE_SIZE) {
+      const result = await api(`/api/v1/users/scores/best-ever?vpsId=${encodeURIComponent(PANEL_VPS_ID)}&limit=${PAGE_SIZE}&offset=${offset}`);
+      const pageItems = Array.isArray(result.data?.items) ? result.data.items : null;
+      if (!result.ok || !pageItems) {
+        return { ok: false, status: result.status, error: result.data?.error || "Request failed", items };
+      }
+      items.push(...pageItems);
+      if (pageItems.length < PAGE_SIZE) break;
+    }
+    return { ok: true, items };
+  }
+
+  async function loadPanel() {
+    setStatus(`Loading global score data for ${PANEL_VPS_ID}...`);
+    const bestEverResult = await fetchBestEverScoreItems();
+
+    if (!bestEverResult.ok) {
+      setStatus(`Failed to load score data (${bestEverResult.status || "network"}).`, "error");
+      return;
+    }
+
+    const items = bestEverResult.items
+      .filter((item) => item && String(item.vpsId || "") === PANEL_VPS_ID && item.score && typeof item.score === "object")
+      .sort(compareScores);
+
+    if (!items.length) {
+      setStatus("No historical matched score entries were found for this table.", "error");
+      return;
+    }
+
+    q("afm-score-title").textContent = getScoreTitle(items[0].score);
+    renderScoreList(items.slice(0, SCORE_LIMIT));
+
+    const grid = q("afm-grid");
+    if (grid) grid.hidden = false;
+    clearStatus();
+  }
+
+  loadPanel();
+})();
+</script>
