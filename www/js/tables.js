@@ -1,5 +1,50 @@
 let derivativeRowsCache = [];
 
+async function loadScoreTablePanel(vpsId) {
+  const shell = q("scoreTablePanelShell");
+  const host = q("scoreTablePanelEmbed");
+  if (!shell || !host) return;
+
+  host.replaceChildren();
+  shell.classList.add("hidden");
+
+  const cleanVpsId = String(vpsId || "").trim();
+  if (!cleanVpsId) return;
+
+  const src = `panels/score_table/${encodeURIComponent(cleanVpsId)}.html`;
+
+  try {
+    const response = await fetch(src);
+    if (!response.ok) {
+      return;
+    }
+
+    const html = await response.text();
+    const template = document.createElement("template");
+    template.innerHTML = html;
+
+    const fragment = template.content;
+    const scripts = [...fragment.querySelectorAll("script")];
+    scripts.forEach((script) => script.remove());
+
+    host.appendChild(fragment.cloneNode(true));
+
+    scripts.forEach((oldScript) => {
+      const newScript = document.createElement("script");
+      [...oldScript.attributes].forEach((attr) => {
+        newScript.setAttribute(attr.name, attr.value);
+      });
+      newScript.textContent = oldScript.textContent;
+      host.appendChild(newScript);
+    });
+
+    shell.classList.remove("hidden");
+  } catch (error) {
+    host.replaceChildren();
+    shell.classList.add("hidden");
+  }
+}
+
 function getVpsidFromUrl() {
   const params = new URLSearchParams(window.location.search);
   return (params.get("vpsid") || "").trim();
@@ -412,6 +457,7 @@ async function refreshDashboard() {
   setVpisidInUrl(vpsId);
 
   if (!vpsId) {
+    await loadScoreTablePanel("");
     renderTable(
       "playerRatingsTable",
       [{ label: "Info", getter: () => "Enter a VPS ID" }],
@@ -440,6 +486,8 @@ async function refreshDashboard() {
       api(`/api/v1/tables/${encodeURIComponent(vpsId)}/activity-summary`),
       api(`/api/v1/tables/${encodeURIComponent(vpsId)}/activity-weekly?days=7`),
     ]);
+
+  await loadScoreTablePanel(vpsId);
 
   const playerRatingsRows =
     playerRatingsRes.ok && Array.isArray(playerRatingsRes.data)
