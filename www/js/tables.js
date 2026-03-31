@@ -227,44 +227,66 @@ function toggleDerivativeDifferences() {
   }
 }
 
-function renderAssociatedRoms(rows) {
+function renderAssociatedRoms(rows, activitySummary = null) {
   const container = q("associatedRomsDetails");
   const title = q("associatedRomsTitle");
 
   if (!rows || rows.length === 0) {
-    if (title) title.textContent = "Associated ROMs (0)";
+    if (title) title.textContent = "Metadata";
     container.innerHTML = `<div class="muted">No submitted table data found for this VPS ID.</div>`;
     return;
   }
 
   const romMap = new Map();
   rows.forEach((row, index) => {
-    const rawRom = [row?.rom, row?.vpxFile?.rom].find(
-      (value) => String(value || "").trim() !== "",
-    );
-    const rom = String(rawRom || "").trim();
-    if (!rom) return;
-
-    const key = rom.toLowerCase();
-    if (!romMap.has(key)) {
-      romMap.set(key, {
-        rom,
-        filenames: new Set(),
-        submitters: new Set(),
-        variants: 0,
-        firstIndex: index,
-      });
-    }
-
-    const entry = romMap.get(key);
-    entry.variants += 1;
-
     const filename = String(row?.vpxFile?.filename || "").trim();
-    if (filename) entry.filenames.add(filename);
-
     (row?.submittedByUserIdsNormalized || []).forEach((userId) => {
       const normalized = String(userId || "").trim();
-      if (normalized) entry.submitters.add(normalized);
+      if (!normalized) return;
+      // submitters are tracked both globally and per-ROM entry
+    });
+
+    const romValues = [...new Set(
+      [row?.rom, row?.vpxFile?.rom]
+        .map((value) => String(value || "").trim())
+        .filter(Boolean),
+    )];
+
+    romValues.forEach((rom) => {
+      const key = rom.toLowerCase();
+      if (!romMap.has(key)) {
+        romMap.set(key, {
+          rom,
+          filenames: new Set(),
+          submitters: new Set(),
+          variants: 0,
+          firstIndex: index,
+        });
+      }
+
+      const entry = romMap.get(key);
+      entry.variants += 1;
+      if (filename) entry.filenames.add(filename);
+
+      (row?.submittedByUserIdsNormalized || []).forEach((userId) => {
+        const normalized = String(userId || "").trim();
+        if (normalized) entry.submitters.add(normalized);
+      });
+    });
+
+    if (!romValues.length && filename) {
+      const key = `__no_rom__${index}`;
+      romMap.set(key, {
+        rom: "No ROM",
+        filenames: new Set([filename]),
+        submitters: new Set(
+          (row?.submittedByUserIdsNormalized || [])
+            .map((userId) => String(userId || "").trim())
+            .filter(Boolean),
+        ),
+        variants: 1,
+        firstIndex: index,
+      });
     });
   });
 
@@ -275,7 +297,7 @@ function renderAssociatedRoms(rows) {
   });
 
   if (title) {
-    title.textContent = `Associated ROMs (${romEntries.length})`;
+    title.textContent = "Metadata";
   }
 
   if (romEntries.length === 0) {
@@ -290,9 +312,22 @@ function renderAssociatedRoms(rows) {
                 </div>
             `;
 
-  container.innerHTML = romEntries
-    .map(
-      (entry) => `
+  const playerCount = Number(activitySummary?.playerCount || 0);
+  const summaryCard = `
+                <div class="variation-card">
+                    <div class="variation-title">Table Summary</div>
+                    <div class="variation-grid">
+                        ${field("playerCount", String(playerCount))}
+                        ${field("romCount", String(romEntries.filter((entry) => entry.rom !== "No ROM").length))}
+                    </div>
+                </div>
+            `;
+
+  container.innerHTML =
+    summaryCard +
+    romEntries
+      .map(
+        (entry) => `
                 <div class="variation-card">
                     <div class="variation-title">${escapeHtml(entry.rom)}</div>
                     <div class="variation-grid">
@@ -302,8 +337,8 @@ function renderAssociatedRoms(rows) {
                     </div>
                 </div>
             `,
-    )
-    .join("");
+      )
+      .join("");
 }
 
 function renderVpsdbDetails(record, ratingSummary = null, activitySummary = null, activityWeekly = null) {
@@ -379,11 +414,6 @@ async function refreshDashboard() {
 
   if (!vpsId) {
     renderTable(
-      "ratingSummaryTable",
-      [{ label: "Info", getter: () => "Enter a VPS ID" }],
-      [],
-    );
-    renderTable(
       "playerRatingsTable",
       [{ label: "Info", getter: () => "Enter a VPS ID" }],
       [],
@@ -412,23 +442,6 @@ async function refreshDashboard() {
       api(`/api/v1/tables/${encodeURIComponent(vpsId)}/activity-weekly?days=7`),
     ]);
 
-  const ratingSummaryRows =
-    ratingSummaryRes.ok && ratingSummaryRes.data ? [ratingSummaryRes.data] : [];
-  renderTable(
-    "ratingSummaryTable",
-    [
-      { label: "Table", getter: (r) => fmtTableName(r) },
-      {
-        label: "Avg Rating",
-        getter: (r) => fmtRatingStars(r.avgRating, { showNumeric: true }),
-        html: true,
-      },
-      { label: "Rating Count", getter: (r) => r.ratingCount ?? "-" },
-      { label: "VPS ID", getter: (r) => linkVpsId(r.vpsId), html: true },
-    ],
-    ratingSummaryRows,
-  );
-
   const playerRatingsRows =
     playerRatingsRes.ok && Array.isArray(playerRatingsRes.data)
       ? playerRatingsRes.data
@@ -454,7 +467,10 @@ async function refreshDashboard() {
     tableByIdRes.ok && Array.isArray(tableByIdRes.data)
       ? tableByIdRes.data
       : [];
-  renderAssociatedRoms(byIdRows);
+  renderAssociatedRoms(
+    byIdRows,
+    activitySummaryRes.ok ? activitySummaryRes.data : null,
+  );
   syncDerivativeDifferences(byIdRows, { resetCollapsed: true });
 
   const vpsdbRecord =
