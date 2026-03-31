@@ -287,7 +287,7 @@ function renderAssociatedRoms(rows, activitySummary = null) {
         variants: 1,
         firstIndex: index,
       });
-    });
+    }
   });
 
   const romEntries = [...romMap.values()].sort((a, b) => {
