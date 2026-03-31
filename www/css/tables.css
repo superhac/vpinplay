@@ -3,6 +3,11 @@
    ============================================ */
 
 /* Lookup status */
+.grid-panels {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
+}
+
 .lookup-status {
   width: 100%;
   font-size: 0.86rem;
@@ -113,7 +118,54 @@
   transform: translateY(-1px);
 }
 
+.panel-toggle {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 0;
+  margin: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 1rem;
+  font-weight: 800;
+  text-align: left;
+  cursor: pointer;
+}
+
+.panel-toggle .panel-toggle-indicator {
+  width: 1.8rem;
+  height: 1.8rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--surface-2);
+  color: var(--neon-cyan);
+  font-size: 1rem;
+  font-weight: 800;
+  line-height: 1;
+  box-shadow: var(--glow-cyan);
+}
+
+.panel-toggle:hover .panel-toggle-indicator,
+.panel-toggle:focus-visible .panel-toggle-indicator {
+  border-color: var(--neon-pink);
+  color: var(--neon-pink);
+  box-shadow: var(--glow-pink);
+}
+
 /* Responsive overrides for table */
+@media (max-width: 900px) {
+  .grid-panels {
+    grid-template-columns: 1fr;
+  }
+}
+
 @media (max-width: 640px) {
   .variation-grid {
     grid-template-columns: 1fr;

@@ -1,3 +1,5 @@
+let derivativeRowsCache = [];
+
 function getVpsidFromUrl() {
   const params = new URLSearchParams(window.location.search);
   return (params.get("vpsid") || "").trim();
@@ -75,14 +77,32 @@ function buildDerivativeComparableMap(row) {
   return out;
 }
 
-function renderDerivativeDifferences(rows) {
-  const container = q("derivativeDifferencesDetails");
+function setDerivativePanelExpanded(expanded) {
+  const details = q("derivativeDifferencesDetails");
+  const toggle = q("derivativeDifferencesToggle");
+  if (!details || !toggle) return;
+
+  details.classList.toggle("hidden", !expanded);
+  toggle.setAttribute("aria-expanded", expanded ? "true" : "false");
+
+  const indicator = toggle.querySelector(".panel-toggle-indicator");
+  if (indicator) {
+    indicator.textContent = expanded ? "-" : "+";
+  }
+}
+
+function updateDerivativePanelTitle(rows) {
   const title = q("derivativeDifferencesTitle");
   const count = Array.isArray(rows) ? rows.length : 0;
   const comparisonCount = count > 1 ? (count * (count - 1)) / 2 : 0;
   if (title) {
     title.textContent = `Derivative Differences (${comparisonCount} comparisons)`;
   }
+}
+
+function renderDerivativeDifferences(rows) {
+  const container = q("derivativeDifferencesDetails");
+  updateDerivativePanelTitle(rows);
 
   if (!rows || rows.length === 0) {
     container.innerHTML = `<div class="muted">No submitted table data found for this VPS ID.</div>`;
@@ -166,6 +186,40 @@ function renderDerivativeDifferences(rows) {
   }
 
   container.innerHTML = html;
+}
+
+function syncDerivativeDifferences(rows, options = {}) {
+  derivativeRowsCache = Array.isArray(rows) ? rows : [];
+  updateDerivativePanelTitle(derivativeRowsCache);
+
+  if (options.resetCollapsed) {
+    setDerivativePanelExpanded(false);
+  }
+
+  const isExpanded =
+    q("derivativeDifferencesToggle")?.getAttribute("aria-expanded") === "true";
+
+  if (isExpanded) {
+    renderDerivativeDifferences(derivativeRowsCache);
+    return;
+  }
+
+  const container = q("derivativeDifferencesDetails");
+  if (container) {
+    container.innerHTML = "";
+  }
+}
+
+function toggleDerivativeDifferences() {
+  const toggle = q("derivativeDifferencesToggle");
+  if (!toggle) return;
+
+  const nextExpanded = toggle.getAttribute("aria-expanded") !== "true";
+  setDerivativePanelExpanded(nextExpanded);
+
+  if (nextExpanded) {
+    renderDerivativeDifferences(derivativeRowsCache);
+  }
 }
 
 function renderAssociatedRoms(rows) {
@@ -304,7 +358,7 @@ async function refreshDashboard() {
     );
     q("playerRatingsTitle").textContent = "Player Ratings (0)";
     renderAssociatedRoms([]);
-    renderDerivativeDifferences([]);
+    syncDerivativeDifferences([], { resetCollapsed: true });
     renderVpsdbDetails(null);
     return;
   }
@@ -360,7 +414,7 @@ async function refreshDashboard() {
       ? tableByIdRes.data
       : [];
   renderAssociatedRoms(byIdRows);
-  renderDerivativeDifferences(byIdRows);
+  syncDerivativeDifferences(byIdRows, { resetCollapsed: true });
 
   const vpsdbRecord =
     vpsdbByIdRes.ok && vpsdbByIdRes.data ? vpsdbByIdRes.data : null;
@@ -378,6 +432,10 @@ async function refreshDashboard() {
 
 document.addEventListener("DOMContentLoaded", () => {
   initTheme();
+  q("derivativeDifferencesToggle")?.addEventListener(
+    "click",
+    toggleDerivativeDifferences,
+  );
   const vpsid = getVpsidFromUrl();
   if (vpsid) {
     q("vpsIdInput").value = vpsid;

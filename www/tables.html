@@ -81,10 +81,19 @@
         </section>
 
         <section class="panel panel-full">
-          <h3 id="derivativeDifferencesTitle">Derivative Differences</h3>
+          <button
+            id="derivativeDifferencesToggle"
+            class="panel-toggle"
+            type="button"
+            aria-expanded="false"
+            aria-controls="derivativeDifferencesDetails"
+          >
+            <span id="derivativeDifferencesTitle">Derivative Differences</span>
+            <span class="panel-toggle-indicator" aria-hidden="true">+</span>
+          </button>
           <div
             id="derivativeDifferencesDetails"
-            class="variation-details"
+            class="variation-details hidden"
           ></div>
         </section>
       </section>
