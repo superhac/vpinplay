@@ -154,7 +154,7 @@ function linkTableName(name, vpsId) {
     const text = name === null || name === undefined || name === "" ? "-" : String(name);
     const id = String(vpsId || "").trim();
     if (!id || text === "-") return escapeHtml(text);
-    return `<a href="tables.html?vpsid=${encodeURIComponent(id)}">${escapeHtml(text)}</a>`;
+    return `<a href="tables?vpsid=${encodeURIComponent(id)}">${escapeHtml(text)}</a>`;
 }
 
 function linkVpsId(vpsId) {
@@ -166,7 +166,7 @@ function linkVpsId(vpsId) {
 function linkUserId(userId) {
     const id = String(userId || "").trim();
     if (!id) return "-";
-    return `<a href="players.html?userid=${encodeURIComponent(id)}">${escapeHtml(id)}</a>`;
+    return `<a href="players?userid=${encodeURIComponent(id)}">${escapeHtml(id)}</a>`;
 }
 
 async function api(path) {

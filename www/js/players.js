@@ -248,7 +248,7 @@ function renderCarousel(elId, rows, options = {}) {
       : "https://placehold.co/160x220/111d31/e8f0ff?text=No+VPS+ID";
 
     html += `
-                    <a href="tables.html?vpsid=${encodeURIComponent(vpsId || "")}" class="carousel-card">
+                    <a href="tables?vpsid=${encodeURIComponent(vpsId || "")}" class="carousel-card">
                         <div class="card-img-wrap">
                             <img src="${imgUrl}" alt="${escapeHtml(title)}" onerror="this.src='https://placehold.co/160x220/111d31/e8f0ff?text=No+Image'; this.onerror=null;" loading="lazy">
                         </div>
