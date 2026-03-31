@@ -47,6 +47,11 @@ body::after {
 }
 
 /* Carousel view */
+.grid-panels {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
+}
+
 .grid-panels.carousel-view {
   grid-template-columns: 1fr;
 }
@@ -161,4 +166,10 @@ body::after {
   border-radius: 12px;
   background: transparent;
   display: block;
+}
+
+@media (max-width: 900px) {
+  .grid-panels {
+    grid-template-columns: 1fr;
+  }
 }
