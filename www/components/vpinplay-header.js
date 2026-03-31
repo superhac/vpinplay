@@ -6,25 +6,29 @@ class VPinPlayHeader extends HTMLElement {
   }
 
   connectedCallback() {
-    const title = this.getAttribute("title") || "Dashboard";
     const h1Id = this.getAttribute("h1-id") || "";
     const refreshBtnId =
       this.getAttribute("refresh-btn-id") || "refreshDashboardBtn";
 
-    const currentPath = window.location.pathname;
+    const path = window.location.pathname;
+
     const navItems = [
-      { name: "Global", href: "index.html" },
-      { name: "Tables", href: "tables.html" },
-      { name: "Players", href: "players.html" },
-      { name: "Scores", href: "scores.html" },
+      { name: "Global", href: "/" },
+      { name: "Tables", href: "/tables" },
+      { name: "Players", href: "/players" },
+      { name: "Scores", href: "/scores" },
     ];
 
     const navHtml = navItems
       .map((item) => {
-        const isActive =
-          currentPath.endsWith(item.href) ||
-          (item.href === "index.html" &&
-            (currentPath.endsWith("/") || currentPath === ""));
+        let isActive = false;
+
+        if (item.href === "/") {
+          isActive = path === "/" || path === "" || path === "/index.html";
+        } else {
+          isActive = path === item.href || path === `${item.href}/`;
+        }
+
         return `<li><a href="${item.href}" class="nav-link ${isActive ? "active" : ""}">${item.name}</a></li>`;
       })
       .join("");
@@ -33,10 +37,10 @@ class VPinPlayHeader extends HTMLElement {
             <header class="header">
                 <div class="header-left">
                     <div class="header-logo">
-                        <a href="index.html"><img src="img/header-logo.png" alt="VPinPlay Logo"></a>
+                        <a href="/"><img src="img/header-logo.png" alt="VPinPlay Logo"></a>
                     </div>
                     <div class="header-content">
-                        <h1 ${h1Id ? `id="${h1Id}"` : ""}>${title}</h1>
+                        <h1 ${h1Id ? `id="${h1Id}"` : ""}>VPin Play</h1>
                     </div>
                 </div>
 

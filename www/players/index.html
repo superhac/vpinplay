@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>VPin Play Players Dashboard</title>
+    <link rel="icon" type="image/png" href="img/logo.png" />
+    <link rel="apple-touch-icon" href="img/logo.png" />
+    <link rel="shortcut icon" href="img/logo.png" type="image/x-icon" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="css/base.css" />
+    <link rel="stylesheet" href="css/players.css" />
+    <script src="js/main.js"></script>
+    <script src="components/vpinplay-header.js"></script>
+  </head>
+  <body>
+    <vpinplay-header refresh-btn-id="refreshPlayersBtn"></vpinplay-header>
+    <div class="main">
+      <section id="setup" class="setup">
+        <h2>Set User ID</h2>
+        <form class="setup-row" onsubmit="handleSetupSubmit(event)">
+          <input id="setupUserId" type="text" placeholder="Enter userid" />
+          <button type="submit" class="btn">Apply</button>
+        </form>
+      </section>
+      <section class="controls">
+        <span id="userBadge" class="pill mono">userid=?</span>
+        <button
+          id="viewToggleBtn"
+          class="btn btn-theme"
+          onclick="toggleViewMode()"
+        >
+          Carousel
+        </button>
+      </section>
+
+      <section id="dashboard" class="grid-dashboard">
+        <div class="grid-kpi">
+          <div class="kpi">
+            <div class="kpi-label">Table Count</div>
+            <div id="kpiTableCount" class="kpi-value">-</div>
+            <div class="kpi-sub">Total submitted tables</div>
+          </div>
+          <div class="kpi">
+            <div class="kpi-label">Last Sync</div>
+            <div id="kpiLastSync" class="kpi-value">-</div>
+            <div class="kpi-sub">Latest successful sync</div>
+          </div>
+          <div class="kpi">
+            <div class="kpi-label">Total Table Plays</div>
+            <div id="kpiStarts" class="kpi-value">-</div>
+            <div class="kpi-sub">Sum of startCount</div>
+          </div>
+          <div class="kpi">
+            <div class="kpi-label">Total Play Time</div>
+            <div id="kpiRuntime" class="kpi-value">-</div>
+            <div class="kpi-sub">Sum of runTime</div>
+          </div>
+          <div class="kpi">
+            <div class="kpi-label">This Week Play Time</div>
+            <div id="kpiRuntimeWeek" class="kpi-value">-</div>
+            <div class="kpi-sub">Last 7 days (delta)</div>
+          </div>
+          <div class="kpi">
+            <div class="kpi-label">This Week Plays</div>
+            <div id="kpiStartsWeek" class="kpi-value">-</div>
+            <div class="kpi-sub">Last 7 days (delta)</div>
+          </div>
+        </div>
+
+        <div id="panels" class="grid-panels">
+          <div class="panel">
+            <h3>Most Played Tables</h3>
+            <table id="spotlightTable"></table>
+          </div>
+
+          <div id="topRatedPanel" class="panel">
+            <h3>Top Rated</h3>
+            <div id="topRatedContainer" class="panel-details">
+              <table id="topRatedTable"></table>
+            </div>
+          </div>
+
+          <div id="recentlyPlayedPanel" class="panel">
+            <h3>Recently Played</h3>
+            <div id="recentlyPlayedContainer" class="panel-details">
+              <table id="recentlyPlayedTable"></table>
+            </div>
+          </div>
+
+          <div id="topPlaytimePanel" class="panel">
+            <h3>Top Play Time</h3>
+            <div id="topPlaytimeContainer" class="panel-details">
+              <table id="topPlaytimeTable"></table>
+            </div>
+          </div>
+
+          <div id="mostPlayedPanel" class="panel">
+            <h3>Most Played</h3>
+            <div id="mostPlayedContainer" class="panel-details">
+              <table id="mostPlayedTable"></table>
+            </div>
+          </div>
+
+          <div id="userNewlyAddedPanel" class="panel">
+            <h3>Newest Tables Added</h3>
+            <div id="userNewlyAddedContainer" class="panel-details">
+              <table id="userNewlyAddedTable"></table>
+            </div>
+          </div>
+
+          <div id="latestSubmittedScoresPanel" class="panel">
+            <h3>Latest Submitted Scores</h3>
+            <div id="latestSubmittedScoresContainer" class="panel-details">
+              <table id="latestSubmittedScoresTable"></table>
+            </div>
+          </div>
+        </div>
+
+        <section class="panel-embed">
+          <div
+            id="scoreUserPanelEmbed"
+            class="panel-embed-body"
+            data-panel-src="panels/score_user/9Paf7-CL.html"
+          ></div>
+        </section>
+      </section>
+    </div>
+    <script src="js/players.js"></script>
+  </body>
+</html>
