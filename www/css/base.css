@@ -301,7 +301,6 @@ vpinplay-header {
 .controls,
 .panel,
 .kpi,
-.score-card,
 .setup {
   background: var(--surface);
   border-radius: var(--radius);

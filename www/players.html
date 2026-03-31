@@ -17,6 +17,7 @@
     <link rel="stylesheet" href="css/players.css" />
     <script src="js/main.js"></script>
     <script src="components/vpinplay-header.js"></script>
+    <script src="components/player-scores-panel.js"></script>
   </head>
   <body>
     <vpinplay-header refresh-btn-id="refreshPlayersBtn"></vpinplay-header>
@@ -122,29 +123,7 @@
           </div>
         </div>
 
-        <section class="panel-embed">
-          <div class="panel-embed-header">
-            <div>
-              <h3>Scoreboard Viewer</h3>
-              <p class="panel-embed-note">
-                Choose a table score panel from scoreboards you have submitted.
-              </p>
-            </div>
-            <label class="panel-embed-picker" for="scoreUserPanelSelect">
-              <span>Scoreboard</span>
-              <select
-                id="scoreUserPanelSelect"
-                onchange="handleScorePanelChange(event)"
-              >
-                <option value="">Loading available scoreboards...</option>
-              </select>
-            </label>
-          </div>
-          <div
-            id="scoreUserPanelEmbed"
-            class="panel-embed-body"
-          ></div>
-        </section>
+        <player-scores-panel class="panel panel-full"></player-scores-panel>
       </section>
     </div>
     <script src="js/players.js"></script>

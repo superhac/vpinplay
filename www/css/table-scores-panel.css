@@ -53,6 +53,11 @@
 }
 
 .score-card {
+  background: var(--surface);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  position: relative;
+  padding: 14px;
   min-width: 0;
   display: grid;
   gap: 12px;
