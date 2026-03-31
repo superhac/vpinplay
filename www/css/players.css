@@ -149,6 +149,15 @@ body::after {
   box-shadow: var(--shadow);
 }
 
+.panel-embed-header {
+  display: flex;
+  gap: 16px;
+  justify-content: space-between;
+  align-items: end;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+
 .panel-embed h3 {
   margin: 0 0 8px;
   font-size: 1rem;
@@ -161,6 +170,30 @@ body::after {
   font-size: 0.9rem;
 }
 
+.panel-embed-header .panel-embed-note {
+  margin-bottom: 0;
+}
+
+.panel-embed-picker {
+  display: grid;
+  gap: 6px;
+  min-width: min(100%, 320px);
+  color: var(--ink-muted);
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.panel-embed-picker select {
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface-2);
+  color: var(--ink);
+  padding: 10px 12px;
+  font: inherit;
+}
+
 .panel-embed-body {
   width: 100%;
   border-radius: 12px;
@@ -171,5 +204,9 @@ body::after {
 @media (max-width: 900px) {
   .grid-panels {
     grid-template-columns: 1fr;
+  }
+
+  .panel-embed-picker {
+    min-width: 100%;
   }
 }

@@ -123,10 +123,26 @@
         </div>
 
         <section class="panel-embed">
+          <div class="panel-embed-header">
+            <div>
+              <h3>Scoreboard Viewer</h3>
+              <p class="panel-embed-note">
+                Choose a table score panel from scoreboards you have submitted.
+              </p>
+            </div>
+            <label class="panel-embed-picker" for="scoreUserPanelSelect">
+              <span>Scoreboard</span>
+              <select
+                id="scoreUserPanelSelect"
+                onchange="handleScorePanelChange(event)"
+              >
+                <option value="">Loading available scoreboards...</option>
+              </select>
+            </label>
+          </div>
           <div
             id="scoreUserPanelEmbed"
             class="panel-embed-body"
-            data-panel-src="panels/score_user/9Paf7-CL.html"
           ></div>
         </section>
       </section>
