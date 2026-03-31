@@ -340,13 +340,10 @@ function renderVpsdbDetails(record, ratingSummary = null, activitySummary = null
                             <div class="table-focus-title">${escapeHtml(title)}</div>
                             <div class="table-focus-rating-row">
                                 <div class="table-focus-label">Rating</div>
-                                <div class="table-focus-rating">${fmtRatingStars(avgRating, { showNumeric: true })}</div>
+                            <div class="table-focus-rating">${fmtRatingStars(avgRating, { showNumeric: true })}</div>
                             </div>
                             <div class="table-focus-subhead">${escapeHtml(subtitle || "Unknown Manufacturer")}</div>
                             <div class="table-focus-meta">Last update: ${escapeHtml(lastUpdated)}</div>
-                            <div class="table-focus-pill-row">
-                                <span class="table-focus-pill">VPS ID: ${escapeHtml(record?.vpsId || "-")}</span>
-                            </div>
                         </div>
                     </div>
                     <div class="table-focus-stats">
