@@ -32,6 +32,11 @@ function fmtSubmitters(submitters) {
     .join(", ");
 }
 
+function getTableArtUrl(vpsId) {
+  if (!vpsId) return "";
+  return `https://github.com/superhac/vpinmediadb/raw/refs/heads/main/${encodeURIComponent(vpsId)}/1k/bg.png`;
+}
+
 async function lookupByFilehash() {
   const filehash = q("filehashInput").value.trim();
   if (!filehash) {
@@ -301,39 +306,70 @@ function renderAssociatedRoms(rows) {
     .join("");
 }
 
-function renderVpsdbDetails(record) {
+function renderVpsdbDetails(record, ratingSummary = null, activitySummary = null, activityWeekly = null) {
   const container = q("vpsdbByIdDetails");
   if (!record) {
     container.innerHTML = `<div class="muted">No VPSDB record found for this VPS ID.</div>`;
     return;
   }
 
-  const field = (label, value, isHtml = false) => `
-                <div class="variation-field">
-                    <div class="variation-label">${escapeHtml(label)}</div>
-                    <div class="variation-value">${isHtml ? (value ?? "-") : escapeHtml(value ?? "-")}</div>
-                </div>
-            `;
+  const vpsdb = record?.vpsdb && typeof record.vpsdb === "object" ? record.vpsdb : {};
+  const title = vpsdb?.name || record?.vpsId || "Unknown Table";
+  const manufacturer = typeof vpsdb?.manufacturer === "string" ? vpsdb.manufacturer.trim() : "";
+  const year = vpsdb?.year === null || vpsdb?.year === undefined ? "" : String(vpsdb.year).trim();
+  const subtitle = [manufacturer, year].filter(Boolean).join(" • ");
+  const artUrl = getTableArtUrl(record?.vpsId);
+  const avgRating = ratingSummary?.avgRating;
+  const lastUpdated = record?.updatedAt ? fmtDate(record.updatedAt) : "-";
+  const totalStarts = Number(activitySummary?.startCountTotal || 0);
+  const totalRuntime = Number(activitySummary?.runTimeTotal || 0);
+  const weeklyRuntime = Number(activityWeekly?.runTimePlayed || 0);
+  const weeklyStarts = Number(activityWeekly?.startCountPlayed || 0);
 
-  const flatFields = flattenObject(record).map((item) => {
-    const raw = item.value;
-    const isDateField = /(At|Run)$/i.test(item.key);
-    const isVpsIdField = /(^|\.)(vpsId)$/i.test(item.key);
-    return {
-      key: item.key,
-      value: isDateField ? fmtDate(raw) : (raw ?? "-"),
-      html: isVpsIdField ? linkVpsId(raw) : null,
-    };
-  });
-
-  const fieldsHtml = flatFields
-    .map((item) => field(item.key, item.html ?? item.value, !!item.html))
-    .join("");
   container.innerHTML = `
-                <div class="variation-card">
-                    <div class="variation-title">${escapeHtml(record?.vpsdb?.name || record?.vpsId || "VPSDB Record")}</div>
-                    <div class="variation-grid">
-                        ${fieldsHtml}
+                <div class="table-focus-panel">
+                    <div class="table-focus-header">
+                        <img
+                            class="table-focus-art"
+                            src="${artUrl}"
+                            alt="${escapeHtml(title)} backglass art"
+                            onerror="this.style.display='none'; this.nextElementSibling?.classList.remove('hidden');"
+                        >
+                        <div class="table-focus-art table-focus-art-fallback hidden">${escapeHtml(record?.vpsId || "No Art")}</div>
+                        <div class="table-focus-copy">
+                            <div class="table-focus-title">${escapeHtml(title)}</div>
+                            <div class="table-focus-rating-row">
+                                <div class="table-focus-label">Rating</div>
+                                <div class="table-focus-rating">${fmtRatingStars(avgRating, { showNumeric: true })}</div>
+                            </div>
+                            <div class="table-focus-subhead">${escapeHtml(subtitle || "Unknown Manufacturer")}</div>
+                            <div class="table-focus-meta">Last update: ${escapeHtml(lastUpdated)}</div>
+                            <div class="table-focus-pill-row">
+                                <span class="table-focus-pill">VPS ID: ${escapeHtml(record?.vpsId || "-")}</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="table-focus-stats">
+                        <section class="table-focus-stat-card">
+                            <div class="table-focus-label">Total Table Plays</div>
+                            <div class="table-focus-stat-value">${escapeHtml(fmtNumber(totalStarts))}</div>
+                            <div class="table-focus-stat-sub">Sum of startCount</div>
+                        </section>
+                        <section class="table-focus-stat-card">
+                            <div class="table-focus-label">Total Play Time</div>
+                            <div class="table-focus-stat-value">${escapeHtml(fmtRuntime(totalRuntime))}</div>
+                            <div class="table-focus-stat-sub">Sum of runTime</div>
+                        </section>
+                        <section class="table-focus-stat-card">
+                            <div class="table-focus-label">This Week Play Time</div>
+                            <div class="table-focus-stat-value">${escapeHtml(fmtRuntime(weeklyRuntime))}</div>
+                            <div class="table-focus-stat-sub">Last 7 days (delta)</div>
+                        </section>
+                        <section class="table-focus-stat-card">
+                            <div class="table-focus-label">This Week Plays</div>
+                            <div class="table-focus-stat-value">${escapeHtml(fmtNumber(weeklyStarts))}</div>
+                            <div class="table-focus-stat-sub">Last 7 days (delta)</div>
+                        </section>
                     </div>
                 </div>
             `;
@@ -359,16 +395,25 @@ async function refreshDashboard() {
     q("playerRatingsTitle").textContent = "Player Ratings (0)";
     renderAssociatedRoms([]);
     syncDerivativeDifferences([], { resetCollapsed: true });
-    renderVpsdbDetails(null);
+    renderVpsdbDetails(null, null, null, null);
     return;
   }
 
-  const [ratingSummaryRes, playerRatingsRes, tableByIdRes, vpsdbByIdRes] =
+  const [
+    ratingSummaryRes,
+    playerRatingsRes,
+    tableByIdRes,
+    vpsdbByIdRes,
+    activitySummaryRes,
+    activityWeeklyRes,
+  ] =
     await Promise.all([
       api(`/api/v1/tables/${encodeURIComponent(vpsId)}/rating-summary`),
       api(`/api/v1/tables/${encodeURIComponent(vpsId)}/user-ratings`),
       api(`/api/v1/tables/${encodeURIComponent(vpsId)}`),
       api(`/api/v1/vpsdb/${encodeURIComponent(vpsId)}`),
+      api(`/api/v1/tables/${encodeURIComponent(vpsId)}/activity-summary`),
+      api(`/api/v1/tables/${encodeURIComponent(vpsId)}/activity-weekly?days=7`),
     ]);
 
   const ratingSummaryRows =
@@ -418,7 +463,12 @@ async function refreshDashboard() {
 
   const vpsdbRecord =
     vpsdbByIdRes.ok && vpsdbByIdRes.data ? vpsdbByIdRes.data : null;
-  renderVpsdbDetails(vpsdbRecord);
+  renderVpsdbDetails(
+    vpsdbRecord,
+    ratingSummaryRes.ok ? ratingSummaryRes.data : null,
+    activitySummaryRes.ok ? activitySummaryRes.data : null,
+    activityWeeklyRes.ok ? activityWeeklyRes.data : null,
+  );
 
   const header = document.querySelector("vpinplay-header");
   if (header) {
