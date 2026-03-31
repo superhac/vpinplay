@@ -291,11 +291,13 @@ function renderAssociatedRoms(rows, activitySummary = null) {
       // submitters are tracked both globally and per-ROM entry
     });
 
-    const romValues = [...new Set(
-      [row?.rom, row?.vpxFile?.rom]
-        .map((value) => String(value || "").trim())
-        .filter(Boolean),
-    )];
+    const romValues = [
+      ...new Set(
+        [row?.rom, row?.vpxFile?.rom]
+          .map((value) => String(value || "").trim())
+          .filter(Boolean),
+      ),
+    ];
 
     romValues.forEach((rom) => {
       const key = rom.toLowerCase();
@@ -385,17 +387,27 @@ function renderAssociatedRoms(rows, activitySummary = null) {
       .join("");
 }
 
-function renderVpsdbDetails(record, ratingSummary = null, activitySummary = null, activityWeekly = null) {
+function renderVpsdbDetails(
+  record,
+  ratingSummary = null,
+  activitySummary = null,
+  activityWeekly = null,
+) {
   const container = q("vpsdbByIdDetails");
   if (!record) {
     container.innerHTML = `<div class="muted">No VPSDB record found for this VPS ID.</div>`;
     return;
   }
 
-  const vpsdb = record?.vpsdb && typeof record.vpsdb === "object" ? record.vpsdb : {};
+  const vpsdb =
+    record?.vpsdb && typeof record.vpsdb === "object" ? record.vpsdb : {};
   const title = vpsdb?.name || record?.vpsId || "Unknown Table";
-  const manufacturer = typeof vpsdb?.manufacturer === "string" ? vpsdb.manufacturer.trim() : "";
-  const year = vpsdb?.year === null || vpsdb?.year === undefined ? "" : String(vpsdb.year).trim();
+  const manufacturer =
+    typeof vpsdb?.manufacturer === "string" ? vpsdb.manufacturer.trim() : "";
+  const year =
+    vpsdb?.year === null || vpsdb?.year === undefined
+      ? ""
+      : String(vpsdb.year).trim();
   const subtitle = [manufacturer, year].filter(Boolean).join(" • ");
   const artUrl = getTableArtUrl(record?.vpsId);
   const avgRating = ratingSummary?.avgRating;
@@ -451,8 +463,9 @@ function renderVpsdbDetails(record, ratingSummary = null, activitySummary = null
 }
 
 async function refreshDashboard() {
-  const btn = document.querySelector("#refreshDashboardBtn");
-  if (btn) btn.classList.add("refreshing");
+  const header = document.querySelector("vpinplay-header");
+  if (header) header.setRefreshing(true);
+
   const vpsId = q("vpsIdInput").value.trim();
   setVpisidInUrl(vpsId);
 
@@ -482,15 +495,14 @@ async function refreshDashboard() {
     vpsdbByIdRes,
     activitySummaryRes,
     activityWeeklyRes,
-  ] =
-    await Promise.all([
-      api(`/api/v1/tables/${encodeURIComponent(vpsId)}/rating-summary`),
-      api(`/api/v1/tables/${encodeURIComponent(vpsId)}/user-ratings`),
-      api(`/api/v1/tables/${encodeURIComponent(vpsId)}`),
-      api(`/api/v1/vpsdb/${encodeURIComponent(vpsId)}`),
-      api(`/api/v1/tables/${encodeURIComponent(vpsId)}/activity-summary`),
-      api(`/api/v1/tables/${encodeURIComponent(vpsId)}/activity-weekly?days=7`),
-    ]);
+  ] = await Promise.all([
+    api(`/api/v1/tables/${encodeURIComponent(vpsId)}/rating-summary`),
+    api(`/api/v1/tables/${encodeURIComponent(vpsId)}/user-ratings`),
+    api(`/api/v1/tables/${encodeURIComponent(vpsId)}`),
+    api(`/api/v1/vpsdb/${encodeURIComponent(vpsId)}`),
+    api(`/api/v1/tables/${encodeURIComponent(vpsId)}/activity-summary`),
+    api(`/api/v1/tables/${encodeURIComponent(vpsId)}/activity-weekly?days=7`),
+  ]);
 
   await loadScoreTablePanel(vpsId);
 
@@ -534,18 +546,14 @@ async function refreshDashboard() {
     activityWeeklyRes.ok ? activityWeeklyRes.data : null,
   );
 
-  const header = document.querySelector("vpinplay-header");
   if (header) {
     header.markRefresh();
   }
-
-  if (btn) {
-    setTimeout(() => btn.classList.remove("refreshing"), 600);
-  }
 }
 
-document.addEventListener("DOMContentLoaded", () => {
-  initTheme();
+document.addEventListener("DOMContentLoaded", async () => {
+  await customElements.whenDefined("vpinplay-header");
+
   q("derivativeDifferencesToggle")?.addEventListener(
     "click",
     toggleDerivativeDifferences,
@@ -554,5 +562,6 @@ document.addEventListener("DOMContentLoaded", () => {
   if (vpsid) {
     q("vpsIdInput").value = vpsid;
   }
+
   refreshDashboard();
 });

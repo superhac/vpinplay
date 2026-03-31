@@ -1,6 +1,6 @@
 async function refreshDashboard() {
-  const btn = document.querySelector("#refreshDashboardBtn");
-  if (btn) btn.classList.add("refreshing");
+  const header = document.querySelector("vpinplay-header");
+  if (header) header.setRefreshing(true);
   const limit = parseDashboardLimit();
   q("limitInput").value = String(limit);
 
@@ -184,27 +184,27 @@ async function refreshDashboard() {
     await loadAllTablesPage();
   }
 
-  const header = document.querySelector("vpinplay-header");
   if (header) {
     header.markRefresh();
   }
-
-  if (btn) {
-    setTimeout(() => btn.classList.remove("refreshing"), 600);
-  }
 }
 
-document.addEventListener("DOMContentLoaded", () => {
-  initTheme();
+document.addEventListener("DOMContentLoaded", async () => {
+  await customElements.whenDefined("vpinplay-header");
+
   if (!ENABLE_ALL_TABLES_PANEL) {
     const allTablesPanel = q("allTablesPanel");
     if (allTablesPanel) allTablesPanel.style.display = "none";
   }
+
   refreshDashboard();
 });
 
 async function fetchLatestSubmittedScores(limit) {
-  const safeLimit = Math.max(1, Math.min(API_PAGE_LIMIT, Number(limit || 0) || 5));
+  const safeLimit = Math.max(
+    1,
+    Math.min(API_PAGE_LIMIT, Number(limit || 0) || 5),
+  );
   const res = await api(
     `/api/v1/users/scores/latest?limit=${encodeURIComponent(safeLimit)}&offset=0`,
   );

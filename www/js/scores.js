@@ -262,8 +262,8 @@ function renderOverview(rows) {
 }
 
 async function refreshDashboard() {
-  const btn = document.querySelector("#refreshDashboardBtn");
-  if (btn) btn.classList.add("refreshing");
+  const header = document.querySelector("vpinplay-header");
+  if (header) header.setRefreshing(true);
 
   const userId = q("userIdInput").value.trim();
   const vpsIdFilter = q("vpsIdInput").value.trim();
@@ -342,18 +342,14 @@ async function refreshDashboard() {
     );
   }
 
-  const header = document.querySelector("vpinplay-header");
   if (header) {
     header.markRefresh();
   }
-
-  if (btn) {
-    setTimeout(() => btn.classList.remove("refreshing"), 600);
-  }
 }
 
-document.addEventListener("DOMContentLoaded", () => {
-  initTheme();
+document.addEventListener("DOMContentLoaded", async () => {
+  await customElements.whenDefined("vpinplay-header");
+
   const params = getParams();
   if (params.userId) q("userIdInput").value = params.userId;
   if (params.vpsId) q("vpsIdInput").value = params.vpsId;

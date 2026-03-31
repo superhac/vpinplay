@@ -119,7 +119,8 @@ function buildScorePanelOptions(rows) {
     if (!vpsId || !SCORE_USER_PANELS[vpsId] || byVpsId.has(vpsId)) return;
     byVpsId.set(vpsId, {
       vpsId,
-      label: String(row?.vpsdb?.name || row?.tableTitle || vpsId).trim() || vpsId,
+      label:
+        String(row?.vpsdb?.name || row?.tableTitle || vpsId).trim() || vpsId,
       src: SCORE_USER_PANELS[vpsId],
     });
   });
@@ -266,8 +267,8 @@ function renderCarousel(elId, rows, options = {}) {
 async function refreshDashboard() {
   if (!currentUserId) return;
 
-  const btn = document.querySelector("#refreshDashboardBtn");
-  if (btn) btn.classList.add("refreshing");
+  const header = document.querySelector("vpinplay-header");
+  if (header) header.setRefreshing(true);
 
   q("userBadge").textContent = `userid=${currentUserId}`;
 
@@ -515,13 +516,8 @@ async function refreshDashboard() {
     }
   });
 
-  const header = document.querySelector("vpinplay-header");
   if (header) {
     header.markRefresh();
-  }
-
-  if (btn) {
-    setTimeout(() => btn.classList.remove("refreshing"), 600);
   }
 }
 
@@ -533,22 +529,29 @@ function applyUserId() {
   window.location.href = url.toString();
 }
 
-function init() {
-  initTheme();
+async function init() {
+  await customElements.whenDefined("vpinplay-header");
+
   initViewMode();
+
   const params = new URLSearchParams(window.location.search);
   const userId = params.get("userid");
+  currentUserId = userId;
   currentScorePanelVpsId = getRequestedScorePanelVpsId();
 
   if (!userId) {
-    q("dashboard").classList.add("hidden");
+    const dashboard = q("dashboard");
+    if (dashboard) dashboard.classList.add("hidden");
     loadEmbeddedPanel();
     return;
   }
 
-  currentUserId = userId;
-  q("dashboard").classList.remove("hidden");
-  q("userBadge").textContent = `userid=${userId}`;
+  const dashboard = q("dashboard");
+  if (dashboard) dashboard.classList.remove("hidden");
+
+  const userBadge = q("userBadge");
+  if (userBadge) userBadge.textContent = `userid=${userId}`;
+
   loadEmbeddedPanel();
   refreshDashboard();
 }
