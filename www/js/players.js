@@ -5,6 +5,7 @@ let currentScorePanelVpsId = "";
 const SCORE_USER_PANELS = {
   "9Paf7-CL": "panels/score_user/9Paf7-CL.html",
   SrcagQN8: "panels/score_user/SrcagQN8.html",
+  WyxpJ3Wjt3: "panels/score_user/WyxpJ3Wjt3.html",
   "fz-KTflv": "panels/score_user/fz-KTflv.html",
   vZDUDUii: "panels/score_user/vZDUDUii.html",
 };
