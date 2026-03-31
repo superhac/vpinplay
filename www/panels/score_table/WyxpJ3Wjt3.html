@@ -2,51 +2,7 @@
 
 <div id="afm-score-panel" class="afm-score-panel">
   <div class="afm-shell">
-    <div class="afm-header">
-      <div class="afm-header-main">
-        <img
-          class="afm-art"
-          src="https://github.com/superhac/vpinmediadb/raw/refs/heads/main/WyxpJ3Wjt3/1k/bg.png"
-          alt="Table backglass art">
-        <div class="afm-header-copy">
-          <h2 id="afm-title">Loading table...</h2>
-          <div class="afm-rating-row">
-            <div class="afm-rating-label">Rating</div>
-            <div id="afm-rating" class="afm-rating">-</div>
-          </div>
-          <div class="afm-subhead" id="afm-subhead"></div>
-          <div class="afm-meta" id="afm-meta">Waiting for global score data.</div>
-        </div>
-      </div>
-    </div>
-
     <div class="afm-status" id="afm-status" hidden>Ready.</div>
-
-    <div class="afm-stats" id="afm-stats">
-      <section class="afm-stat-card">
-        <div class="afm-stat-label">Total Table Plays</div>
-        <div class="afm-stat-value" id="afm-stat-starts-total">-</div>
-        <div class="afm-stat-sub">Sum of startCount</div>
-      </section>
-
-      <section class="afm-stat-card">
-        <div class="afm-stat-label">Total Play Time</div>
-        <div class="afm-stat-value" id="afm-stat-runtime-total">-</div>
-        <div class="afm-stat-sub">Sum of runTime</div>
-      </section>
-
-      <section class="afm-stat-card">
-        <div class="afm-stat-label">This Week Play Time</div>
-        <div class="afm-stat-value" id="afm-stat-runtime-week">-</div>
-        <div class="afm-stat-sub">Last 7 days (delta)</div>
-      </section>
-
-      <section class="afm-stat-card">
-        <div class="afm-stat-label">This Week Plays</div>
-        <div class="afm-stat-value" id="afm-stat-starts-week">-</div>
-        <div class="afm-stat-sub">Last 7 days (delta)</div>
-      </section>
-    </div>
 
     <section class="afm-scoreboard-shell" id="afm-grid" hidden>
       <div class="afm-scoreboard-title">Scoreboard</div>
@@ -120,56 +76,6 @@
   function fmtNumber(value) {
     const num = Number(value);
     return Number.isFinite(num) ? num.toLocaleString() : "-";
-  }
-
-  function escapeHtml(value) {
-    return String(value ?? "")
-      .replaceAll("&", "&amp;")
-      .replaceAll("<", "&lt;")
-      .replaceAll(">", "&gt;")
-      .replaceAll('"', "&quot;")
-      .replaceAll("'", "&#039;");
-  }
-
-  function fmtRatingStars(value, options = {}) {
-    if (value === null || value === undefined || value === "") return "-";
-    const numeric = Number(value);
-    if (!Number.isFinite(numeric)) return "-";
-    const clamped = Math.max(0, Math.min(5, numeric));
-    const roundedToHalf = Math.round(clamped * 2) / 2;
-    const fullStars = Math.floor(roundedToHalf);
-    const hasHalf = roundedToHalf - fullStars >= 0.5;
-    let stars = "";
-    for (let i = 0; i < 5; i += 1) {
-      const fillPercent =
-        i < fullStars ? 100 : i === fullStars && hasHalf ? 50 : 0;
-      stars += `<span class="rating-star-cell" aria-hidden="true"><span class="rating-star empty">★</span><span class="rating-star fill" style="width:${fillPercent}%">★</span></span>`;
-    }
-    const numericText = options.showNumeric
-      ? ` <span class="rating-value">(${escapeHtml(clamped.toFixed(2))})</span>`
-      : "";
-    return `<span class="rating-stars" title="${escapeHtml(clamped.toFixed(2))} / 5" aria-label="${escapeHtml(clamped.toFixed(2))} out of 5 stars">${stars}</span>${numericText}`;
-  }
-
-  function fmtUpdatedAt(value) {
-    if (!value) return "Unknown";
-    const dt = new Date(value);
-    return Number.isNaN(dt.getTime()) ? "Unknown" : dt.toLocaleString();
-  }
-
-  function buildTableSubtitle(rows) {
-    const firstVpsdb = rows
-      .map(row => row?.vpsdb)
-      .find(vpsdb => vpsdb && typeof vpsdb === "object");
-
-    const manufacturer = typeof firstVpsdb?.manufacturer === "string"
-      ? firstVpsdb.manufacturer.trim()
-      : "";
-    const year = firstVpsdb?.year === null || firstVpsdb?.year === undefined
-      ? ""
-      : String(firstVpsdb.year).trim();
-
-    return [manufacturer, year].filter(Boolean).join(" • ");
   }
 
   function scoreText(entry) {
@@ -302,21 +208,6 @@
     return { ok: true, items };
   }
 
-  async function fetchCumulativeRating() {
-    const path = `/api/v1/tables/${encodeURIComponent(PANEL_VPS_ID)}/cumulative-rating`;
-    return api(path);
-  }
-
-  async function fetchActivitySummary() {
-    const path = `/api/v1/tables/${encodeURIComponent(PANEL_VPS_ID)}/activity-summary`;
-    return api(path);
-  }
-
-  async function fetchWeeklyActivity() {
-    const path = `/api/v1/tables/${encodeURIComponent(PANEL_VPS_ID)}/activity-weekly?days=7`;
-    return api(path);
-  }
-
   function normalizeBestEverItems(items) {
     return items
       .filter(item => item && item.score && typeof item.score === "object")
@@ -329,19 +220,9 @@
       }));
   }
 
-  function setStatValue(id, value) {
-    const el = q(id);
-    if (el) el.textContent = value;
-  }
-
   async function loadPanel() {
     setStatus(`Loading global score data for ${PANEL_VPS_ID}...`);
-    const [bestEverResult, ratingResult, activityResult, weeklyActivityResult] = await Promise.all([
-      fetchBestEverScoreItems(),
-      fetchCumulativeRating(),
-      fetchActivitySummary(),
-      fetchWeeklyActivity(),
-    ]);
+    const bestEverResult = await fetchBestEverScoreItems();
 
     if (!bestEverResult.ok) {
       setStatus(`Failed to load score data (${bestEverResult.status || "network"}).`, "error");
@@ -352,28 +233,6 @@
     if (!items.length) {
       setStatus("No historical matched score entries were found for this table.", "error");
       return;
-    }
-
-    const subhead = q("afm-subhead");
-    if (subhead) {
-      subhead.textContent = buildTableSubtitle(items);
-      subhead.hidden = !subhead.textContent;
-    }
-
-    const vpsdb = items
-      .map(item => item?.vpsdb)
-      .find(item => item && typeof item === "object");
-    const title = q("afm-title");
-    if (title && typeof vpsdb?.name === "string" && vpsdb.name.trim()) {
-      title.textContent = vpsdb.name.trim();
-    }
-
-    const rating = q("afm-rating");
-    if (rating) {
-      const cumulativeRating = ratingResult.ok ? ratingResult.data?.cumulativeRating : null;
-      rating.innerHTML = cumulativeRating
-        ? fmtRatingStars(cumulativeRating, { showNumeric: true })
-        : `No ratings`;
     }
 
     const entries = normalizeBestEverItems(items);
@@ -401,21 +260,6 @@
 
     const grid = q("afm-grid");
     if (grid) grid.hidden = false;
-
-    const latestUpdatedAt = items
-      .map(item => item.updatedAt)
-      .filter(Boolean)
-      .sort((a, b) => String(b).localeCompare(String(a)))[0];
-
-    q("afm-meta").textContent = `Latest update: ${fmtUpdatedAt(latestUpdatedAt)}`;
-    const runTimeTotal = activityResult.ok ? Number(activityResult.data?.runTimeTotal || 0) : 0;
-    const startCountTotal = activityResult.ok ? Number(activityResult.data?.startCountTotal || 0) : 0;
-    const runTimeWeek = weeklyActivityResult.ok ? Number(weeklyActivityResult.data?.runTimePlayed || 0) : 0;
-    const startCountWeek = weeklyActivityResult.ok ? Number(weeklyActivityResult.data?.startCountPlayed || 0) : 0;
-    setStatValue("afm-stat-starts-total", fmtNumber(startCountTotal));
-    setStatValue("afm-stat-runtime-total", `${fmtNumber(runTimeTotal)} min`);
-    setStatValue("afm-stat-runtime-week", `${fmtNumber(runTimeWeek)} min`);
-    setStatValue("afm-stat-starts-week", fmtNumber(startCountWeek));
     clearStatus();
   }
 
