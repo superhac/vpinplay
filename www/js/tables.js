@@ -4,14 +4,14 @@ let vpsNameSearchRequestId = 0;
 let activeVpsNameDisplay = "";
 let activeVpsIdValue = "";
 let activeFilehashValue = "";
+let currentFocusIndex = -1;
 
 function formatVpsNameOption(item) {
-  if (!item || !item.name || !item.vpsId) return "";
+  if (!item?.name || !item?.vpsId) return "";
   const meta = [item.manufacturer, item.year].filter(
-    (value) =>
-      value !== null && value !== undefined && String(value).trim() !== "",
+    (v) => v !== null && v !== undefined && String(v).trim() !== "",
   );
-  return meta.length ? `${item.name} (${meta.join(", ")})` : `${item.name}`;
+  return meta.length ? `${item.name} (${meta.join(", ")})` : item.name;
 }
 
 function syncVpsNameOptions(items) {
@@ -33,21 +33,18 @@ function findVpsNameMatch(value) {
     .toLowerCase();
   if (!normalized) return null;
 
-  const exactDisplayMatch =
-    vpsNameSearchCache.find(
-      (item) => formatVpsNameOption(item).trim().toLowerCase() === normalized,
-    ) || null;
-  if (exactDisplayMatch) return exactDisplayMatch;
+  const exactDisplay = vpsNameSearchCache.find(
+    (item) => formatVpsNameOption(item).trim().toLowerCase() === normalized,
+  );
+  if (exactDisplay) return exactDisplay;
 
-  const exactNameMatches = vpsNameSearchCache.filter(
+  const exactNames = vpsNameSearchCache.filter(
     (item) =>
       String(item.name || "")
         .trim()
         .toLowerCase() === normalized,
   );
-  if (exactNameMatches.length === 1) return exactNameMatches[0];
-
-  return null;
+  return exactNames.length === 1 ? exactNames[0] : null;
 }
 
 async function selectVpsNameMatch(match) {
@@ -64,9 +61,7 @@ async function selectVpsNameMatch(match) {
 
   setLookupStatus(`Selected VPS ID: ${nextVpsId}`);
 
-  if (nextVpsId !== currentVpsId) {
-    await refreshDashboard();
-  }
+  return nextVpsId !== currentVpsId;
 }
 
 async function searchVpsNames(query) {
@@ -102,7 +97,9 @@ function syncNameInputFromVpsdbRecord(record) {
   const displayValue = formatVpsNameOption(item);
   activeVpsNameDisplay = displayValue;
   input.value = displayValue;
-  syncVpsNameOptions(displayValue ? [item] : []);
+  vpsNameSearchCache = displayValue ? [item] : [];
+
+  syncClearIcon("vpsNameInput");
 }
 
 function handleVpsNameFocus() {
@@ -115,30 +112,173 @@ function handleVpsNameFocus() {
   }
 }
 
-async function handleVpsNameInput() {
-  const value = q("vpsNameInput")?.value || "";
-  const match = findVpsNameMatch(value);
-  if (match) {
-    await selectVpsNameMatch(match);
+async function handleVpsNameInput(event) {
+  if (["ArrowUp", "ArrowDown", "Enter"].includes(event?.key)) {
+    handleNavigation(event);
     return;
   }
 
-  await searchVpsNames(value);
+  const input = q("vpsNameInput");
+  const clearIcon = q("vpsNameClear");
+  const resultsDiv = q("vpsNameResults");
+  const query = input.value.trim();
+
+  if (clearIcon) {
+    clearIcon.style.display = query.length > 0 ? "block" : "none";
+  }
+
+  if (query.length < 2) {
+    resultsDiv.style.display = "none";
+    currentFocusIndex = -1;
+    return;
+  }
+
+  const res = await api(
+    `/api/v1/vpsdb/search?q=${encodeURIComponent(query)}&limit=20`,
+  );
+  const items = res.ok && Array.isArray(res.data?.items) ? res.data.items : [];
+
+  vpsNameSearchCache = items;
+  currentFocusIndex = -1;
+
+  if (items.length > 0) {
+    resultsDiv.innerHTML = items
+      .map((item, index) => {
+        const displayName = formatVpsNameOption(item);
+        return `
+          <div class="search-item" data-index="${index}">
+            <strong>${escapeHtml(item.name)}</strong>
+            ${item.manufacturer || item.year ? `<span class="search-meta">${[item.manufacturer, item.year].filter(Boolean).join(", ")}</span>` : ""}
+          </div>
+        `;
+      })
+      .join("");
+    resultsDiv.style.display = "block";
+  } else {
+    resultsDiv.style.display = "none";
+  }
 }
 
-async function handleVpsNameCommit() {
-  const input = q("vpsNameInput");
-  if (!input) return;
+function handleNavigation(e) {
+  const resultsDiv = q("vpsNameResults");
+  const items = resultsDiv.querySelectorAll(".search-item");
+  if (!items.length) return;
 
-  const match = findVpsNameMatch(input.value);
-  if (!match) {
-    if (input.value.trim() !== "") {
-      setLookupStatus("Choose a table name from the search list.", true);
+  if (e.key === "ArrowDown") {
+    e.preventDefault();
+    currentFocusIndex = (currentFocusIndex + 1) % items.length;
+    updateHighlight(items);
+  } else if (e.key === "ArrowUp") {
+    e.preventDefault();
+    currentFocusIndex =
+      currentFocusIndex <= 0 ? items.length - 1 : currentFocusIndex - 1;
+    updateHighlight(items);
+  } else if (e.key === "Enter") {
+    e.preventDefault();
+    if (currentFocusIndex > -1) {
+      applyTableSelection(vpsNameSearchCache[currentFocusIndex]);
     }
-    return;
+  }
+}
+
+function updateHighlight(items) {
+  items.forEach((item, index) => {
+    item.classList.toggle("highlighted", index === currentFocusIndex);
+    if (index === currentFocusIndex) {
+      item.scrollIntoView({ block: "nearest", behavior: "smooth" });
+    }
+  });
+}
+
+async function handleTablesSetupSubmit(event) {
+  if (event) event.preventDefault();
+
+  const vpsId = q("vpsIdInput").value.trim();
+  const vpsName = q("vpsNameInput").value.trim();
+  const filehash = q("filehashInput").value.trim();
+
+  if (filehash !== "" && filehash !== activeFilehashValue) {
+    await lookupByFilehash();
+    q("vpsNameInput").value = "";
+  } else if (vpsName !== "" && vpsName !== activeVpsNameDisplay) {
+    const match = findVpsNameMatch(vpsName);
+    if (match) {
+      await applyTableSelection(match);
+      return;
+    }
+  } else if (vpsId !== "" && vpsId !== activeVpsIdValue) {
+    q("vpsNameInput").value = "";
+    q("filehashInput").value = "";
   }
 
-  await selectVpsNameMatch(match);
+  await refreshDashboard();
+}
+
+async function applyTableSelection(item) {
+  const vpsId = String(item.vpsId).trim();
+  const displayName = formatVpsNameOption(item);
+
+  q("vpsIdInput").value = vpsId;
+  q("vpsNameInput").value = displayName;
+  q("filehashInput").value = "";
+
+  activeVpsIdValue = vpsId;
+  activeVpsNameDisplay = displayName;
+  activeFilehashValue = "";
+
+  q("vpsNameResults").style.display = "none";
+  q("vpsNameClear").style.display = "none";
+
+  setLookupStatus(`Selected VPS ID: ${vpsId}`);
+  await refreshDashboard();
+}
+
+async function confirmTableSelection(vpsId) {
+  q("vpsIdInput").value = vpsId;
+  q("vpsNameInput").value = "";
+  q("filehashInput").value = "";
+  q("searchResults").style.display = "none";
+
+  await refreshDashboard();
+}
+
+function clearInput(inputId) {
+  const input = q(inputId);
+  const clearIcon = q(inputId.replace("Input", "Clear"));
+
+  if (input) {
+    input.value = "";
+    input.focus();
+  }
+
+  if (clearIcon) {
+    clearIcon.style.display = "none";
+  }
+
+  if (inputId === "vpsNameInput") {
+    const resultsDiv = q("vpsNameResults");
+    if (resultsDiv) {
+      resultsDiv.style.display = "none";
+      resultsDiv.innerHTML = "";
+    }
+    currentFocusIndex = -1;
+    vpsNameSearchCache = [];
+  }
+}
+
+function syncClearIcon(inputId) {
+  const input = q(inputId);
+  const clearIcon = q(inputId.replace("Input", "Clear"));
+
+  if (input && clearIcon) {
+    clearIcon.style.display = input.value.trim().length > 0 ? "block" : "none";
+  }
+}
+
+function syncAllClearIcons() {
+  syncClearIcon("vpsIdInput");
+  syncClearIcon("vpsNameInput");
+  syncClearIcon("filehashInput");
 }
 
 function getVpsidFromUrl() {
@@ -182,7 +322,7 @@ async function lookupByFilehash() {
   const filehash = q("filehashInput").value.trim();
   if (!filehash) {
     setLookupStatus("Enter a file hash to search.", true);
-    return;
+    return false;
   }
   setLookupStatus("Looking up hash...");
   const result = await api(
@@ -190,14 +330,14 @@ async function lookupByFilehash() {
   );
   if (!result.ok) {
     setLookupStatus(`Lookup failed (${result.status}).`, true);
-    return;
+    return false;
   }
   const matchedVpsId = result.data?.vpsId
     ? String(result.data.vpsId).trim()
     : "";
   if (!matchedVpsId) {
     setLookupStatus("No table match found for that hash.", true);
-    return;
+    return false;
   }
   activeFilehashValue = filehash;
   q("vpsIdInput").value = matchedVpsId;
@@ -205,32 +345,7 @@ async function lookupByFilehash() {
     ? ` (altvpsid: ${result.data.altvpsid})`
     : "";
   setLookupStatus(`Matched VPS ID: ${matchedVpsId}${alt}`);
-  await refreshDashboard();
-}
-
-async function handleVpsIdCommit() {
-  const input = q("vpsIdInput");
-  if (!input) return;
-
-  const nextVpsId = input.value.trim();
-  if (nextVpsId === activeVpsIdValue) return;
-
-  if (!nextVpsId) {
-    activeVpsIdValue = "";
-    await refreshDashboard();
-    return;
-  }
-
-  await refreshDashboard();
-}
-
-async function handleFilehashCommit() {
-  const input = q("filehashInput");
-  if (!input) return;
-
-  const nextFilehash = input.value.trim();
-  if (!nextFilehash) return;
-  await lookupByFilehash();
+  return true;
 }
 
 function toComparableValue(value) {
@@ -587,7 +702,6 @@ function renderVpsdbDetails(
 async function refreshDashboard() {
   const header = document.querySelector("vpinplay-header");
   if (header) header.setRefreshing(true);
-  setLookupStatus("");
 
   const vpsId = q("vpsIdInput").value.trim();
   activeVpsIdValue = vpsId;
@@ -679,24 +793,50 @@ async function refreshDashboard() {
     header.markRefresh();
   }
 }
-
 document.addEventListener("DOMContentLoaded", async () => {
   await customElements.whenDefined("vpinplay-header");
+
+  syncAllClearIcons();
+
+  ["vpsIdInput", "filehashInput"].forEach((inputId) => {
+    const input = q(inputId);
+    if (input) {
+      input.addEventListener("input", () => {
+        syncClearIcon(inputId);
+      });
+    }
+  });
+
+  const resultsDiv = q("vpsNameResults");
+  if (resultsDiv) {
+    resultsDiv.addEventListener("click", (e) => {
+      const item = e.target.closest(".search-item");
+      if (!item) return;
+
+      const index = parseInt(item.dataset.index, 10);
+      if (index >= 0 && index < vpsNameSearchCache.length) {
+        applyTableSelection(vpsNameSearchCache[index]);
+      }
+    });
+  }
+
+  document.addEventListener("click", (e) => {
+    if (!e.target.closest(".field")) {
+      const resultsDiv = q("vpsNameResults");
+      if (resultsDiv) resultsDiv.style.display = "none";
+    }
+  });
 
   q("derivativeDifferencesToggle")?.addEventListener(
     "click",
     toggleDerivativeDifferences,
   );
+
   const vpsid = getVpsidFromUrl();
   if (vpsid) {
     q("vpsIdInput").value = vpsid;
+    syncClearIcon("vpsIdInput");
   }
 
   refreshDashboard();
 });
-
-window.handleVpsNameInput = handleVpsNameInput;
-window.handleVpsNameCommit = handleVpsNameCommit;
-window.handleVpsNameFocus = handleVpsNameFocus;
-window.handleVpsIdCommit = handleVpsIdCommit;
-window.handleFilehashCommit = handleFilehashCommit;

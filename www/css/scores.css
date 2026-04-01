@@ -3,21 +3,6 @@
    ============================================ */
 
 /* Setup section */
-.setup {
-  padding: 16px;
-}
-
-.setup h2 {
-  margin: 0 0 10px;
-  font-size: 1.1rem;
-}
-
-.setup-row {
-  display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
-}
-
 .setup-note {
   color: var(--ink-muted);
   font-size: 0.88rem;

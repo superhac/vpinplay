@@ -1,4 +1,4 @@
-function handleControlsSubmit(event) {
+function handleScoresSetupSubmit(event) {
   event.preventDefault();
   refreshDashboard();
 }

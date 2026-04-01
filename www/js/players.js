@@ -1,7 +1,7 @@
 let currentUserId = null;
 let currentViewMode = "table";
 
-function handleSetupSubmit(event) {
+function handlePlayersSetupSubmit(event) {
   event.preventDefault();
   applyUserId();
 }

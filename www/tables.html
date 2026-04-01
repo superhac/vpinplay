@@ -22,60 +22,63 @@
   <body>
     <vpinplay-header></vpinplay-header>
     <div class="main">
-      <section class="controls table-controls">
-        <div class="field table-control-field table-control-vpsid">
-          <label for="vpsIdInput">VPS ID Focus</label>
-          <input
-            id="vpsIdInput"
-            type="text"
-            value=""
-            placeholder="Enter VPS ID"
-            onchange="handleVpsIdCommit()"
-            onkeydown="
-              if (event.key === 'Enter') {
-                event.preventDefault();
-                handleVpsIdCommit();
-              }
-            "
-          />
-        </div>
-        <div class="field table-control-field table-name-field">
-          <label for="vpsNameInput">Table Name</label>
-          <input
-            id="vpsNameInput"
-            type="text"
-            list="vpsNameOptions"
-            placeholder="Search by VPSDB name"
-            autocomplete="off"
-            onclick="handleVpsNameFocus()"
-            onfocus="handleVpsNameFocus()"
-            oninput="handleVpsNameInput()"
-            onchange="handleVpsNameCommit()"
-            onkeydown="
-              if (event.key === 'Enter') {
-                event.preventDefault();
-                handleVpsNameCommit();
-              }
-            "
-          />
-          <datalist id="vpsNameOptions"></datalist>
-        </div>
-        <div class="field table-control-field table-control-hash">
-          <label for="filehashInput">Lookup by VPX File Hash</label>
-          <input
-            id="filehashInput"
-            type="text"
-            placeholder="Enter vpxFile.filehash"
-            onchange="handleFilehashCommit()"
-            onkeydown="
-              if (event.key === 'Enter') {
-                event.preventDefault();
-                handleFilehashCommit();
-              }
-            "
-          />
-        </div>
-        <div id="lookupStatus" class="lookup-status muted"></div>
+      <section id="setup" class="setup">
+        <h2>Set VPS Game ID or Search By Table Name</h2>
+        <form class="setup-row" onsubmit="handleTablesSetupSubmit(event)">
+          <div class="field">
+            <input
+              id="vpsIdInput"
+              type="text"
+              value=""
+              placeholder="Enter VPS ID"
+            />
+            <span
+              id="vpsIdClear"
+              class="clear-icon"
+              onclick="clearInput('vpsIdInput')"
+              >&times;</span
+            >
+          </div>
+
+          <div class="field">
+            <input
+              id="vpsNameInput"
+              type="text"
+              placeholder="Search by Name"
+              oninput="handleVpsNameInput(event)"
+              onkeydown="handleNavigation(event)"
+              autocomplete="off"
+            />
+            <span
+              id="vpsNameClear"
+              class="clear-icon"
+              onclick="clearInput('vpsNameInput')"
+              >&times;</span
+            >
+            <div id="vpsNameResults" class="search-results-popup"></div>
+          </div>
+
+          <div class="field">
+            <input
+              id="filehashInput"
+              type="text"
+              placeholder="Optional lookup by vpxFile.filehash"
+            />
+            <span
+              id="filehashClear"
+              class="clear-icon"
+              onclick="clearInput('filehashInput')"
+              >&times;</span
+            >
+          </div>
+
+          <button type="submit" class="btn">Apply</button>
+          <div id="lookupStatus" class="lookup-status muted">
+            Enter a VPS Game Id, or start typing a table name to search and
+            select from a list of tables. Optionally you can search for a
+            vpxFile.filehash.
+          </div>
+        </form>
       </section>
 
       <section class="grid-panels">

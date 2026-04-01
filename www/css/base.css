@@ -298,7 +298,6 @@ vpinplay-header {
    Cards & Panels
    ============================================ */
 
-.controls,
 .panel,
 .kpi,
 .setup {
@@ -306,6 +305,21 @@ vpinplay-header {
   border-radius: var(--radius);
   box-shadow: var(--shadow);
   position: relative;
+}
+
+.setup {
+  padding: 16px;
+}
+
+.setup h2 {
+  margin: 0 0 10px;
+  font-size: 1.1rem;
+}
+
+.setup-row {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
 }
 
 .panel {
@@ -360,14 +374,6 @@ vpinplay-header {
 /* ============================================
    Forms
    ============================================ */
-
-.controls {
-  padding: 14px;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-  align-items: end;
-}
 
 .field {
   display: flex;
