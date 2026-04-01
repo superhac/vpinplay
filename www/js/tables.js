@@ -1,4 +1,96 @@
 let derivativeRowsCache = [];
+let vpsNameSearchCache = [];
+let vpsNameSearchRequestId = 0;
+
+function formatVpsNameOption(item) {
+  if (!item || !item.name || !item.vpsId) return "";
+  const meta = [item.manufacturer, item.year].filter(
+    (value) => value !== null && value !== undefined && String(value).trim() !== "",
+  );
+  return meta.length
+    ? `${item.name} (${meta.join(", ")}) [${item.vpsId}]`
+    : `${item.name} [${item.vpsId}]`;
+}
+
+function syncVpsNameOptions(items) {
+  const list = q("vpsNameOptions");
+  if (!list) return;
+
+  vpsNameSearchCache = Array.isArray(items) ? items : [];
+  list.innerHTML = vpsNameSearchCache
+    .map(
+      (item) =>
+        `<option value="${escapeHtml(formatVpsNameOption(item))}"></option>`,
+    )
+    .join("");
+}
+
+function findVpsNameMatch(value) {
+  const normalized = String(value || "").trim().toLowerCase();
+  if (!normalized) return null;
+
+  return (
+    vpsNameSearchCache.find(
+      (item) => formatVpsNameOption(item).trim().toLowerCase() === normalized,
+    ) || null
+  );
+}
+
+async function searchVpsNames(query) {
+  const text = String(query || "").trim();
+  if (text.length < 2) {
+    syncVpsNameOptions([]);
+    return;
+  }
+
+  const requestId = ++vpsNameSearchRequestId;
+  const res = await api(
+    `/api/v1/vpsdb/search?q=${encodeURIComponent(text)}&limit=20`,
+  );
+  if (requestId !== vpsNameSearchRequestId) return;
+
+  syncVpsNameOptions(
+    res.ok && Array.isArray(res.data?.items) ? res.data.items : [],
+  );
+}
+
+function syncNameInputFromVpsdbRecord(record) {
+  const input = q("vpsNameInput");
+  if (!input) return;
+
+  const vpsdb = record?.vpsdb && typeof record.vpsdb === "object" ? record.vpsdb : {};
+  const item = {
+    vpsId: record?.vpsId,
+    name: vpsdb?.name,
+    manufacturer: vpsdb?.manufacturer,
+    year: vpsdb?.year,
+  };
+  const displayValue = formatVpsNameOption(item);
+  input.value = displayValue;
+  syncVpsNameOptions(displayValue ? [item] : []);
+}
+
+async function handleVpsNameInput() {
+  await searchVpsNames(q("vpsNameInput")?.value || "");
+}
+
+async function handleVpsNameCommit() {
+  const input = q("vpsNameInput");
+  if (!input) return;
+
+  const match = findVpsNameMatch(input.value);
+  if (!match) {
+    if (input.value.trim() !== "") {
+      setLookupStatus("Choose a table name from the search list.", true);
+    }
+    return;
+  }
+
+  q("vpsIdInput").value = match.vpsId;
+  input.value = formatVpsNameOption(match);
+  setLookupStatus(`Selected VPS ID: ${match.vpsId}`);
+  await refreshDashboard();
+}
 
 async function loadScoreTablePanel(vpsId) {
   const shell = q("scoreTablePanelShell");
@@ -475,6 +567,9 @@ async function refreshDashboard() {
   }
 
   if (!vpsId) {
+    const nameInput = q("vpsNameInput");
+    if (nameInput) nameInput.value = "";
+    syncVpsNameOptions([]);
     await loadScoreTablePanel("");
     renderTable(
       "playerRatingsTable",
@@ -539,6 +634,7 @@ async function refreshDashboard() {
 
   const vpsdbRecord =
     vpsdbByIdRes.ok && vpsdbByIdRes.data ? vpsdbByIdRes.data : null;
+  syncNameInputFromVpsdbRecord(vpsdbRecord);
   renderVpsdbDetails(
     vpsdbRecord,
     ratingSummaryRes.ok ? ratingSummaryRes.data : null,
@@ -565,3 +661,6 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   refreshDashboard();
 });
+
+window.handleVpsNameInput = handleVpsNameInput;
+window.handleVpsNameCommit = handleVpsNameCommit;

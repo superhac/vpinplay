@@ -763,6 +763,60 @@ async def get_vpsdb_status(db: Database = Depends(get_db)):
     return get_vpsdb_sync_status(db)
 
 
+@router.get("/vpsdb/search")
+async def search_vpsdb_by_name(
+    q: str = Query("", min_length=0),
+    limit: int = Query(20, ge=1, le=100),
+    db: Database = Depends(get_db),
+):
+    """
+    Search cached VPS DB rows by table name.
+    """
+    query_text = q.strip()
+    if query_text == "":
+        return {
+            "query": query_text,
+            "items": [],
+            "limit": limit,
+        }
+
+    name_filter = {"data.name": {"$regex": re.escape(query_text), "$options": "i"}}
+    rows = list(
+        db["vpsdb_aux"]
+        .find(
+            name_filter,
+            {
+                "_id": 0,
+                "vpsId": 1,
+                "data.name": 1,
+                "data.manufacturer": 1,
+                "data.year": 1,
+                "updatedAt": 1,
+            },
+        )
+        .sort([("data.name", 1), ("vpsId", 1)])
+        .limit(limit)
+    )
+
+    items = [
+        {
+            "vpsId": row.get("vpsId"),
+            "name": ((row.get("data") or {}).get("name")),
+            "manufacturer": ((row.get("data") or {}).get("manufacturer")),
+            "year": ((row.get("data") or {}).get("year")),
+            "updatedAt": row.get("updatedAt"),
+        }
+        for row in rows
+        if row.get("vpsId") and ((row.get("data") or {}).get("name"))
+    ]
+
+    return {
+        "query": query_text,
+        "items": items,
+        "limit": limit,
+    }
+
+
 @router.get("/vpsdb/{vpsId}")
 async def get_vpsdb_by_id(vpsId: str, db: Database = Depends(get_db)):
     """Get cached VPS DB selected fields for a vpsId."""

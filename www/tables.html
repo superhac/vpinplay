@@ -37,6 +37,25 @@
             "
           />
         </div>
+        <div class="field table-name-field">
+          <label for="vpsNameInput">Table Name</label>
+          <input
+            id="vpsNameInput"
+            type="text"
+            list="vpsNameOptions"
+            placeholder="Search by VPSDB name"
+            autocomplete="off"
+            oninput="handleVpsNameInput()"
+            onchange="handleVpsNameCommit()"
+            onkeydown="
+              if (event.key === 'Enter') {
+                event.preventDefault();
+                handleVpsNameCommit();
+              }
+            "
+          />
+          <datalist id="vpsNameOptions"></datalist>
+        </div>
         <button class="btn" onclick="refreshDashboard()">Apply</button>
         <div class="field">
           <label for="filehashInput">Lookup by VPX File Hash</label>

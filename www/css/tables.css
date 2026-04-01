@@ -15,6 +15,11 @@
   color: var(--ink-muted);
 }
 
+.table-name-field {
+  min-width: min(28rem, 100%);
+  flex: 1 1 22rem;
+}
+
 .lookup-status.error {
   color: var(--bad);
   text-shadow: 0 0 10px var(--bad);
