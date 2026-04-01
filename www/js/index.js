@@ -325,6 +325,7 @@ async function changeDashboardPanelPage(panelId, direction) {
     getDashboardPanelOffset(panelId) + direction * EXPANDED_DASHBOARD_PANEL_LIMIT;
   setDashboardPanelOffset(panelId, nextOffset);
   await refreshDashboard();
+  q(panelId)?.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
 document.addEventListener("DOMContentLoaded", async () => {
