@@ -828,3 +828,85 @@ async def get_vpsdb_by_id(vpsId: str, db: Database = Depends(get_db)):
         "vpsdb": doc.get("data", {}),
         "updatedAt": doc.get("updatedAt"),
     }
+
+@router.get("/tables-plus")
+async def get_all_tables_plus(
+    limit: int = Query(50, ge=1, le=100),
+    offset: int = Query(0, ge=0),
+    sort_by: Optional[str] = Query("updatedAt"),
+    sort_order: Optional[int] = Query(-1, ge=-1, le=1),
+    search_key: Optional[str] = Query(None),
+    search_term: Optional[str] = Query(None),
+    db: Database = Depends(get_db),
+):
+    """
+    Get all table variation rows with pagination, dynamic sorting, and filtering.
+    """
+    initial_match = {}
+
+    if search_key and search_term and search_key != "sortName":
+        initial_match[search_key] = {"$regex": search_term, "$options": "i"}
+
+    pipeline = [
+        {"$match": initial_match},
+        {
+            "$lookup": {
+                "from": "vpsdb_aux",
+                "localField": "vpsId",
+                "foreignField": "_id",
+                "as": "vpsdbDoc",
+            }
+        },
+        {
+            "$addFields": {
+                "sortName": {
+                    "$let": {
+                        "vars": {"firstVpsdb": {"$arrayElemAt": ["$vpsdbDoc", 0]}},
+                        "in": {"$toLower": {"$ifNull": ["$$firstVpsdb.data.name", ""]}},
+                    }
+                }
+            }
+        },
+    ]
+
+    if search_key == "sortName" and search_term:
+        pipeline.append(
+            {"$match": {"sortName": {"$regex": search_term.lower(), "$options": "i"}}}
+        )
+
+    count_pipeline = pipeline.copy()
+    count_pipeline.append({"$count": "total"})
+    count_result = list(db["tables"].aggregate(count_pipeline))
+    filtered_total = count_result[0]["total"] if count_result else 0
+
+    pipeline.extend(
+        [
+            {"$sort": {sort_by: sort_order, "vpsId": 1}},
+            {"$skip": offset},
+            {"$limit": limit},
+        ]
+    )
+
+    rows = list(db["tables"].aggregate(pipeline))
+
+    response = []
+    for row in rows:
+        item = {k: v for k, v in row.items() if k != "vpsdbDoc"}
+        if "_id" in item:
+            item["_id"] = str(item["_id"])
+        response.append(item)
+
+    items = enrich_with_vpsdb(response, db)
+
+    return {
+        "items": items,
+        "pagination": {
+            "limit": limit,
+            "offset": offset,
+            "total": filtered_total,
+            "hasNext": (offset + len(items)) < filtered_total,
+            "hasPrev": offset > 0,
+            "sort_by": sort_by,
+            "sort_order": sort_order,
+        },
+    }
