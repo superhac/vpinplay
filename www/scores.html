@@ -21,34 +21,23 @@
   <body>
     <vpinplay-header refresh-btn-id="refreshScoresBtn"></vpinplay-header>
     <div class="main">
-      <section class="controls">
-        <form id="controlsForm" onsubmit="handleControlsSubmit(event)">
-          <div class="field">
-            <label for="userIdInput">User ID</label>
-            <input
-              id="userIdInput"
-              type="text"
-              value="cabinet_1"
-              placeholder="Enter userId"
-            />
-          </div>
-          <div class="field">
-            <label for="vpsIdInput">Optional VPS ID Filter</label>
-            <input
-              id="vpsIdInput"
-              type="text"
-              placeholder="Filter to one vpsId"
-            />
-          </div>
+      <section id="setup" class="setup">
+        <h2>Set User ID</h2>
+        <form class="setup-row" onsubmit="handleControlsSubmit(event)">
+          <input id="setupUserId" type="text" placeholder="Enter userid" />
+          <input
+            id="vpsIdInput"
+            type="text"
+            placeholder="Optional vpsId filter"
+          />
           <button type="submit" class="btn">Apply</button>
+          <div class="setup-note">
+            With a user ID, this page uses the per-user scored-table query and
+            optionally filters by VPS ID. If you leave user ID blank but provide
+            a VPS ID, it uses the cross-user scored-table query for that table.
+          </div>
+          <div id="status" class="status">Ready.</div>
         </form>
-
-        <div class="controls-note">
-          With a user ID, this page uses the per-user scored-table query and
-          optionally filters by VPS ID. If you leave user ID blank but provide a
-          VPS ID, it uses the cross-user scored-table query for that table.
-        </div>
-        <div id="status" class="status">Ready.</div>
       </section>
 
       <section class="grid-kpi">
