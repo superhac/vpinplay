@@ -1,8 +1,7 @@
 async function refreshDashboard() {
   const header = document.querySelector("vpinplay-header");
   if (header) header.setRefreshing(true);
-  const limit = parseDashboardLimit();
-  q("limitInput").value = String(limit);
+  const limit = 5;
 
   const [
     lastSyncRes,

@@ -289,12 +289,6 @@ async function loadTopPlayerActivity(
   return res.ok && Array.isArray(res.data?.items) ? res.data.items : [];
 }
 
-function parseDashboardLimit() {
-  const raw = Number.parseInt(String(q("limitInput").value || "").trim(), 10);
-  if (!Number.isFinite(raw) || raw < 1) return 5;
-  return Math.min(raw, MAX_DASHBOARD_LIMIT);
-}
-
 async function fetchPaginatedRows(basePath, requestedLimit) {
   const target = Math.max(1, Number(requestedLimit || 0));
   let offset = 0;
