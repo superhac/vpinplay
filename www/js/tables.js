@@ -8,11 +8,10 @@ let activeFilehashValue = "";
 function formatVpsNameOption(item) {
   if (!item || !item.name || !item.vpsId) return "";
   const meta = [item.manufacturer, item.year].filter(
-    (value) => value !== null && value !== undefined && String(value).trim() !== "",
+    (value) =>
+      value !== null && value !== undefined && String(value).trim() !== "",
   );
-  return meta.length
-    ? `${item.name} (${meta.join(", ")})`
-    : `${item.name}`;
+  return meta.length ? `${item.name} (${meta.join(", ")})` : `${item.name}`;
 }
 
 function syncVpsNameOptions(items) {
@@ -29,7 +28,9 @@ function syncVpsNameOptions(items) {
 }
 
 function findVpsNameMatch(value) {
-  const normalized = String(value || "").trim().toLowerCase();
+  const normalized = String(value || "")
+    .trim()
+    .toLowerCase();
   if (!normalized) return null;
 
   const exactDisplayMatch =
@@ -39,7 +40,10 @@ function findVpsNameMatch(value) {
   if (exactDisplayMatch) return exactDisplayMatch;
 
   const exactNameMatches = vpsNameSearchCache.filter(
-    (item) => String(item.name || "").trim().toLowerCase() === normalized,
+    (item) =>
+      String(item.name || "")
+        .trim()
+        .toLowerCase() === normalized,
   );
   if (exactNameMatches.length === 1) return exactNameMatches[0];
 
@@ -87,7 +91,8 @@ function syncNameInputFromVpsdbRecord(record) {
   const input = q("vpsNameInput");
   if (!input) return;
 
-  const vpsdb = record?.vpsdb && typeof record.vpsdb === "object" ? record.vpsdb : {};
+  const vpsdb =
+    record?.vpsdb && typeof record.vpsdb === "object" ? record.vpsdb : {};
   const item = {
     vpsId: record?.vpsId,
     name: vpsdb?.name,
@@ -134,51 +139,6 @@ async function handleVpsNameCommit() {
   }
 
   await selectVpsNameMatch(match);
-}
-
-async function loadScoreTablePanel(vpsId) {
-  const shell = q("scoreTablePanelShell");
-  const host = q("scoreTablePanelEmbed");
-  if (!shell || !host) return;
-
-  host.replaceChildren();
-  shell.classList.add("hidden");
-
-  const cleanVpsId = String(vpsId || "").trim();
-  if (!cleanVpsId) return;
-
-  const src = `panels/score_table/${encodeURIComponent(cleanVpsId)}.html`;
-
-  try {
-    const response = await fetch(src);
-    if (!response.ok) {
-      return;
-    }
-
-    const html = await response.text();
-    const template = document.createElement("template");
-    template.innerHTML = html;
-
-    const fragment = template.content;
-    const scripts = [...fragment.querySelectorAll("script")];
-    scripts.forEach((script) => script.remove());
-
-    host.appendChild(fragment.cloneNode(true));
-
-    scripts.forEach((oldScript) => {
-      const newScript = document.createElement("script");
-      [...oldScript.attributes].forEach((attr) => {
-        newScript.setAttribute(attr.name, attr.value);
-      });
-      newScript.textContent = oldScript.textContent;
-      host.appendChild(newScript);
-    });
-
-    shell.classList.remove("hidden");
-  } catch (error) {
-    host.replaceChildren();
-    shell.classList.add("hidden");
-  }
 }
 
 function getVpsidFromUrl() {
@@ -646,7 +606,6 @@ async function refreshDashboard() {
     activeVpsNameDisplay = "";
     activeFilehashValue = "";
     syncVpsNameOptions([]);
-    await loadScoreTablePanel("");
     renderTable(
       "playerRatingsTable",
       [{ label: "Info", getter: () => "Enter a VPS ID" }],
@@ -674,8 +633,6 @@ async function refreshDashboard() {
     api(`/api/v1/tables/${encodeURIComponent(vpsId)}/activity-summary`),
     api(`/api/v1/tables/${encodeURIComponent(vpsId)}/activity-weekly?days=7`),
   ]);
-
-  await loadScoreTablePanel(vpsId);
 
   const playerRatingsRows =
     playerRatingsRes.ok && Array.isArray(playerRatingsRes.data)
