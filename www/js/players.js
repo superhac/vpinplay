@@ -270,8 +270,6 @@ async function refreshDashboard() {
   const header = document.querySelector("vpinplay-header");
   if (header) header.setRefreshing(true);
 
-  q("userBadge").textContent = `userid=${currentUserId}`;
-
   const [
     lastSyncRes,
     countRes,
@@ -536,6 +534,10 @@ async function init() {
 
   const params = new URLSearchParams(window.location.search);
   const userId = params.get("userid");
+  if (userId) {
+    const setupInput = q("setupUserId");
+    if (setupInput) setupInput.value = userId;
+  }
   currentUserId = userId;
   currentScorePanelVpsId = getRequestedScorePanelVpsId();
 
@@ -548,9 +550,6 @@ async function init() {
 
   const dashboard = q("dashboard");
   if (dashboard) dashboard.classList.remove("hidden");
-
-  const userBadge = q("userBadge");
-  if (userBadge) userBadge.textContent = `userid=${userId}`;
 
   loadEmbeddedPanel();
   refreshDashboard();

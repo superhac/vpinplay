@@ -27,17 +27,14 @@
         <form class="setup-row" onsubmit="handleSetupSubmit(event)">
           <input id="setupUserId" type="text" placeholder="Enter userid" />
           <button type="submit" class="btn">Apply</button>
+          <button
+            id="viewToggleBtn"
+            class="btn btn-theme"
+            onclick="toggleViewMode()"
+          >
+            Carousel
+          </button>
         </form>
-      </section>
-      <section class="controls">
-        <span id="userBadge" class="pill mono">userid=?</span>
-        <button
-          id="viewToggleBtn"
-          class="btn btn-theme"
-          onclick="toggleViewMode()"
-        >
-          Carousel
-        </button>
       </section>
 
       <section id="dashboard" class="grid-dashboard">
