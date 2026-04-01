@@ -1,166 +1,5 @@
 let currentUserId = null;
 let currentViewMode = "table";
-let currentScorePanelVpsId = "";
-
-const SCORE_USER_PANELS = {
-  "9Paf7-CL": "panels/score_user/9Paf7-CL.html",
-  SrcagQN8: "panels/score_user/SrcagQN8.html",
-  WyxpJ3Wjt3: "panels/score_user/WyxpJ3Wjt3.html",
-  "fz-KTflv": "panels/score_user/fz-KTflv.html",
-  vZDUDUii: "panels/score_user/vZDUDUii.html",
-};
-
-async function loadEmbeddedPanel() {
-  const host = q("scoreUserPanelEmbed");
-  if (!host) return;
-  const select = q("scoreUserPanelSelect");
-
-  const userId =
-    currentUserId ||
-    new URLSearchParams(window.location.search).get("userid") ||
-    "";
-  if (!userId) {
-    if (select) {
-      select.innerHTML = `<option value="">Set userid first</option>`;
-      select.disabled = true;
-    }
-    host.innerHTML = `<div class="muted">Set a userid to load the score panel.</div>`;
-    return;
-  }
-
-  const vpsId = currentScorePanelVpsId || select?.value || "";
-  const baseSrc = SCORE_USER_PANELS[vpsId];
-  if (!baseSrc) {
-    host.innerHTML = `<div class="muted">Choose a scoreboard to load its panel.</div>`;
-    return;
-  }
-
-  const src = new URL(baseSrc, window.location.href);
-  src.searchParams.set("userid", userId);
-
-  try {
-    const response = await fetch(src.toString());
-    if (!response.ok) {
-      host.innerHTML = `<div class="muted">Failed to load embedded panel (${response.status}).</div>`;
-      return;
-    }
-
-    const html = await response.text();
-    const template = document.createElement("template");
-    template.innerHTML = html;
-
-    host.replaceChildren();
-
-    const fragment = template.content;
-    const scripts = [...fragment.querySelectorAll("script")];
-    scripts.forEach((script) => script.remove());
-
-    host.appendChild(fragment.cloneNode(true));
-
-    scripts.forEach((oldScript) => {
-      const newScript = document.createElement("script");
-      [...oldScript.attributes].forEach((attr) => {
-        newScript.setAttribute(attr.name, attr.value);
-      });
-      newScript.textContent = oldScript.textContent;
-      host.appendChild(newScript);
-    });
-  } catch (error) {
-    host.innerHTML = `<div class="muted">Failed to load embedded panel: ${escapeHtml(error.message || "unknown error")}</div>`;
-  }
-}
-
-function getRequestedScorePanelVpsId() {
-  const params = new URLSearchParams(window.location.search);
-  return String(params.get("score_vpsid") || "").trim();
-}
-
-function setRequestedScorePanelVpsId(vpsId) {
-  const url = new URL(window.location.href);
-  if (vpsId) {
-    url.searchParams.set("score_vpsid", vpsId);
-  } else {
-    url.searchParams.delete("score_vpsid");
-  }
-  window.history.replaceState({}, "", url.toString());
-}
-
-function handleScorePanelChange(event) {
-  const nextVpsId = String(event?.target?.value || "").trim();
-  currentScorePanelVpsId = nextVpsId;
-  setRequestedScorePanelVpsId(nextVpsId);
-  loadEmbeddedPanel();
-}
-
-async function fetchAllUserTablesWithScore(userId) {
-  const items = [];
-  let offset = 0;
-
-  while (true) {
-    const res = await api(
-      `/api/v1/users/${encodeURIComponent(userId)}/tables/with-score?limit=${encodeURIComponent(API_PAGE_LIMIT)}&offset=${encodeURIComponent(offset)}`,
-    );
-    if (!res.ok || !Array.isArray(res.data)) break;
-
-    const pageItems = res.data;
-    items.push(...pageItems);
-
-    if (pageItems.length < API_PAGE_LIMIT) break;
-    offset += pageItems.length;
-  }
-
-  return items;
-}
-
-function buildScorePanelOptions(rows) {
-  const byVpsId = new Map();
-  (rows || []).forEach((row) => {
-    const vpsId = String(row?.vpsId || "").trim();
-    if (!vpsId || !SCORE_USER_PANELS[vpsId] || byVpsId.has(vpsId)) return;
-    byVpsId.set(vpsId, {
-      vpsId,
-      label:
-        String(row?.vpsdb?.name || row?.tableTitle || vpsId).trim() || vpsId,
-      src: SCORE_USER_PANELS[vpsId],
-    });
-  });
-
-  return [...byVpsId.values()].sort((a, b) =>
-    a.label.localeCompare(b.label, undefined, { sensitivity: "base" }),
-  );
-}
-
-function syncScorePanelPicker(options) {
-  const select = q("scoreUserPanelSelect");
-  const host = q("scoreUserPanelEmbed");
-  if (!select || !host) return false;
-
-  if (!Array.isArray(options) || options.length === 0) {
-    currentScorePanelVpsId = "";
-    select.innerHTML = `<option value="">No matching scoreboards available</option>`;
-    select.disabled = true;
-    setRequestedScorePanelVpsId("");
-    host.innerHTML = `<div class="muted">No supported score_user panel is available for this user's submitted scores yet.</div>`;
-    return false;
-  }
-
-  const requested = getRequestedScorePanelVpsId();
-  const selected =
-    options.find((option) => option.vpsId === currentScorePanelVpsId) ||
-    options.find((option) => option.vpsId === requested) ||
-    options[0];
-
-  currentScorePanelVpsId = selected.vpsId;
-  select.disabled = false;
-  select.innerHTML = options
-    .map(
-      (option) =>
-        `<option value="${escapeHtml(option.vpsId)}"${option.vpsId === selected.vpsId ? " selected" : ""}>${escapeHtml(option.label)}</option>`,
-    )
-    .join("");
-  setRequestedScorePanelVpsId(selected.vpsId);
-  return true;
-}
 
 function handleSetupSubmit(event) {
   event.preventDefault();
@@ -317,14 +156,7 @@ async function refreshDashboard() {
     api(
       `/api/v1/users/${encodeURIComponent(currentUserId)}/scores/latest?limit=5&offset=0`,
     ),
-    fetchAllUserTablesWithScore(currentUserId),
   ]);
-
-  const scorePanelOptions = buildScorePanelOptions(scorePanelRows);
-  const hasScorePanelSelection = syncScorePanelPicker(scorePanelOptions);
-  if (hasScorePanelSelection) {
-    await loadEmbeddedPanel();
-  }
 
   const rowsNeedingGlobalRating = [
     ...(topRatedRes.ok ? topRatedRes.data : []),
@@ -539,19 +371,10 @@ async function init() {
     if (setupInput) setupInput.value = userId;
   }
   currentUserId = userId;
-  currentScorePanelVpsId = getRequestedScorePanelVpsId();
-
-  if (!userId) {
-    const dashboard = q("dashboard");
-    if (dashboard) dashboard.classList.add("hidden");
-    loadEmbeddedPanel();
-    return;
-  }
 
   const dashboard = q("dashboard");
   if (dashboard) dashboard.classList.remove("hidden");
 
-  loadEmbeddedPanel();
   refreshDashboard();
 }
 
