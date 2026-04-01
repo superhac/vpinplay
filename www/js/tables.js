@@ -2,6 +2,8 @@ let derivativeRowsCache = [];
 let vpsNameSearchCache = [];
 let vpsNameSearchRequestId = 0;
 let activeVpsNameDisplay = "";
+let activeVpsIdValue = "";
+let activeFilehashValue = "";
 
 function formatVpsNameOption(item) {
   if (!item || !item.name || !item.vpsId) return "";
@@ -237,12 +239,38 @@ async function lookupByFilehash() {
     setLookupStatus("No table match found for that hash.", true);
     return;
   }
+  activeFilehashValue = filehash;
   q("vpsIdInput").value = matchedVpsId;
   const alt = result.data?.altvpsid
     ? ` (altvpsid: ${result.data.altvpsid})`
     : "";
   setLookupStatus(`Matched VPS ID: ${matchedVpsId}${alt}`);
   await refreshDashboard();
+}
+
+async function handleVpsIdCommit() {
+  const input = q("vpsIdInput");
+  if (!input) return;
+
+  const nextVpsId = input.value.trim();
+  if (nextVpsId === activeVpsIdValue) return;
+
+  if (!nextVpsId) {
+    activeVpsIdValue = "";
+    await refreshDashboard();
+    return;
+  }
+
+  await refreshDashboard();
+}
+
+async function handleFilehashCommit() {
+  const input = q("filehashInput");
+  if (!input) return;
+
+  const nextFilehash = input.value.trim();
+  if (!nextFilehash || nextFilehash === activeFilehashValue) return;
+  await lookupByFilehash();
 }
 
 function toComparableValue(value) {
@@ -602,6 +630,7 @@ async function refreshDashboard() {
   setLookupStatus("");
 
   const vpsId = q("vpsIdInput").value.trim();
+  activeVpsIdValue = vpsId;
   setVpisidInUrl(vpsId);
 
   const scoresPanel = document.querySelector("table-scores-panel");
@@ -613,6 +642,7 @@ async function refreshDashboard() {
     const nameInput = q("vpsNameInput");
     if (nameInput) nameInput.value = "";
     activeVpsNameDisplay = "";
+    activeFilehashValue = "";
     syncVpsNameOptions([]);
     await loadScoreTablePanel("");
     renderTable(
@@ -709,3 +739,5 @@ document.addEventListener("DOMContentLoaded", async () => {
 window.handleVpsNameInput = handleVpsNameInput;
 window.handleVpsNameCommit = handleVpsNameCommit;
 window.handleVpsNameFocus = handleVpsNameFocus;
+window.handleVpsIdCommit = handleVpsIdCommit;
+window.handleFilehashCommit = handleFilehashCommit;

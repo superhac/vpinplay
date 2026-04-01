@@ -15,14 +15,78 @@
   color: var(--ink-muted);
 }
 
+.table-controls {
+  width: 100%;
+  display: grid;
+  grid-template-columns: minmax(12rem, 1.05fr) minmax(18rem, 1.7fr) auto minmax(16rem, 1.25fr) auto;
+  gap: 14px 12px;
+  align-items: end;
+  padding: 18px;
+}
+
+.table-control-field {
+  min-width: 0;
+}
+
 .table-name-field {
-  min-width: min(28rem, 100%);
-  flex: 1 1 22rem;
+  min-width: 0;
 }
 
 .lookup-status.error {
   color: var(--bad);
   text-shadow: 0 0 10px var(--bad);
+}
+
+.table-control-action {
+  align-self: end;
+  min-height: 44px;
+  white-space: nowrap;
+}
+
+.table-control-apply {
+  box-shadow: var(--glow-cyan);
+  color: var(--neon-cyan);
+}
+
+.table-control-apply:hover {
+  background: var(--neon-cyan);
+  color: #10061d;
+  box-shadow:
+    var(--glow-cyan),
+    0 0 30px rgba(0, 217, 255, 0.5);
+}
+
+.table-controls .lookup-status {
+  grid-column: 1 / -1;
+  margin-top: 2px;
+  min-height: 1.2rem;
+}
+
+@media (max-width: 1120px) {
+  .table-controls {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .table-control-apply,
+  .table-control-hash-btn,
+  .table-controls .lookup-status {
+    grid-column: auto;
+  }
+
+  .table-controls .lookup-status {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 720px) {
+  .table-controls {
+    grid-template-columns: 1fr;
+  }
+
+  .table-control-action,
+  .table-controls .lookup-status {
+    grid-column: 1;
+  }
 }
 
 .table-focus-panel {

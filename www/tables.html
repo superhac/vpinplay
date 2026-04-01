@@ -22,24 +22,24 @@
   <body>
     <vpinplay-header></vpinplay-header>
     <div class="main">
-      <section class="controls">
-        <div class="field">
+      <section class="controls table-controls">
+        <div class="field table-control-field table-control-vpsid">
           <label for="vpsIdInput">VPS ID Focus</label>
           <input
             id="vpsIdInput"
             type="text"
             value="lkSumsrF"
             placeholder="Enter VPS ID"
-            onchange="refreshDashboard()"
+            onchange="handleVpsIdCommit()"
             onkeydown="
               if (event.key === 'Enter') {
                 event.preventDefault();
-                refreshDashboard();
+                handleVpsIdCommit();
               }
             "
           />
         </div>
-        <div class="field table-name-field">
+        <div class="field table-control-field table-name-field">
           <label for="vpsNameInput">Table Name</label>
           <input
             id="vpsNameInput"
@@ -60,21 +60,35 @@
           />
           <datalist id="vpsNameOptions"></datalist>
         </div>
-        <button class="btn" type="button" onclick="refreshDashboard()">Apply</button>
-        <div class="field">
+        <button
+          class="btn table-control-action table-control-apply"
+          type="button"
+          onclick="refreshDashboard()"
+        >
+          Refresh
+        </button>
+        <div class="field table-control-field table-control-hash">
           <label for="filehashInput">Lookup by VPX File Hash</label>
           <input
             id="filehashInput"
             type="text"
             placeholder="Enter vpxFile.filehash"
+            onchange="handleFilehashCommit()"
             onkeydown="
               if (event.key === 'Enter') {
-                lookupByFilehash();
+                event.preventDefault();
+                handleFilehashCommit();
               }
             "
           />
         </div>
-        <button class="btn" onclick="lookupByFilehash()">Find by Hash</button>
+        <button
+          class="btn table-control-action table-control-hash-btn"
+          type="button"
+          onclick="handleFilehashCommit()"
+        >
+          Find by Hash
+        </button>
         <div id="lookupStatus" class="lookup-status muted"></div>
       </section>
 
