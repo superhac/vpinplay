@@ -360,7 +360,7 @@ async function refreshDashboard() {
   );
   setKpi("kpiStarts", fmtNumber(totalStarts));
   setKpi("kpiRuntime", fmtRuntime(totalRuntime));
-  setKpi("kpiRuntimeWeek", fmtRuntime(runtimeWeek));
+  setKpi("kpiRuntimeWeek", fmtWeeklyRuntime(runtimeWeek));
   setKpi("kpiStartsWeek", fmtNumber(startsWeek));
 
   renderTable(

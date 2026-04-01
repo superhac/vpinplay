@@ -63,6 +63,16 @@ function fmtRuntime(minutes) {
   return `${n} min`;
 }
 
+function fmtWeeklyRuntime(minutes) {
+  const n = Number(minutes || 0);
+  if (n <= 60) return `${n} min`;
+  const hours = n / 60;
+  const roundedHours = Number.isInteger(hours)
+    ? String(hours)
+    : hours.toFixed(1).replace(/\.0$/, "");
+  return `${roundedHours} hr`;
+}
+
 function fmtLatestScoreValue(score) {
   if (!score || typeof score !== "object") return "-";
   const numericValue = score.value ?? score.score;

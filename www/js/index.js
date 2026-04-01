@@ -60,8 +60,9 @@ async function refreshDashboard() {
   }
 
   if (weeklyActivityRes.ok) {
-    q("kpiRuntimeWeek").textContent =
-      `${fmtNumber(weeklyActivityRes.data.runTimePlayed)} min`;
+    q("kpiRuntimeWeek").textContent = fmtWeeklyRuntime(
+      weeklyActivityRes.data.runTimePlayed,
+    );
     q("kpiStartsWeek").textContent = fmtNumber(
       weeklyActivityRes.data.startCountPlayed,
     );
@@ -155,7 +156,7 @@ async function refreshDashboard() {
     "topPlayerPlaytimeTable",
     [
       { label: "User", getter: (r) => linkUserId(r.userId), html: true },
-      { label: "Run Time", getter: (r) => `${fmtNumber(r.runTimePlayed)} min` },
+      { label: "Run Time", getter: (r) => fmtWeeklyRuntime(r.runTimePlayed) },
     ],
     topPlayerRuntimeRows,
   );
