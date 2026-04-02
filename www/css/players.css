@@ -50,6 +50,7 @@
     transform 200ms ease,
     box-shadow 200ms ease;
   cursor: pointer;
+  min-width: 200px;
 }
 
 .carousel-card:hover {
