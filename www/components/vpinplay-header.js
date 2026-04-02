@@ -237,6 +237,18 @@ class VPinPlayHeader extends HTMLElement {
         nav.classList.toggle("open");
         toggle.textContent = nav.classList.contains("open") ? "✕" : "☰";
       });
+
+      // Close menu when clicking outside
+      this._outsideClickHandler = (e) => {
+        if (nav.classList.contains("open")) {
+          const path = e.composedPath();
+          if (!path.includes(nav) && !path.includes(toggle)) {
+            nav.classList.remove("open");
+            toggle.textContent = "☰";
+          }
+        }
+      };
+      document.addEventListener("click", this._outsideClickHandler);
     }
 
     // Refresh button
@@ -258,6 +270,9 @@ class VPinPlayHeader extends HTMLElement {
 
   disconnectedCallback() {
     this.stopUpdateTimer();
+    if (this._outsideClickHandler) {
+      document.removeEventListener("click", this._outsideClickHandler);
+    }
   }
 
   startUpdateTimer() {
