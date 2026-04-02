@@ -140,11 +140,7 @@
 
 .table-focus-header {
   display: grid;
-  grid-template-columns:
-    auto
-    minmax(0, 1fr)
-    minmax(220px, 280px)
-    minmax(220px, 280px);
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 16px;
   align-items: start;
   width: 100%;
