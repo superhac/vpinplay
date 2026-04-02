@@ -60,22 +60,25 @@ async def get_global_latest_submitted_ratings(
     db: Database = Depends(get_db)
 ):
     """
-    Get the most recently submitted valid table ratings across all users.
+    Get the most recent actual rating submissions/changes across all users.
     """
     rows = list(
-        db["user_table_ratings"]
+        db["user_table_state_deltas"]
         .find(
-            {"rating": {"$gte": 1, "$lte": 5}},
+            {
+                "newRating": {"$gte": 1, "$lte": 5},
+                "$expr": {"$ne": ["$prevRating", "$newRating"]},
+            },
             {
                 "_id": 0,
                 "userId": 1,
                 "vpsId": 1,
-                "rating": 1,
-                "createdAt": 1,
-                "updatedAt": 1,
+                "prevRating": 1,
+                "newRating": 1,
+                "changedAt": 1,
             },
         )
-        .sort([("updatedAt", -1), ("createdAt", -1), ("userId", 1), ("vpsId", 1)])
+        .sort([("changedAt", -1), ("userId", 1), ("vpsId", 1)])
         .skip(offset)
         .limit(limit)
     )
@@ -84,9 +87,9 @@ async def get_global_latest_submitted_ratings(
         {
             "userId": row.get("userId"),
             "vpsId": row.get("vpsId"),
-            "rating": row.get("rating"),
-            "createdAt": row.get("createdAt"),
-            "updatedAt": row.get("updatedAt"),
+            "prevRating": row.get("prevRating"),
+            "rating": row.get("newRating"),
+            "updatedAt": row.get("changedAt"),
         }
         for row in rows
     ]

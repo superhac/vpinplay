@@ -342,6 +342,28 @@ async def submit_sync(request: FullSyncRequest, db: Database = Depends(get_db)):
                         {"$set": {"lastSeenAt": received_at, "userId": user_id, "userIdNormalized": user_id}}
                     )
             else:
+                user_state_deltas_col.insert_one({
+                    "userId": user_id,
+                    "userIdNormalized": user_id,
+                    "vpsId": vps_id,
+                    "changedAt": received_at,
+                    "prevRating": None,
+                    "newRating": normalized_rating,
+                    "prevLastRun": None,
+                    "newLastRun": incoming_last_run,
+                    "prevStartCount": 0,
+                    "newStartCount": incoming_start_count,
+                    "deltaStartCount": incoming_start_count,
+                    "prevRunTime": 0,
+                    "newRunTime": incoming_run_time,
+                    "deltaRunTime": incoming_run_time,
+                    "prevScore": None,
+                    "newScore": incoming_score,
+                    "prevAlttitle": None,
+                    "newAlttitle": table_payload.vpinfe.alttitle,
+                    "prevAltvpsid": None,
+                    "newAltvpsid": table_payload.vpinfe.altvpsid,
+                })
                 user_state_col.insert_one({
                     **user_state_doc,
                     "createdAt": received_at
