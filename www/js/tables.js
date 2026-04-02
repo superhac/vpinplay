@@ -671,11 +671,11 @@ function renderVpsdbDetails(
                             ${vpsLink ? `<a class="table-focus-vps-link" href="${vpsLink}" target="_blank" rel="noopener noreferrer" aria-label="Open VPS entry for ${escapeHtml(title)}"><img class="table-focus-vps-logo" src="img/vpsLogo.png" alt="VPS"></a>` : ""}
                         </div>
                         <div class="table-focus-copy">
+                            <div class="table-focus-subhead">${escapeHtml(subtitle || "Unknown Manufacturer")}</div>
                             <div class="table-focus-rating-row">
                                 <div class="table-focus-label">Rating</div>
                                 <div class="table-focus-rating">${fmtRatingStars(avgRating, { showNumeric: true })}</div>
                             </div>
-                            <div class="table-focus-subhead">${escapeHtml(subtitle || "Unknown Manufacturer")}</div>
                             <div class="table-focus-meta">Last update: ${escapeHtml(lastUpdated)}</div>
                         </div>
                         <section class="table-focus-stat-card table-focus-stat-total">
@@ -735,7 +735,6 @@ async function refreshDashboard() {
   const [
     ratingSummaryRes,
     playerRatingsRes,
-    topRuntimePlayersRes,
     tableByIdRes,
     vpsdbByIdRes,
     activitySummaryRes,
@@ -743,7 +742,6 @@ async function refreshDashboard() {
   ] = await Promise.all([
     api(`/api/v1/tables/${encodeURIComponent(vpsId)}/rating-summary`),
     api(`/api/v1/tables/${encodeURIComponent(vpsId)}/user-ratings`),
-    api(`/api/v1/tables/${encodeURIComponent(vpsId)}/top-runtime-players?limit=5`),
     api(`/api/v1/tables/${encodeURIComponent(vpsId)}`),
     api(`/api/v1/vpsdb/${encodeURIComponent(vpsId)}`),
     api(`/api/v1/tables/${encodeURIComponent(vpsId)}/activity-summary`),
@@ -769,23 +767,6 @@ async function refreshDashboard() {
       { label: "Updated", getter: (r) => fmtDate(r.updatedAt) },
     ],
     playerRatingsRows,
-  );
-
-  const topRuntimePlayersRows =
-    topRuntimePlayersRes.ok && Array.isArray(topRuntimePlayersRes.data)
-      ? topRuntimePlayersRes.data
-      : [];
-  q("topRuntimePlayersTitle").textContent =
-    `Top Player Play Time (${topRuntimePlayersRows.length})`;
-  renderTable(
-    "topRuntimePlayersTable",
-    [
-      { label: "Player", getter: (r) => linkUserId(r.userId), html: true },
-      { label: "Play Time", getter: (r) => fmtWeeklyRuntime(r.runTime) },
-      { label: "Last Played", getter: (r) => fmtDate(r.lastRun) },
-      { label: "Updated", getter: (r) => fmtDate(r.updatedAt) },
-    ],
-    topRuntimePlayersRows,
   );
 
   const byIdRows =

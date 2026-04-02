@@ -444,6 +444,10 @@
     font-size: 1.7rem;
   }
 
+  .table-focus-meta {
+    font-size: 0.75rem;
+  }
+
   .setup-row {
     flex-direction: column;
     align-items: stretch;

@@ -33,7 +33,194 @@ class TableScoresPanel extends HTMLElement {
 
   render() {
     this.shadowRoot.innerHTML = `
-    <link rel="stylesheet" href="css/table-scores-panel.css">
+    <link rel="stylesheet" href="css/base.css">
+    <style>
+      :host {
+        position: relative;
+        color: var(--ink);
+        z-index: 1;
+        display: block;
+        width: 100%;
+      }
+
+      :host,
+      :host * {
+        box-sizing: border-box;
+        font-family: inherit;
+      }
+
+      .status {
+        margin-bottom: 14px;
+        border-radius: 10px;
+        padding: 10px 12px;
+        background: rgba(0, 217, 255, 0.08);
+        border: 1px solid rgba(0, 217, 255, 0.18);
+        color: var(--neon-cyan);
+        font-size: 0.9rem;
+        font-weight: 700;
+        box-shadow: var(--glow-cyan);
+      }
+
+      .status.error {
+        color: var(--bad);
+        border-color: rgba(255, 10, 120, 0.24);
+        background: rgba(255, 10, 120, 0.12);
+      }
+
+      .scoreboard-title {
+        color: var(--neon-purple);
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        font-size: 1.68rem;
+        font-weight: 900;
+        text-align: center;
+        text-shadow: var(--glow-purple);
+      }
+
+      .grid-score-panels {
+        display: flex;
+        flex-direction: row;
+        flex-wrap: wrap;
+        gap: 12px;
+        align-items: start;
+        width: 100%;
+      }
+
+      .score-card {
+        background: var(--surface);
+        border-radius: var(--radius);
+        box-shadow: var(--shadow);
+        position: relative;
+        padding: 14px;
+        min-width: 0;
+        display: grid;
+        gap: 12px;
+        flex: 1 1 calc(50% - 6px);
+        max-width: calc(50% - 6px);
+      }
+
+      .score-card:last-child:nth-child(odd) {
+        margin: 0 auto;
+      }
+
+      .score-card.hero {
+        background:
+          linear-gradient(135deg, rgba(180, 41, 249, 0.12), rgba(0, 217, 255, 0.08)),
+          var(--surface-soft);
+        border-radius: var(--radius);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        width: fit-content;
+        flex-basis: 100%;
+        max-width: none;
+        margin: 0 auto;
+        padding: 12px;
+      }
+
+      .score-card-title {
+        color: var(--ink-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        font-size: 0.78rem;
+        font-weight: 800;
+      }
+
+      .hero-empty,
+      .empty-state {
+        color: var(--ink-muted);
+      }
+
+      .grand-wrap {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 18px;
+        align-items: baseline;
+      }
+
+      .grand-initials {
+        font-size: 2.4rem;
+        font-weight: 900;
+        letter-spacing: 0.08em;
+        color: var(--neon-cyan);
+        text-shadow: var(--glow-cyan);
+      }
+
+      .grand-score {
+        font-size: 1.6rem;
+        font-weight: 800;
+      }
+
+      .score-list {
+        display: grid;
+        gap: 10px;
+      }
+
+      .score-row {
+        display: grid;
+        grid-template-columns: max-content 1fr max-content;
+        gap: 12px;
+        align-items: center;
+        padding: 10px 12px;
+        border-radius: 10px;
+        border: 1px solid var(--line);
+        background: var(--surface-2);
+      }
+
+      .score-rank {
+        color: var(--neon-cyan);
+        font-weight: 800;
+        font-size: 0.82rem;
+        text-transform: uppercase;
+        text-shadow: var(--glow-cyan);
+      }
+
+      .score-initials {
+        font-weight: 800;
+        letter-spacing: 0.04em;
+        font-size: 1rem;
+        min-height: 1.2em;
+        color: var(--ink);
+      }
+
+      .score-value {
+        text-align: right;
+        font-weight: 700;
+        min-width: 0;
+        color: var(--ink);
+      }
+
+      @media (max-width: 900px) {
+        .score-card {
+          min-width: 100%;
+        }
+
+        .score-row {
+          gap: 8px;
+          padding: 4px 6px;
+          align-items: center;
+        }
+
+        .score-rank, .score-initials, .score-value {
+          font-size: 0.8rem;
+          font-weight: 500;
+        }
+
+        .score-initials {
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+
+        .grand-initials {
+          font-size: 2rem;
+        }
+
+        .grand-score {
+          font-size: 1.3rem;
+        }
+      }
+    </style>
     <div class="scoreboard-title">Scoreboard</div>
     <div class="status" id="status" hidden>Ready.</div>
     <div class="grid-score-panels" id="grid-score-panels"></div>
