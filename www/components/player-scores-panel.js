@@ -313,7 +313,7 @@ class PlayerScoresPanel extends HTMLElement {
 
       .score-row {
         display: grid;
-        grid-template-columns: 56px minmax(0, 140px) minmax(0, 1fr);
+        grid-template-columns: max-content 1fr max-content;
         gap: 12px;
         align-items: center;
         padding: 10px 12px;
@@ -380,9 +380,9 @@ class PlayerScoresPanel extends HTMLElement {
         }
 
         .score-row {
-          grid-template-columns: minmax(0, 60px) minmax(0, 100px) minmax(0, 1fr);
           gap: 8px;
           padding: 4px 6px;
+          align-items: center;
         }
 
         .score-rank, .score-initials, .score-value {
