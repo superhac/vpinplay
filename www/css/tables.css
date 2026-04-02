@@ -140,9 +140,9 @@
 
 .table-focus-header {
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-columns: auto minmax(0, 1fr) minmax(280px, 340px);
   gap: 16px;
-  align-items: center;
+  align-items: start;
   width: 100%;
 }
 
@@ -233,9 +233,12 @@
 
 .table-focus-stats {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-column: 3;
+  grid-row: 1;
+  grid-template-columns: 1fr;
   gap: 12px;
   width: 100%;
+  align-self: center;
 }
 
 .table-focus-stat-card {
@@ -400,6 +403,8 @@
   }
 
   .table-focus-stats {
+    grid-column: 1;
+    grid-row: auto;
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }

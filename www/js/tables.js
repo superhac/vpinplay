@@ -669,20 +669,20 @@ function renderVpsdbDetails(
                                 <div class="table-focus-label">Rating</div>
                                 <div class="table-focus-rating">${fmtRatingStars(avgRating, { showNumeric: true })}</div>
                             </div>
-                            <div class="table-focus-stats">
-                                <section class="table-focus-stat-card">
-                                    <div class="table-focus-label">Total Activity</div>
-                                    <div class="table-focus-stat-value">${escapeHtml(`${fmtWeeklyRuntime(totalRuntime)} / ${fmtNumber(totalStarts)}`)}</div>
-                                    <div class="table-focus-stat-sub">All-time playtime / starts</div>
-                                </section>
-                                <section class="table-focus-stat-card">
-                                    <div class="table-focus-label">This Week Activity</div>
-                                    <div class="table-focus-stat-value">${escapeHtml(`${fmtWeeklyRuntime(weeklyRuntime)} / ${fmtNumber(weeklyStarts)}`)}</div>
-                                    <div class="table-focus-stat-sub">Last 7 days (delta)</div>
-                                </section>
-                            </div>
                             <div class="table-focus-subhead">${escapeHtml(subtitle || "Unknown Manufacturer")}</div>
                             <div class="table-focus-meta">Last update: ${escapeHtml(lastUpdated)}</div>
+                        </div>
+                        <div class="table-focus-stats">
+                            <section class="table-focus-stat-card">
+                                <div class="table-focus-label">Total Activity</div>
+                                <div class="table-focus-stat-value">${escapeHtml(`${fmtWeeklyRuntime(totalRuntime)} / ${fmtNumber(totalStarts)}`)}</div>
+                                <div class="table-focus-stat-sub">All-time playtime / starts</div>
+                            </section>
+                            <section class="table-focus-stat-card">
+                                <div class="table-focus-label">This Week Activity</div>
+                                <div class="table-focus-stat-value">${escapeHtml(`${fmtWeeklyRuntime(weeklyRuntime)} / ${fmtNumber(weeklyStarts)}`)}</div>
+                                <div class="table-focus-stat-sub">Last 7 days (delta)</div>
+                            </section>
                         </div>
                     </div>
                 </div>
