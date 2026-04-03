@@ -448,6 +448,9 @@ tbody tr:nth-child(even) td {
 
 tbody tr:hover td {
   background: var(--table-hover);
+}
+
+tbody tr:hover td:first-child {
   border-left: 2px solid var(--neon-pink);
 }
 
