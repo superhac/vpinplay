@@ -489,7 +489,7 @@ class TablesDataTable extends HTMLElement {
           padding: 12px 16px;
           background: var(--bg-secondary);
           border-top: 1px solid var(--line);
-          font-size: 14px;
+          font-size: 1rem;
           color: var(--ink-muted);
         }
 
@@ -551,7 +551,7 @@ class TablesDataTable extends HTMLElement {
 
         @media (max-width: 900px) {
           .container {
-            max-height: calc(100vh - 140px);;
+            max-height: calc(90vh - 140px);;
           }
           
           .table-title-panel {
@@ -584,7 +584,7 @@ class TablesDataTable extends HTMLElement {
           }
 
           .table-wrapper {
-            max-height: calc(100vh - 220px);
+            max-height: calc(90vh - 220px);
           }
 
           th {
@@ -601,10 +601,15 @@ class TablesDataTable extends HTMLElement {
             text-overflow: ellipsis;
             white-space: nowrap;
           }
+
+          .stats {
+            padding: 6px 8px;
+            font-size: 0.8rem;
+          }
         }
         @media (max-width: 600px) {
           .table-wrapper {
-            max-height: calc(100vh - 300px);
+            max-height: calc(90vh - 300px);
           }
 
           .column-name {
