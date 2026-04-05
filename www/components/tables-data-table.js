@@ -953,7 +953,7 @@ class TablesDataTable extends HTMLElement {
       const apiUrl = this.getAttribute("api-url") || "/api/tables-plus";
       const fullUrl = apiUrl.startsWith("http")
         ? apiUrl
-        : `${window.API_BASE || ""}${apiUrl}`;
+        : `${API_BASE || ""}${apiUrl}`;
 
       const response = await fetch(`${fullUrl}?${params}`);
       const data = await response.json();
