@@ -911,74 +911,193 @@ async def get_vpsdb_by_id(vpsId: str, db: Database = Depends(get_db)):
         "updatedAt": doc.get("updatedAt"),
     }
 
-@router.get("/tables-plus")
-async def get_all_tables_plus(
+@router.get("/tables-plus/search")
+async def get_tables_plus_search(
     limit: int = Query(50, ge=1, le=100),
     offset: int = Query(0, ge=0),
-    sort_by: Optional[str] = Query("updatedAt"),
+    sort_by: Optional[str] = Query("name"),
     sort_order: Optional[int] = Query(-1, ge=-1, le=1),
     search_key: Optional[str] = Query(None),
     search_term: Optional[str] = Query(None),
     db: Database = Depends(get_db),
 ):
     """
-    Get all table variation rows with pagination, dynamic sorting, and filtering.
+    Search and sort across all tables with combined statistics and metadata.
+    Combines: top rated, play time, variants, and newly added stats.
     """
-    initial_match = {}
-
-    if search_key and search_term and search_key != "sortName":
-        initial_match[search_key] = {"$regex": search_term, "$options": "i"}
+    
+    sort_key_map = {
+        "name": "sortName",
+        "manufacturer": "vpsdbRaw.data.manufacturer",
+        "year": "vpsdbRaw.data.year",
+        "avgRating": "avgRating",
+        "ratingCount": "ratingCount",
+        "playerCount": "playerCount",
+        "startCountTotal": "startCountTotal",
+        "runTimeTotal": "runTimeTotal",
+        "variationCount": "variationCount",
+        "firstSeenAt": "firstSeenAt",
+        "authors": "firstAuthor",
+        "vpsId": "vpsId",
+    }
+    actual_sort_by = sort_key_map.get(sort_by, "sortName")
 
     pipeline = [
-        {"$match": initial_match},
+        {
+            "$group": {
+                "_id": "$vpsId",
+                "firstSeenAt": {"$min": {"$ifNull": ["$createdAt", "$updatedAt"]}},
+                "variationCount": {"$sum": 1},
+            }
+        },
+        {
+            "$lookup": {
+                "from": "user_table_ratings",
+                "localField": "_id",
+                "foreignField": "vpsId",
+                "pipeline": [
+                    {"$match": {"rating": {"$gte": 1, "$lte": 5}}},
+                    {
+                        "$group": {
+                            "_id": "$vpsId",
+                            "avgRating": {"$avg": "$rating"},
+                            "ratingCount": {"$sum": 1},
+                        }
+                    },
+                ],
+                "as": "ratingInfo",
+            }
+        },
+        {
+            "$lookup": {
+                "from": "user_table_state",
+                "localField": "_id",
+                "foreignField": "vpsId",
+                "pipeline": [
+                    {
+                        "$group": {
+                            "_id": "$vpsId",
+                            "runTimeTotal": {"$sum": {"$ifNull": ["$runTime", 0]}},
+                            "startCountTotal": {"$sum": {"$ifNull": ["$startCount", 0]}},
+                            "playerCount": {"$sum": 1},
+                        }
+                    },
+                ],
+                "as": "stateInfo",
+            }
+        },
         {
             "$lookup": {
                 "from": "vpsdb_aux",
-                "localField": "vpsId",
+                "localField": "_id",
                 "foreignField": "_id",
                 "as": "vpsdbDoc",
             }
         },
         {
             "$addFields": {
-                "sortName": {
-                    "$let": {
-                        "vars": {"firstVpsdb": {"$arrayElemAt": ["$vpsdbDoc", 0]}},
-                        "in": {"$toLower": {"$ifNull": ["$$firstVpsdb.data.name", ""]}},
-                    }
-                }
+                "vpsId": "$_id",
+                "ratingData": {"$arrayElemAt": ["$ratingInfo", 0]},
+                "stateData": {"$arrayElemAt": ["$stateInfo", 0]},
+                "vpsdbRaw": {"$arrayElemAt": ["$vpsdbDoc", 0]},
+            }
+        },
+        {
+            "$addFields": {
+                "avgRating": {"$round": [{"$ifNull": ["$ratingData.avgRating", 0]}, 3]},
+                "ratingCount": {"$ifNull": ["$ratingData.ratingCount", 0]},
+                "runTimeTotal": {"$ifNull": ["$stateData.runTimeTotal", 0]},
+                "startCountTotal": {"$ifNull": ["$stateData.startCountTotal", 0]},
+                "playerCount": {"$ifNull": ["$stateData.playerCount", 0]},
+                "firstAuthor": {"$ifNull": [{"$arrayElemAt": ["$vpsdbRaw.data.authors", 0]}, ""]},
+                "sortName": {"$toLower": {"$ifNull": ["$vpsdbRaw.data.name", ""]}},
+                "year": {"$ifNull": ["$vpsdbRaw.data.year", 0]},
+                "name": {"$ifNull": ["$vpsdbRaw.data.name", ""]},
+                "manufacturer": {"$ifNull": ["$vpsdbRaw.data.manufacturer", ""]},
             }
         },
     ]
 
-    if search_key == "sortName" and search_term:
-        pipeline.append(
-            {"$match": {"sortName": {"$regex": search_term.lower(), "$options": "i"}}}
-        )
+    match_stage = {}
+    if search_key and search_term:
+        field_map = {
+            "name": ("name", "string"),
+            "manufacturer": ("manufacturer", "string"),
+            "year": ("year", "number"),
+            "avgRating": ("avgRating", "number"),
+            "ratingCount": ("ratingCount", "number"),
+            "playerCount": ("playerCount", "number"),
+            "startCountTotal": ("startCountTotal", "number"),
+            "runTimeTotal": ("runTimeTotal", "number"),
+            "variationCount": ("variationCount", "number"),
+            "vpsId": ("vpsId", "string"),
+            "authors": ("firstAuthor", "string"),
+            }
+
+
+        field_info = field_map.get(search_key)
+        if field_info:
+            field_path, field_type = field_info
+            if field_type == "string":
+                match_stage[field_path] = {"$regex": search_term, "$options": "i"}
+            elif field_type == "number":
+                match_stage["$expr"] = {
+                    "$regexMatch": {
+                        "input": { "$toString": f"${field_path}" },
+                        "regex": search_term,
+                        "options": "i"
+                    }
+                }
+
+    if match_stage:
+        pipeline.append({"$match": match_stage})
 
     count_pipeline = pipeline.copy()
     count_pipeline.append({"$count": "total"})
     count_result = list(db["tables"].aggregate(count_pipeline))
     filtered_total = count_result[0]["total"] if count_result else 0
 
+    sort_stage = {actual_sort_by: sort_order}
+
+    if actual_sort_by != "avgRating":
+        sort_stage["avgRating"] = -1
+    if actual_sort_by != "ratingCount":
+        sort_stage["ratingCount"] = -1
+    if actual_sort_by != "sortName":
+        sort_stage["sortName"] = 1
+    if actual_sort_by != "vpsId":
+        sort_stage["vpsId"] = 1
+
     pipeline.extend(
         [
-            {"$sort": {sort_by: sort_order, "vpsId": 1}},
+            {"$sort": sort_stage},
             {"$skip": offset},
             {"$limit": limit},
+            {
+                "$project": {
+                    "_id": 0,
+                    "name": {"$ifNull": ["$vpsdbRaw.data.name", ""]},
+                    "manufacturer": {"$ifNull": ["$vpsdbRaw.data.manufacturer", ""]},
+                    "year": {"$ifNull": ["$vpsdbRaw.data.year", 0]},
+                    "authors": {"$ifNull": [{"$arrayElemAt": ["$vpsdbRaw.data.authors", 0]}, ""]},
+                    "avgRating": {"$round": [{"$ifNull": ["$ratingData.avgRating", 0]}, 3]},
+                    "ratingCount": {"$ifNull": ["$ratingData.ratingCount", 0]},
+                    "playerCount": {"$ifNull": ["$stateData.playerCount", 0]},
+                    "startCountTotal": {"$ifNull": ["$stateData.startCountTotal", 0]},
+                    "runTimeTotal": {"$ifNull": ["$stateData.runTimeTotal", 0]},
+                    "variationCount": 1,
+                    "vpsId": "$_id",
+                    "firstSeenAt": 1,
+                    "sortName": {"$toLower": {"$ifNull": ["$vpsdbRaw.data.name", ""]}},
+                }
+            },
         ]
     )
 
-    rows = list(db["tables"].aggregate(pipeline))
-
-    response = []
-    for row in rows:
-        item = {k: v for k, v in row.items() if k != "vpsdbDoc"}
-        if "_id" in item:
-            item["_id"] = str(item["_id"])
-        response.append(item)
-
-    items = enrich_with_vpsdb(response, db)
+    items = list(db["tables"].aggregate(pipeline))
+    
+    for item in items:
+        item.pop("sortName", None)
 
     return {
         "items": items,
