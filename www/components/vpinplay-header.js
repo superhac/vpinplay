@@ -15,10 +15,10 @@ class VPinPlayHeader extends HTMLElement {
 
     const navItems = [
       { name: "Global", href: "/" },
-      { name: "Status", href: "/status.html" },
       { name: "Tables", href: "/tables" },
       { name: "Players", href: "/players" },
       { name: "Scores", href: "/scores" },
+      { name: "Status", href: "/status.html" },
     ];
 
     const navHtml = navItems
