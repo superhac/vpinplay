@@ -319,15 +319,11 @@ async function refreshDashboard() {
       : "-";
 
     if (weeklyActivityRes.ok) {
-      q("kpiRuntimeWeek").textContent = fmtWeeklyRuntime(
+      q("kpiWeeklyActivity").textContent = `${fmtWeeklyRuntime(
         weeklyActivityRes.data.runTimePlayed,
-      );
-      q("kpiStartsWeek").textContent = fmtNumber(
-        weeklyActivityRes.data.startCountPlayed,
-      );
+      )} / ${fmtNumber(weeklyActivityRes.data.startCountPlayed)}`;
     } else {
-      q("kpiRuntimeWeek").textContent = "-";
-      q("kpiStartsWeek").textContent = "-";
+      q("kpiWeeklyActivity").textContent = "-";
     }
 
     await renderDashboardPanels(limit);
