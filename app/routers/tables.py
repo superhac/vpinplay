@@ -424,6 +424,109 @@ async def get_global_top_play_time_tables(
     return enrich_with_vpsdb(response, db)
 
 
+@router.get("/tables/top-play-time-weekly")
+async def get_global_top_play_time_tables_weekly(
+    days: int = Query(7, ge=1, le=365),
+    limit: int = Query(5, ge=1, le=100),
+    offset: int = Query(0, ge=0),
+    db: Database = Depends(get_db)
+):
+    """
+    Get top tables by trailing N-day runtime using per-sync runtime deltas.
+    Counts only positive runtime/start-count deltas.
+    """
+    now = datetime.utcnow()
+    since = now - timedelta(days=days)
+
+    pipeline = [
+        {"$match": {"changedAt": {"$gte": since}}},
+        {
+            "$group": {
+                "_id": "$vpsId",
+                "runTimePlayed": {
+                    "$sum": {
+                        "$cond": [
+                            {"$gt": ["$deltaRunTime", 0]},
+                            "$deltaRunTime",
+                            0,
+                        ]
+                    }
+                },
+                "startCountPlayed": {
+                    "$sum": {
+                        "$cond": [
+                            {"$gt": ["$deltaStartCount", 0]},
+                            "$deltaStartCount",
+                            0,
+                        ]
+                    }
+                },
+                "changeEvents": {"$sum": 1},
+                "distinctUsers": {"$addToSet": "$userId"},
+                "lastChangedAt": {"$max": "$changedAt"},
+            }
+        },
+        {"$match": {"runTimePlayed": {"$gt": 0}}},
+        {
+            "$project": {
+                "_id": 0,
+                "vpsId": "$_id",
+                "runTimePlayed": 1,
+                "startCountPlayed": 1,
+                "changeEvents": 1,
+                "playerCount": {"$size": "$distinctUsers"},
+                "lastChangedAt": 1,
+            }
+        },
+        {"$sort": {"runTimePlayed": -1, "startCountPlayed": -1, "vpsId": 1}},
+        {
+            "$facet": {
+                "items": [
+                    {"$skip": offset},
+                    {"$limit": limit},
+                ],
+                "meta": [
+                    {"$count": "total"},
+                ],
+            }
+        },
+    ]
+
+    result = list(db["user_table_state_deltas"].aggregate(pipeline))
+    facet = result[0] if result else {}
+    rows = facet.get("items", [])
+    meta = facet.get("meta", [])
+    total = int(meta[0].get("total", 0)) if meta else 0
+
+    response = [
+        {
+            "vpsId": row.get("vpsId"),
+            "runTimePlayed": int(row.get("runTimePlayed", 0)),
+            "startCountPlayed": int(row.get("startCountPlayed", 0)),
+            "changeEvents": int(row.get("changeEvents", 0)),
+            "playerCount": int(row.get("playerCount", 0)),
+            "lastChangedAt": row.get("lastChangedAt"),
+        }
+        for row in rows
+    ]
+    items = enrich_with_vpsdb(response, db)
+
+    return {
+        "days": days,
+        "from": since,
+        "to": now,
+        "items": items,
+        "pagination": {
+            "limit": limit,
+            "offset": offset,
+            "returned": len(items),
+            "total": total,
+            "hasNext": (offset + len(items)) < total,
+            "hasPrev": offset > 0,
+        },
+    }
+
+
 @router.get("/tables/top-variants")
 async def get_global_top_variant_tables(
     limit: int = Query(5, ge=1, le=100),

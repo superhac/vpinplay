@@ -52,6 +52,30 @@ function getDashboardPanelConfigs() {
         { label: "VPS ID", getter: (r) => linkVpsId(r.vpsId), html: true },
       ],
     },
+    topWeeklyPlayTimePanel: {
+      tableId: "topWeeklyPlayTimeTable",
+      pagerId: "topWeeklyPlayTimePager",
+      fetchPage: (limit, offset) =>
+        fetchDashboardObjectPage(
+          "/api/v1/tables/top-play-time-weekly?days=7",
+          limit,
+          offset,
+        ),
+      columns: [
+        {
+          label: "Table",
+          getter: (r) => linkTableName(fmtTableName(r), r.vpsId),
+          html: true,
+        },
+        {
+          label: "Run Time (7d)",
+          getter: (r) => fmtWeeklyRuntime(r.runTimePlayed),
+        },
+        { label: "Plays (7d)", getter: (r) => fmtNumber(r.startCountPlayed) },
+        { label: "Players", getter: (r) => fmtNumber(r.playerCount) },
+        { label: "VPS ID", getter: (r) => linkVpsId(r.vpsId), html: true },
+      ],
+    },
     latestSubmittedRatingsPanel: {
       tableId: "latestSubmittedRatingsTable",
       pagerId: "latestSubmittedRatingsPager",
@@ -424,6 +448,26 @@ async function loadTopPlayerActivityPage(metric, days, limit, offset = 0) {
       limit: safeLimit,
       offset: safeOffset,
       returned: items.length,
+      ...(res.ok ? res.data?.pagination || {} : {}),
+    },
+  };
+}
+
+async function fetchDashboardObjectPage(basePath, limit, offset = 0) {
+  const safeLimit = Math.max(
+    1,
+    Math.min(API_PAGE_LIMIT, Number(limit || 0) || 5),
+  );
+  const safeOffset = Math.max(0, Number(offset || 0));
+  const joiner = basePath.includes("?") ? "&" : "?";
+  const res = await api(
+    `${basePath}${joiner}limit=${encodeURIComponent(safeLimit)}&offset=${encodeURIComponent(safeOffset)}`,
+  );
+  return {
+    items: res.ok && Array.isArray(res.data?.items) ? res.data.items : [],
+    pagination: {
+      limit: safeLimit,
+      offset: safeOffset,
       ...(res.ok ? res.data?.pagination || {} : {}),
     },
   };
