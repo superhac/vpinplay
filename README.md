@@ -44,6 +44,7 @@ This will start:
 - `GET /api/v1/tables-plus/search` - Search and sort the flattened global table catalog across metadata, ratings, player counts, activity totals, variants, and first-seen date (paginated via `limit` + `offset`, max 100 per request)
 - `GET /api/v1/tables/top-rated` - Get top tables by average rating across all users (paginated via `limit` + `offset`, max 100 per request, default limit 5)
 - `GET /api/v1/tables/top-play-time` - Get top tables by cumulative `runTime` across all users (highest first, paginated via `limit` + `offset`, max 100 per request, default limit 5)
+- `GET /api/v1/tables/top-play-time-weekly` - Get top played tables by trailing N-day `runTime` from sync deltas (default `days=7`, paginated via `limit` + `offset`, max 100 per request, default limit 5)
 - `GET /api/v1/tables/top-variants` - Get top tables by total variant count (highest first, paginated via `limit` + `offset`, max 100 per request, default limit 5)
 - `GET /api/v1/tables/activity-weekly` - Get cumulative global play activity from sync deltas for trailing N days (default `days=7`)
 - `GET /api/v1/tables/{vpsId}/rating-summary` - Get cumulative average rating + rating count for a specific table
