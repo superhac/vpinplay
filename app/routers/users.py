@@ -681,6 +681,23 @@ def _best_score_item_key(item: dict) -> tuple[str, str, str]:
     )
 
 
+def _score_slot_key(item: dict) -> tuple[str, str]:
+    score = ((item or {}).get("score") or {})
+    return (
+        str(item.get("vpsId") or "").strip(),
+        "|".join([
+            str(_get_case_insensitive_value(score, "section") or item.get("label") or "").strip().lower(),
+            str(_get_case_insensitive_value(score, "rank") or "").strip().lower(),
+            str(_get_case_insensitive_value(score, "value_suffix") or "").strip().lower(),
+            "|".join(
+                str(part).strip().lower()
+                for part in (_get_case_insensitive_value(score, "extra_lines") or [])
+                if str(part).strip()
+            ),
+        ]),
+    )
+
+
 def _pick_better_score_item(existing: dict | None, candidate: dict) -> dict:
     if existing is None:
         return candidate
@@ -701,6 +718,66 @@ def _pick_better_score_item(existing: dict | None, candidate: dict) -> dict:
         return candidate if candidate_updated_at < existing_updated_at else existing
 
     return candidate if str(candidate.get("userId") or "") < str(existing.get("userId") or "") else existing
+
+
+@router.get("/users/scores/top-holders")
+async def get_top_score_holders(
+    limit: int = Query(10, ge=1, le=25),
+    db: Database = Depends(get_db),
+):
+    """
+    Get top users by count of current first-place score spots held across all tables.
+    """
+    initials_by_user_id = _get_registered_initials_by_user_id(db)
+    current_states = list(
+        db["user_table_state"].find(
+            {"score": {"$type": "object"}},
+            {
+                "_id": 0,
+                "userId": 1,
+                "userIdNormalized": 1,
+                "vpsId": 1,
+                "score": 1,
+                "alttitle": 1,
+                "updatedAt": 1,
+            },
+        )
+    )
+
+    extracted_items: list[dict] = []
+    for state in current_states:
+        normalized_user_id = normalize_user_id(state.get("userIdNormalized") or state.get("userId") or "")
+        initials = initials_by_user_id.get(normalized_user_id)
+        if not normalized_user_id or not initials:
+            continue
+        extracted_items.extend(_build_extracted_score_items(state, normalized_user_id, initials))
+
+    winning_items_by_slot: dict[tuple[str, str], dict] = {}
+    for item in extracted_items:
+        if _score_item_numeric_value(item) is None:
+            continue
+        slot_key = _score_slot_key(item)
+        winning_items_by_slot[slot_key] = _pick_better_score_item(
+            winning_items_by_slot.get(slot_key),
+            item,
+        )
+
+    holder_counts: dict[str, int] = {}
+    for item in winning_items_by_slot.values():
+        user_id = str(item.get("userId") or "").strip()
+        if not user_id:
+            continue
+        holder_counts[user_id] = holder_counts.get(user_id, 0) + 1
+
+    ranked_items = sorted(
+        (
+            {"userId": user_id, "spotCount": count}
+            for user_id, count in holder_counts.items()
+        ),
+        key=lambda row: (-row["spotCount"], row["userId"]),
+    )
+
+    return ranked_items[:limit]
 
 
 @router.get("/users/tables/with-score", response_model=List[UserTableStateResponse])

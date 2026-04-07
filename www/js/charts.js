@@ -5,6 +5,7 @@ let topRuntimeChart = null;
 let topStartsChart = null;
 let newTablesChart = null;
 let reviewersChart = null;
+let scoreHoldersChart = null;
 
 function formatBucketLabel(bucket) {
   const date = new Date(`${bucket}T00:00:00Z`);
@@ -301,6 +302,81 @@ function renderReviewersBarChart(canvasId, chartRef, items) {
   });
 }
 
+function renderScoreHoldersBarChart(canvasId, chartRef, items) {
+  const canvas = q(canvasId);
+  if (!canvas || typeof Chart === "undefined") return null;
+
+  destroyChart(chartRef);
+
+  const axisInk = getCssVar("--ink-muted", "#b89dd9");
+  const axisLine = getCssVar("--line", "#3d2461");
+  const accent = getCssVar("--neon-purple", "#b429f9");
+  const labels = items.map((item) => String(item.userId || "Unknown User"));
+  const values = items.map((item) => Number(item.spotCount || 0));
+
+  return new Chart(canvas, {
+    type: "bar",
+    data: {
+      labels,
+      datasets: [
+        {
+          label: "High Score Spots",
+          data: values,
+          backgroundColor: "rgba(180, 41, 249, 0.34)",
+          borderColor: accent,
+          borderWidth: 1.5,
+          borderRadius: 6,
+          borderSkipped: false,
+        },
+      ],
+    },
+    options: {
+      indexAxis: "y",
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          display: false,
+        },
+        tooltip: {
+          callbacks: {
+            title(itemsCtx) {
+              const index = itemsCtx?.[0]?.dataIndex ?? -1;
+              return index >= 0 ? String(items[index].userId || "Unknown User") : "";
+            },
+            label(context) {
+              return `${fmtNumber(context.parsed.x || 0)} first-place spots`;
+            },
+          },
+        },
+      },
+      scales: {
+        x: {
+          beginAtZero: true,
+          ticks: {
+            color: axisInk,
+            precision: 0,
+            callback(value) {
+              return fmtNumber(value);
+            },
+          },
+          grid: {
+            color: axisLine,
+          },
+        },
+        y: {
+          ticks: {
+            color: axisInk,
+          },
+          grid: {
+            display: false,
+          },
+        },
+      },
+    },
+  });
+}
+
 function renderNewTablesLineChart(canvasId, chartRef, items) {
   const canvas = q(canvasId);
   if (!canvas || typeof Chart === "undefined") return null;
@@ -429,15 +505,18 @@ async function refreshCharts() {
   const newTablesMetaEl = q("newTablesChartMeta");
   const reviewersStatusEl = q("reviewersChartStatus");
   const reviewersMetaEl = q("reviewersChartMeta");
+  const scoreHoldersStatusEl = q("scoreHoldersChartStatus");
+  const scoreHoldersMetaEl = q("scoreHoldersChartMeta");
 
   if (header) header.setRefreshing(true);
   if (topRuntimeStatusEl) topRuntimeStatusEl.textContent = "Loading chart data...";
   if (topStartsStatusEl) topStartsStatusEl.textContent = "Loading chart data...";
   if (newTablesStatusEl) newTablesStatusEl.textContent = "Loading chart data...";
   if (reviewersStatusEl) reviewersStatusEl.textContent = "Loading chart data...";
+  if (scoreHoldersStatusEl) scoreHoldersStatusEl.textContent = "Loading chart data...";
 
   try {
-    const [runtimeResult, startsResult, newTablesResult, reviewersResult] = await Promise.all([
+    const [runtimeResult, startsResult, newTablesResult, reviewersResult, scoreHoldersResult] = await Promise.all([
       api(
         `/api/v1/tables/top-play-time-buckets?days=${encodeURIComponent(CHART_WINDOW_DAYS)}&limit=${encodeURIComponent(CHART_TOP_LIMIT)}`,
       ),
@@ -449,6 +528,9 @@ async function refreshCharts() {
       ),
       api(
         `/api/v1/tables/top-reviewers?limit=${encodeURIComponent(CHART_TOP_LIMIT)}`,
+      ),
+      api(
+        `/api/v1/users/scores/top-holders?limit=${encodeURIComponent(CHART_TOP_LIMIT)}`,
       ),
     ]);
 
@@ -589,6 +671,40 @@ async function refreshCharts() {
         if (reviewersStatusEl) {
           reviewersStatusEl.textContent = reviewersChart
             ? "Top 10 players ranked by submitted review count."
+            : "Chart library unavailable.";
+        }
+      }
+    }
+
+    if (!scoreHoldersResult.ok) {
+      destroyChart(scoreHoldersChart);
+      scoreHoldersChart = null;
+      if (scoreHoldersStatusEl) scoreHoldersStatusEl.textContent = "Unable to load chart data.";
+    } else {
+      const items = Array.isArray(scoreHoldersResult.data)
+        ? scoreHoldersResult.data
+        : [];
+
+      if (scoreHoldersMetaEl) {
+        scoreHoldersMetaEl.textContent =
+          "Players ranked by how many current first-place score spots they hold.";
+      }
+
+      if (items.length === 0) {
+        destroyChart(scoreHoldersChart);
+        scoreHoldersChart = null;
+        if (scoreHoldersStatusEl) {
+          scoreHoldersStatusEl.textContent = "No high score holders found.";
+        }
+      } else {
+        scoreHoldersChart = renderScoreHoldersBarChart(
+          "scoreHoldersChart",
+          scoreHoldersChart,
+          items,
+        );
+        if (scoreHoldersStatusEl) {
+          scoreHoldersStatusEl.textContent = scoreHoldersChart
+            ? "Top 10 players ranked by current first-place score spots."
             : "Chart library unavailable.";
         }
       }

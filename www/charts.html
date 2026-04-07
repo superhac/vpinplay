@@ -102,6 +102,26 @@
             Loading chart data...
           </div>
         </section>
+
+        <section class="panel chart-panel">
+          <div class="panel-heading">
+            <div>
+              <h3>Top 10 Players Holding High Score Spots</h3>
+              <p id="scoreHoldersChartMeta" class="panel-meta">
+                Players ranked by how many current first-place score spots they hold.
+              </p>
+            </div>
+          </div>
+          <div class="chart-stage chart-stage-scoreholders">
+            <canvas
+              id="scoreHoldersChart"
+              aria-label="Top 10 players holding the most high score spots"
+            ></canvas>
+          </div>
+          <div id="scoreHoldersChartStatus" class="muted chart-status">
+            Loading chart data...
+          </div>
+        </section>
       </section>
     </div>
     <script src="js/charts.js"></script>
