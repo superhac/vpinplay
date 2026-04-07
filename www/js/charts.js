@@ -4,6 +4,7 @@ const CHART_TOP_LIMIT = 10;
 let topRuntimeChart = null;
 let topStartsChart = null;
 let newTablesChart = null;
+let reviewersChart = null;
 
 function formatBucketLabel(bucket) {
   const date = new Date(`${bucket}T00:00:00Z`);
@@ -225,6 +226,81 @@ function renderRankedBarChart(canvasId, chartRef, items) {
   });
 }
 
+function renderReviewersBarChart(canvasId, chartRef, items) {
+  const canvas = q(canvasId);
+  if (!canvas || typeof Chart === "undefined") return null;
+
+  destroyChart(chartRef);
+
+  const axisInk = getCssVar("--ink-muted", "#b89dd9");
+  const axisLine = getCssVar("--line", "#3d2461");
+  const accent = getCssVar("--ok", "#00ff9f");
+  const labels = items.map((item) => String(item.userId || "Unknown User"));
+  const values = items.map((item) => Number(item.reviewCount || 0));
+
+  return new Chart(canvas, {
+    type: "bar",
+    data: {
+      labels,
+      datasets: [
+        {
+          label: "Reviews",
+          data: values,
+          backgroundColor: "rgba(0, 255, 159, 0.35)",
+          borderColor: accent,
+          borderWidth: 1.5,
+          borderRadius: 6,
+          borderSkipped: false,
+        },
+      ],
+    },
+    options: {
+      indexAxis: "y",
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          display: false,
+        },
+        tooltip: {
+          callbacks: {
+            title(itemsCtx) {
+              const index = itemsCtx?.[0]?.dataIndex ?? -1;
+              return index >= 0 ? String(items[index].userId || "Unknown User") : "";
+            },
+            label(context) {
+              return `${fmtNumber(context.parsed.x || 0)} reviews`;
+            },
+          },
+        },
+      },
+      scales: {
+        x: {
+          beginAtZero: true,
+          ticks: {
+            color: axisInk,
+            precision: 0,
+            callback(value) {
+              return fmtNumber(value);
+            },
+          },
+          grid: {
+            color: axisLine,
+          },
+        },
+        y: {
+          ticks: {
+            color: axisInk,
+          },
+          grid: {
+            display: false,
+          },
+        },
+      },
+    },
+  });
+}
+
 function renderNewTablesLineChart(canvasId, chartRef, items) {
   const canvas = q(canvasId);
   if (!canvas || typeof Chart === "undefined") return null;
@@ -351,14 +427,17 @@ async function refreshCharts() {
   const topStartsMetaEl = q("topStartsChartMeta");
   const newTablesStatusEl = q("newTablesChartStatus");
   const newTablesMetaEl = q("newTablesChartMeta");
+  const reviewersStatusEl = q("reviewersChartStatus");
+  const reviewersMetaEl = q("reviewersChartMeta");
 
   if (header) header.setRefreshing(true);
   if (topRuntimeStatusEl) topRuntimeStatusEl.textContent = "Loading chart data...";
   if (topStartsStatusEl) topStartsStatusEl.textContent = "Loading chart data...";
   if (newTablesStatusEl) newTablesStatusEl.textContent = "Loading chart data...";
+  if (reviewersStatusEl) reviewersStatusEl.textContent = "Loading chart data...";
 
   try {
-    const [runtimeResult, startsResult, newTablesResult] = await Promise.all([
+    const [runtimeResult, startsResult, newTablesResult, reviewersResult] = await Promise.all([
       api(
         `/api/v1/tables/top-play-time-buckets?days=${encodeURIComponent(CHART_WINDOW_DAYS)}&limit=${encodeURIComponent(CHART_TOP_LIMIT)}`,
       ),
@@ -367,6 +446,9 @@ async function refreshCharts() {
       ),
       api(
         `/api/v1/tables/top-newly-added?days=${encodeURIComponent(CHART_WINDOW_DAYS)}&limit=${encodeURIComponent(CHART_TOP_LIMIT)}`,
+      ),
+      api(
+        `/api/v1/tables/top-reviewers?limit=${encodeURIComponent(CHART_TOP_LIMIT)}`,
       ),
     ]);
 
@@ -480,6 +562,42 @@ async function refreshCharts() {
         if (newTablesStatusEl) {
           newTablesStatusEl.textContent = newTablesChart
             ? "Newest 10 tables plotted by first-seen date and installed player count."
+            : "Chart library unavailable.";
+        }
+      }
+    }
+
+    if (!reviewersResult.ok) {
+      destroyChart(reviewersChart);
+      reviewersChart = null;
+      q("kpiTrackedReviewers").textContent = "-";
+      if (reviewersStatusEl) reviewersStatusEl.textContent = "Unable to load chart data.";
+    } else {
+      const items = Array.isArray(reviewersResult.data)
+        ? reviewersResult.data
+        : [];
+      q("kpiTrackedReviewers").textContent = fmtNumber(items.length);
+
+      if (reviewersMetaEl) {
+        reviewersMetaEl.textContent =
+          "Players ranked by total submitted rating count.";
+      }
+
+      if (items.length === 0) {
+        destroyChart(reviewersChart);
+        reviewersChart = null;
+        if (reviewersStatusEl) {
+          reviewersStatusEl.textContent = "No submitted reviews found.";
+        }
+      } else {
+        reviewersChart = renderReviewersBarChart(
+          "reviewersChart",
+          reviewersChart,
+          items,
+        );
+        if (reviewersStatusEl) {
+          reviewersStatusEl.textContent = reviewersChart
+            ? "Top 10 players ranked by submitted review count."
             : "Chart library unavailable.";
         }
       }

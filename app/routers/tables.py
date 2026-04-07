@@ -131,6 +131,36 @@ async def get_global_latest_submitted_ratings(
     return enrich_with_vpsdb(response, db)
 
 
+@router.get("/tables/top-reviewers")
+async def get_global_top_reviewers(
+    limit: int = Query(10, ge=1, le=25),
+    db: Database = Depends(get_db),
+):
+    """
+    Get top users by count of submitted ratings/reviews.
+    """
+    pipeline = [
+        {"$match": {"rating": {"$gte": 1, "$lte": 5}}},
+        {
+            "$group": {
+                "_id": "$userId",
+                "reviewCount": {"$sum": 1},
+            }
+        },
+        {"$sort": {"reviewCount": -1, "_id": 1}},
+        {"$limit": limit},
+    ]
+
+    rows = list(db["user_table_ratings"].aggregate(pipeline))
+    return [
+        {
+            "userId": row.get("_id"),
+            "reviewCount": int(row.get("reviewCount", 0)),
+        }
+        for row in rows
+    ]
+
+
 @router.get("/tables/{vpsId}/rating-summary")
 async def get_global_table_rating_summary(vpsId: str, db: Database = Depends(get_db)):
     """

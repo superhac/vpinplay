@@ -43,6 +43,11 @@
           <div id="kpiTrackedNewTables" class="value">-</div>
           <div class="sub">Top new tables in last 30 days</div>
         </div>
+        <div class="kpi">
+          <div class="label">Top Reviewers</div>
+          <div id="kpiTrackedReviewers" class="value">-</div>
+          <div class="sub">Players ranked by review count</div>
+        </div>
       </section>
 
       <section class="grid-panels">
@@ -102,6 +107,26 @@
             ></canvas>
           </div>
           <div id="newTablesChartStatus" class="muted chart-status">
+            Loading chart data...
+          </div>
+        </section>
+
+        <section class="panel chart-panel">
+          <div class="panel-heading">
+            <div>
+              <h3>Top 10 Players By Submitted Reviews</h3>
+              <p id="reviewersChartMeta" class="panel-meta">
+                Players ranked by count of submitted ratings.
+              </p>
+            </div>
+          </div>
+          <div class="chart-stage chart-stage-reviewers">
+            <canvas
+              id="reviewersChart"
+              aria-label="Top 10 players by submitted reviews"
+            ></canvas>
+          </div>
+          <div id="reviewersChartStatus" class="muted chart-status">
             Loading chart data...
           </div>
         </section>
