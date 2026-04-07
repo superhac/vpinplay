@@ -233,56 +233,68 @@ function renderNewTablesLineChart(canvasId, chartRef, items) {
 
   const axisInk = getCssVar("--ink-muted", "#b89dd9");
   const axisLine = getCssVar("--line", "#3d2461");
-  const accent = getCssVar("--neon-yellow", "#ffd93d");
+  const palette = getChartPalette();
   const sortedItems = [...items].sort((a, b) => {
     const aTime = new Date(a?.firstSeenAt || 0).getTime();
     const bTime = new Date(b?.firstSeenAt || 0).getTime();
     return aTime - bTime;
   });
-  const labels = sortedItems.map((item) => fmtDay(item.firstSeenAt));
-  const values = sortedItems.map((item) => Number(item.playerCount || 0));
+  const labels = [
+    ...new Set(sortedItems.map((item) => fmtDay(item.firstSeenAt))),
+  ];
+  const datasets = sortedItems.map((item, index) => {
+    const itemLabel = fmtDay(item.firstSeenAt);
+    return {
+      label: fmtTableName(item),
+      data: labels.map((label) =>
+        label === itemLabel ? Number(item.playerCount || 0) : null,
+      ),
+      borderColor: palette[index % palette.length],
+      backgroundColor: palette[index % palette.length],
+      borderWidth: 2,
+      pointRadius: 5,
+      pointHoverRadius: 7,
+      pointBackgroundColor: palette[index % palette.length],
+      pointBorderWidth: 0,
+      showLine: false,
+      spanGaps: false,
+    };
+  });
 
   return new Chart(canvas, {
     type: "line",
     data: {
       labels,
-      datasets: [
-        {
-          label: "Installed Players",
-          data: values,
-          borderColor: accent,
-          backgroundColor: "rgba(255, 217, 61, 0.28)",
-          borderWidth: 3,
-          pointRadius: 4,
-          pointHoverRadius: 6,
-          pointBackgroundColor: accent,
-          pointBorderWidth: 0,
-          tension: 0.22,
-          fill: false,
-        },
-      ],
+      datasets,
     },
     options: {
       responsive: true,
       maintainAspectRatio: false,
       plugins: {
         legend: {
-          display: false,
+          position: "bottom",
+          labels: {
+            color: axisInk,
+            boxWidth: 18,
+            usePointStyle: true,
+          },
         },
         tooltip: {
           callbacks: {
             title(itemsCtx) {
-              const index = itemsCtx?.[0]?.dataIndex ?? -1;
-              return index >= 0 ? fmtTableName(sortedItems[index]) : "";
-            },
-            afterTitle(itemsCtx) {
-              const index = itemsCtx?.[0]?.dataIndex ?? -1;
-              return index >= 0
-                ? `First seen: ${fmtDay(sortedItems[index].firstSeenAt)}`
+              const datasetIndex = itemsCtx?.[0]?.datasetIndex ?? -1;
+              return datasetIndex >= 0
+                ? fmtTableName(sortedItems[datasetIndex])
                 : "";
             },
             label(context) {
               return `${fmtNumber(context.parsed.y || 0)} installed players`;
+            },
+            afterLabel(context) {
+              const datasetIndex = context.datasetIndex ?? -1;
+              return datasetIndex >= 0
+                ? `First seen: ${fmtDay(sortedItems[datasetIndex].firstSeenAt)}`
+                : "";
             },
           },
         },
