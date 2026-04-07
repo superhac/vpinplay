@@ -14,6 +14,18 @@ function formatBucketLabel(bucket) {
   });
 }
 
+function fmtDay(value) {
+  if (!value) return "-";
+  const raw = String(value).trim();
+  const hasTimeZone = /([zZ]|[+-]\d{2}:\d{2})$/.test(raw);
+  const normalized = !hasTimeZone && raw.includes("T") ? `${raw}Z` : raw;
+  const d = new Date(normalized);
+  if (Number.isNaN(d.getTime())) return "-";
+  return d.toLocaleDateString(undefined, {
+    dateStyle: "medium",
+  });
+}
+
 function getChartPalette() {
   return [
     "#00d9ff",
@@ -227,7 +239,7 @@ function renderNewTablesLineChart(canvasId, chartRef, items) {
     const bTime = new Date(b?.firstSeenAt || 0).getTime();
     return aTime - bTime;
   });
-  const labels = sortedItems.map((item) => fmtDate(item.firstSeenAt));
+  const labels = sortedItems.map((item) => fmtDay(item.firstSeenAt));
   const values = sortedItems.map((item) => Number(item.playerCount || 0));
 
   return new Chart(canvas, {
@@ -266,7 +278,7 @@ function renderNewTablesLineChart(canvasId, chartRef, items) {
             afterTitle(itemsCtx) {
               const index = itemsCtx?.[0]?.dataIndex ?? -1;
               return index >= 0
-                ? `First seen: ${fmtDate(sortedItems[index].firstSeenAt)}`
+                ? `First seen: ${fmtDay(sortedItems[index].firstSeenAt)}`
                 : "";
             },
             label(context) {
@@ -424,7 +436,7 @@ async function refreshCharts() {
 
       if (newTablesMetaEl) {
         newTablesMetaEl.textContent =
-          `Newest tables first from ${fmtDate(newTablesResult.data?.from)} to ${fmtDate(newTablesResult.data?.to)}, with installed player count on the y-axis.`;
+          `Newest tables first from ${fmtDay(newTablesResult.data?.from)} to ${fmtDay(newTablesResult.data?.to)}, with installed player count on the y-axis.`;
       }
 
       if (items.length === 0) {
