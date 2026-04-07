@@ -25,10 +25,12 @@
       <section id="setup" class="setup">
         <h2>Set User ID</h2>
         <form class="setup-row" onsubmit="handlePlayersSetupSubmit(event)">
-          <input id="setupUserId" type="text" placeholder="Enter userid" />
-          <button type="submit" class="btn">Apply</button>
+          <select id="setupUserId" aria-label="Select registered user">
+            <option value="">Select a user</option>
+          </select>
           <button
             id="viewToggleBtn"
+            type="button"
             class="btn btn-theme"
             onclick="toggleViewMode()"
           >

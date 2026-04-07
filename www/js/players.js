@@ -1,9 +1,60 @@
 let currentUserId = null;
 let currentViewMode = "table";
+const USER_PAGE_LIMIT = 100;
 
 function handlePlayersSetupSubmit(event) {
   event.preventDefault();
   applyUserId();
+}
+
+async function fetchAllRegisteredUserIds() {
+  const items = [];
+  let offset = 0;
+  let hasNext = true;
+
+  while (hasNext) {
+    const res = await api(
+      `/api/v1/users?limit=${USER_PAGE_LIMIT}&offset=${offset}`,
+    );
+    if (!res.ok) break;
+
+    const pageItems = Array.isArray(res.data?.items) ? res.data.items : [];
+    items.push(...pageItems.filter(Boolean));
+
+    const returned = Number(res.data?.pagination?.returned ?? pageItems.length);
+    hasNext = Boolean(res.data?.pagination?.hasNext) && returned > 0;
+    offset += returned;
+  }
+
+  return [...new Set(items)];
+}
+
+function populateUserSelect(userIds, selectedUserId) {
+  const setupSelect = q("setupUserId");
+  if (!setupSelect) return;
+
+  const normalizedSelected = String(selectedUserId || "").trim();
+  const options = [];
+
+  options.push(`<option value="">Select a user</option>`);
+
+  if (
+    normalizedSelected &&
+    !userIds.some((userId) => userId === normalizedSelected)
+  ) {
+    options.push(
+      `<option value="${escapeHtml(normalizedSelected)}" selected>${escapeHtml(normalizedSelected)}</option>`,
+    );
+  }
+
+  userIds.forEach((userId) => {
+    const selected = userId === normalizedSelected ? " selected" : "";
+    options.push(
+      `<option value="${escapeHtml(userId)}"${selected}>${escapeHtml(userId)}</option>`,
+    );
+  });
+
+  setupSelect.innerHTML = options.join("");
 }
 
 function getPreferredViewMode() {
@@ -358,7 +409,9 @@ async function refreshDashboard() {
 }
 
 function applyUserId() {
-  const entered = q("setupUserId").value.trim();
+  const setupUserId = q("setupUserId");
+  if (!setupUserId) return;
+  const entered = setupUserId.value.trim();
   if (!entered) return;
   const url = new URL(window.location.href);
   url.searchParams.set("userid", entered);
@@ -372,10 +425,18 @@ async function init() {
 
   const params = new URLSearchParams(window.location.search);
   const userId = params.get("userid");
-  if (userId) {
-    const setupInput = q("setupUserId");
-    if (setupInput) setupInput.value = userId;
+  const registeredUserIds = await fetchAllRegisteredUserIds();
+  populateUserSelect(registeredUserIds, userId);
+
+  const setupSelect = q("setupUserId");
+  if (setupSelect) {
+    setupSelect.addEventListener("change", () => {
+      if (setupSelect.value.trim()) {
+        applyUserId();
+      }
+    });
   }
+
   currentUserId = userId;
 
   const dashboard = q("dashboard");
