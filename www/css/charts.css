@@ -37,6 +37,13 @@
     var(--surface-2);
 }
 
+.chart-stage-compact {
+  min-height: 320px;
+  background:
+    linear-gradient(180deg, rgba(255, 10, 120, 0.08), rgba(10, 5, 24, 0.04)),
+    var(--surface-2);
+}
+
 .chart-stage canvas {
   width: 100%;
   height: 100%;
@@ -80,9 +87,48 @@
   font-size: 0.92rem;
 }
 
+.chart-callouts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+}
+
+.chart-callout {
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface-2);
+  box-shadow: var(--shadow);
+}
+
+.chart-callout-label {
+  color: var(--ink-muted);
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.chart-callout-value {
+  margin-top: 8px;
+  color: var(--neon-pink);
+  font-size: 1.35rem;
+  font-weight: 900;
+}
+
+.chart-callout-sub {
+  margin-top: 4px;
+  color: var(--ink-muted);
+  font-size: 0.9rem;
+}
+
 @media (max-width: 900px) {
   .chart-stage {
     min-height: 340px;
     padding: 8px;
+  }
+
+  .chart-stage-compact {
+    min-height: 280px;
   }
 }

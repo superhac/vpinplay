@@ -33,6 +33,11 @@
           <div id="kpiTrackedTables" class="value">-</div>
           <div class="sub">Top runtime tables in chart</div>
         </div>
+        <div class="kpi">
+          <div class="label">Global Starts</div>
+          <div id="kpiGlobalStarts" class="value">-</div>
+          <div class="sub">Total starts across the chart window</div>
+        </div>
       </section>
 
       <section class="grid-panels">
@@ -55,6 +60,27 @@
             Loading chart data...
           </div>
           <div id="topRuntimeSummary" class="chart-summary"></div>
+        </section>
+
+        <section class="panel chart-panel panel-full">
+          <div class="panel-heading">
+            <div>
+              <h3>Global Daily Starts Trend</h3>
+              <p id="globalStartsChartMeta" class="panel-meta">
+                Daily start counts across all tracked table activity.
+              </p>
+            </div>
+          </div>
+          <div class="chart-stage chart-stage-compact">
+            <canvas
+              id="globalStartsChart"
+              aria-label="Global daily starts trend for the last 30 days"
+            ></canvas>
+          </div>
+          <div id="globalStartsChartStatus" class="muted chart-status">
+            Loading chart data...
+          </div>
+          <div id="globalStartsSummary" class="chart-callouts"></div>
         </section>
       </section>
     </div>

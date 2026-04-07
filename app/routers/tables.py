@@ -839,6 +839,103 @@ async def get_global_weekly_activity(
     }
 
 
+@router.get("/tables/activity-buckets")
+async def get_global_activity_buckets(
+    days: int = Query(30, ge=1, le=365),
+    db: Database = Depends(get_db),
+):
+    """
+    Get global daily runtime/start-count buckets over the trailing N days.
+    Counts only positive runtime/start-count deltas.
+    """
+    end_exclusive = datetime.utcnow().replace(
+        hour=0,
+        minute=0,
+        second=0,
+        microsecond=0,
+    ) + timedelta(days=1)
+    since = end_exclusive - timedelta(days=days)
+    bucket_labels = _build_daily_bucket_labels(days, end_exclusive)
+
+    pipeline = [
+        {"$match": {"changedAt": {"$gte": since, "$lt": end_exclusive}}},
+        {
+            "$group": {
+                "_id": {
+                    "bucket": {
+                        "$dateToString": {
+                            "format": "%Y-%m-%d",
+                            "date": "$changedAt",
+                        }
+                    }
+                },
+                "runTimePlayed": {
+                    "$sum": {
+                        "$cond": [
+                            {"$gt": ["$deltaRunTime", 0]},
+                            "$deltaRunTime",
+                            0,
+                        ]
+                    }
+                },
+                "startCountPlayed": {
+                    "$sum": {
+                        "$cond": [
+                            {"$gt": ["$deltaStartCount", 0]},
+                            "$deltaStartCount",
+                            0,
+                        ]
+                    }
+                },
+                "changeEvents": {"$sum": 1},
+                "distinctUsers": {"$addToSet": "$userId"},
+                "distinctTables": {"$addToSet": "$vpsId"},
+            }
+        },
+        {"$sort": {"_id.bucket": 1}},
+    ]
+
+    rows = list(db["user_table_state_deltas"].aggregate(pipeline))
+    daily_buckets = _normalize_daily_bucket_points(
+        bucket_labels,
+        [
+            {
+                "bucket": row.get("_id", {}).get("bucket"),
+                "runTimePlayed": row.get("runTimePlayed", 0),
+                "startCountPlayed": row.get("startCountPlayed", 0),
+            }
+            for row in rows
+        ],
+    )
+
+    change_events = int(sum(int(row.get("changeEvents", 0)) for row in rows))
+    user_ids = {
+        str(user_id)
+        for row in rows
+        for user_id in row.get("distinctUsers", [])
+        if user_id is not None
+    }
+    table_ids = {
+        str(vps_id)
+        for row in rows
+        for vps_id in row.get("distinctTables", [])
+        if vps_id is not None
+    }
+
+    return {
+        "days": days,
+        "bucketUnit": "day",
+        "from": since,
+        "to": end_exclusive,
+        "runTimePlayed": sum(point["runTimePlayed"] for point in daily_buckets),
+        "startCountPlayed": sum(point["startCountPlayed"] for point in daily_buckets),
+        "changeEvents": change_events,
+        "userCount": len(user_ids),
+        "tableCount": len(table_ids),
+        "dailyBuckets": daily_buckets,
+    }
+
+
 @router.get("/tables/count")
 async def get_table_counts(db: Database = Depends(get_db)):
     """
