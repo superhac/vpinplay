@@ -455,14 +455,11 @@ async function refreshCharts() {
     if (!runtimeResult.ok) {
       destroyChart(topRuntimeChart);
       topRuntimeChart = null;
-      q("kpiTrackedTables").textContent = "-";
       if (topRuntimeStatusEl) topRuntimeStatusEl.textContent = "Unable to load chart data.";
     } else {
       const items = Array.isArray(runtimeResult.data?.items)
         ? runtimeResult.data.items
         : [];
-      q("kpiChartWindow").textContent = `${fmtNumber(runtimeResult.data?.days || CHART_WINDOW_DAYS)}d`;
-      q("kpiTrackedTables").textContent = fmtNumber(items.length);
 
       if (topRuntimeMetaEl) {
         topRuntimeMetaEl.textContent =
@@ -495,13 +492,11 @@ async function refreshCharts() {
     if (!startsResult.ok) {
       destroyChart(topStartsChart);
       topStartsChart = null;
-      q("kpiTrackedStartsTables").textContent = "-";
       if (topStartsStatusEl) topStartsStatusEl.textContent = "Unable to load chart data.";
     } else {
       const items = Array.isArray(startsResult.data?.items)
         ? startsResult.data.items
         : [];
-      q("kpiTrackedStartsTables").textContent = fmtNumber(items.length);
 
       if (topStartsMetaEl) {
         topStartsMetaEl.textContent =
@@ -534,13 +529,11 @@ async function refreshCharts() {
     if (!newTablesResult.ok) {
       destroyChart(newTablesChart);
       newTablesChart = null;
-      q("kpiTrackedNewTables").textContent = "-";
       if (newTablesStatusEl) newTablesStatusEl.textContent = "Unable to load chart data.";
     } else {
       const items = Array.isArray(newTablesResult.data?.items)
         ? newTablesResult.data.items
         : [];
-      q("kpiTrackedNewTables").textContent = fmtNumber(items.length);
 
       if (newTablesMetaEl) {
         newTablesMetaEl.textContent =
@@ -570,13 +563,11 @@ async function refreshCharts() {
     if (!reviewersResult.ok) {
       destroyChart(reviewersChart);
       reviewersChart = null;
-      q("kpiTrackedReviewers").textContent = "-";
       if (reviewersStatusEl) reviewersStatusEl.textContent = "Unable to load chart data.";
     } else {
       const items = Array.isArray(reviewersResult.data)
         ? reviewersResult.data
         : [];
-      q("kpiTrackedReviewers").textContent = fmtNumber(items.length);
 
       if (reviewersMetaEl) {
         reviewersMetaEl.textContent =
