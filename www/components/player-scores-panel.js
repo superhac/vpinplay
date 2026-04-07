@@ -402,11 +402,13 @@ class PlayerScoresPanel extends HTMLElement {
         letter-spacing: 0.08em;
         color: var(--neon-cyan);
         text-shadow: var(--glow-cyan);
+        text-align: center;
       }
 
       .grand-score {
         font-size: 1.6rem;
         font-weight: 800;
+        text-align: center;
       }
 
       .score-list {
