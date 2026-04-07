@@ -239,24 +239,38 @@ function renderNewTablesLineChart(canvasId, chartRef, items) {
     const bTime = new Date(b?.firstSeenAt || 0).getTime();
     return aTime - bTime;
   });
-  const labels = [
-    ...new Set(sortedItems.map((item) => fmtDay(item.firstSeenAt))),
-  ];
+  const bucketLabels = [];
+  const endDate = new Date();
+  endDate.setHours(0, 0, 0, 0);
+  for (let i = CHART_WINDOW_DAYS - 1; i >= 0; i -= 1) {
+    const date = new Date(endDate);
+    date.setDate(endDate.getDate() - i);
+    bucketLabels.push(
+      date.toLocaleDateString(undefined, {
+        dateStyle: "medium",
+      }),
+    );
+  }
   const datasets = sortedItems.map((item, index) => {
     const itemLabel = fmtDay(item.firstSeenAt);
+    const playerCount = Number(item.playerCount || 0);
+    const startIndex = bucketLabels.indexOf(itemLabel);
     return {
       label: fmtTableName(item),
-      data: labels.map((label) =>
-        label === itemLabel ? Number(item.playerCount || 0) : null,
+      data: bucketLabels.map((label) =>
+        startIndex >= 0 && bucketLabels.indexOf(label) >= startIndex
+          ? playerCount
+          : null,
       ),
       borderColor: palette[index % palette.length],
       backgroundColor: palette[index % palette.length],
       borderWidth: 2,
-      pointRadius: 5,
+      pointRadius: bucketLabels.map((label) => (label === itemLabel ? 5 : 0)),
       pointHoverRadius: 7,
       pointBackgroundColor: palette[index % palette.length],
       pointBorderWidth: 0,
-      showLine: false,
+      tension: 0.2,
+      fill: false,
       spanGaps: false,
     };
   });
@@ -264,7 +278,7 @@ function renderNewTablesLineChart(canvasId, chartRef, items) {
   return new Chart(canvas, {
     type: "line",
     data: {
-      labels,
+      labels: bucketLabels,
       datasets,
     },
     options: {
