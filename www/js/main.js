@@ -131,7 +131,8 @@ function linkTableName(name, vpsId) {
 function linkVpsId(vpsId) {
   const id = String(vpsId || "").trim();
   if (!id) return "-";
-  return `<a href="https://virtualpinballspreadsheet.github.io/games?game=${encodeURIComponent(id)}" target="_blank" rel="noopener noreferrer">${escapeHtml(id)}</a>`;
+  const safeId = escapeHtml(id);
+  return `<a href="https://virtualpinballspreadsheet.github.io/games?game=${encodeURIComponent(id)}" target="_blank" rel="noopener noreferrer" aria-label="Open VPS entry for ${safeId}" title="${safeId}"><img src="img/vpsLogo.png" alt="VPS" style="height: 1.15rem; width: auto; vertical-align: middle;"></a>`;
 }
 
 function linkUserId(userId) {
@@ -246,7 +247,7 @@ async function loadAllTablesPage() {
       },
       { label: "Manufacturer", getter: (r) => r.vpsdb?.manufacturer || "-" },
       { label: "Year", getter: (r) => r.vpsdb?.year || "-" },
-      { label: "VPS ID", getter: (r) => linkVpsId(r.vpsId), html: true },
+      { label: "VPS", getter: (r) => linkVpsId(r.vpsId), html: true },
       { label: "Filename", getter: (r) => r.filename || "-" },
       { label: "Filehash", getter: (r) => truncateHash(r.filehash, 32) },
     ],

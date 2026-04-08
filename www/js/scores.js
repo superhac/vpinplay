@@ -196,7 +196,7 @@ function renderScoreCards(rows) {
                     <div>
                         <div class="score-card-title">${escapeHtml(fmtTableName(row))}</div>
                         <div class="score-card-subtitle">
-                            VPS ID: ${linkVpsId(row.vpsId)}
+                            VPS: ${linkVpsId(row.vpsId)}
                             <span class="muted">|</span>
                             Updated: ${escapeHtml(fmtDate(row.updatedAt))}
                         </div>
@@ -238,7 +238,7 @@ function renderOverview(rows) {
     "scoreOverviewTable",
     [
       { label: "Table", getter: (row) => fmtTableName(row) },
-      { label: "VPS ID", getter: (row) => linkVpsId(row.vpsId), html: true },
+      { label: "VPS", getter: (row) => linkVpsId(row.vpsId), html: true },
       {
         label: "Score Type",
         getter: (row) => getScorePayload(row)?.score_type || "-",
