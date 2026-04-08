@@ -3,11 +3,13 @@ async function refreshDashboard() {
   if (header) header.setRefreshing(true);
 
   try {
-    const [lastSyncRes, vpsdbStatusRes, userCountRes] = await Promise.all([
-      api("/api/v1/sync/last"),
-      api("/api/v1/vpsdb/status"),
-      api("/api/v1/users/count"),
-    ]);
+    const [lastSyncRes, vpsdbStatusRes, userCountRes, tableCountRes] =
+      await Promise.all([
+        api("/api/v1/sync/last"),
+        api("/api/v1/vpsdb/status"),
+        api("/api/v1/users/count"),
+        api("/api/v1/tables/count"),
+      ]);
 
     q("kpiLastSync").textContent = lastSyncRes.ok
       ? fmtDate(lastSyncRes.data.lastSyncAt)
@@ -17,6 +19,10 @@ async function refreshDashboard() {
 
     q("kpiUserCount").textContent = userCountRes.ok
       ? fmtNumber(userCountRes.data.userCount)
+      : "-";
+
+    q("kpiTotalTables").textContent = tableCountRes.ok
+      ? `${fmtNumber(tableCountRes.data.uniqueVpsIdCount)} / ${fmtNumber(tableCountRes.data.totalTableRows)}`
       : "-";
 
     if (vpsdbStatusRes.ok) {
