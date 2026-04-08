@@ -84,10 +84,6 @@
   height: 100%;
 }
 
-.chart-status {
-  font-size: 0.94rem;
-}
-
 @media (max-width: 900px) {
   .grid-panels {
     grid-template-columns: 1fr;

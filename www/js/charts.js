@@ -591,29 +591,15 @@ function renderNewTablesLineChart(canvasId, chartRef, items) {
 
 async function refreshCharts() {
   const header = document.querySelector("vpinplay-header");
-  const topRuntimeStatusEl = q("topRuntimeChartStatus");
   const topRuntimeMetaEl = q("topRuntimeChartMeta");
-  const topPlayerRuntimeStatusEl = q("topPlayerRuntimeChartStatus");
   const topPlayerRuntimeMetaEl = q("topPlayerRuntimeChartMeta");
-  const topStartsStatusEl = q("topStartsChartStatus");
   const topStartsMetaEl = q("topStartsChartMeta");
-  const topPlayerStartsStatusEl = q("topPlayerStartsChartStatus");
   const topPlayerStartsMetaEl = q("topPlayerStartsChartMeta");
-  const newTablesStatusEl = q("newTablesChartStatus");
   const newTablesMetaEl = q("newTablesChartMeta");
-  const reviewersStatusEl = q("reviewersChartStatus");
   const reviewersMetaEl = q("reviewersChartMeta");
-  const scoreHoldersStatusEl = q("scoreHoldersChartStatus");
   const scoreHoldersMetaEl = q("scoreHoldersChartMeta");
 
   if (header) header.setRefreshing(true);
-  if (topRuntimeStatusEl) topRuntimeStatusEl.textContent = "Loading chart data...";
-  if (topPlayerRuntimeStatusEl) topPlayerRuntimeStatusEl.textContent = "Loading chart data...";
-  if (topStartsStatusEl) topStartsStatusEl.textContent = "Loading chart data...";
-  if (topPlayerStartsStatusEl) topPlayerStartsStatusEl.textContent = "Loading chart data...";
-  if (newTablesStatusEl) newTablesStatusEl.textContent = "Loading chart data...";
-  if (reviewersStatusEl) reviewersStatusEl.textContent = "Loading chart data...";
-  if (scoreHoldersStatusEl) scoreHoldersStatusEl.textContent = "Loading chart data...";
 
   try {
     const [
@@ -651,7 +637,6 @@ async function refreshCharts() {
     if (!runtimeResult.ok) {
       destroyChart(topRuntimeChart);
       topRuntimeChart = null;
-      if (topRuntimeStatusEl) topRuntimeStatusEl.textContent = "Unable to load chart data.";
     } else {
       const items = Array.isArray(runtimeResult.data?.items)
         ? runtimeResult.data.items
@@ -665,9 +650,6 @@ async function refreshCharts() {
       if (items.length === 0) {
         destroyChart(topRuntimeChart);
         topRuntimeChart = null;
-        if (topRuntimeStatusEl) {
-          topRuntimeStatusEl.textContent = "No runtime activity found for this window.";
-        }
       } else {
         topRuntimeChart = renderMultiTableLineChart(
           "topRuntimeChart",
@@ -677,18 +659,12 @@ async function refreshCharts() {
           fmtWeeklyRuntime,
           fmtWeeklyRuntime,
         );
-        if (topRuntimeStatusEl) {
-          topRuntimeStatusEl.textContent = topRuntimeChart
-            ? "Top 10 tables ranked by total runtime across the selected window."
-            : "Chart library unavailable.";
-        }
       }
     }
 
     if (!playerRuntimeResult.ok) {
       destroyChart(topPlayerRuntimeChart);
       topPlayerRuntimeChart = null;
-      if (topPlayerRuntimeStatusEl) topPlayerRuntimeStatusEl.textContent = "Unable to load chart data.";
     } else {
       const items = Array.isArray(playerRuntimeResult.data?.items)
         ? playerRuntimeResult.data.items
@@ -702,9 +678,6 @@ async function refreshCharts() {
       if (items.length === 0) {
         destroyChart(topPlayerRuntimeChart);
         topPlayerRuntimeChart = null;
-        if (topPlayerRuntimeStatusEl) {
-          topPlayerRuntimeStatusEl.textContent = "No player runtime activity found for this window.";
-        }
       } else {
         topPlayerRuntimeChart = renderMultiUserLineChart(
           "topPlayerRuntimeChart",
@@ -714,18 +687,12 @@ async function refreshCharts() {
           fmtWeeklyRuntime,
           fmtWeeklyRuntime,
         );
-        if (topPlayerRuntimeStatusEl) {
-          topPlayerRuntimeStatusEl.textContent = topPlayerRuntimeChart
-            ? "Top 10 players ranked by total runtime across the selected window."
-            : "Chart library unavailable.";
-        }
       }
     }
 
     if (!startsResult.ok) {
       destroyChart(topStartsChart);
       topStartsChart = null;
-      if (topStartsStatusEl) topStartsStatusEl.textContent = "Unable to load chart data.";
     } else {
       const items = Array.isArray(startsResult.data?.items)
         ? startsResult.data.items
@@ -739,9 +706,6 @@ async function refreshCharts() {
       if (items.length === 0) {
         destroyChart(topStartsChart);
         topStartsChart = null;
-        if (topStartsStatusEl) {
-          topStartsStatusEl.textContent = "No start activity found for this window.";
-        }
       } else {
         topStartsChart = renderMultiTableLineChart(
           "topStartsChart",
@@ -751,18 +715,12 @@ async function refreshCharts() {
           (value) => `${fmtNumber(value)} starts`,
           fmtNumber,
         );
-        if (topStartsStatusEl) {
-          topStartsStatusEl.textContent = topStartsChart
-            ? "Top 10 tables ranked by total starts across the selected window."
-            : "Chart library unavailable.";
-        }
       }
     }
 
     if (!playerStartsResult.ok) {
       destroyChart(topPlayerStartsChart);
       topPlayerStartsChart = null;
-      if (topPlayerStartsStatusEl) topPlayerStartsStatusEl.textContent = "Unable to load chart data.";
     } else {
       const items = Array.isArray(playerStartsResult.data?.items)
         ? playerStartsResult.data.items
@@ -776,9 +734,6 @@ async function refreshCharts() {
       if (items.length === 0) {
         destroyChart(topPlayerStartsChart);
         topPlayerStartsChart = null;
-        if (topPlayerStartsStatusEl) {
-          topPlayerStartsStatusEl.textContent = "No player start activity found for this window.";
-        }
       } else {
         topPlayerStartsChart = renderMultiUserLineChart(
           "topPlayerStartsChart",
@@ -788,18 +743,12 @@ async function refreshCharts() {
           (value) => `${fmtNumber(value)} starts`,
           fmtNumber,
         );
-        if (topPlayerStartsStatusEl) {
-          topPlayerStartsStatusEl.textContent = topPlayerStartsChart
-            ? "Top 10 players ranked by total starts across the selected window."
-            : "Chart library unavailable.";
-        }
       }
     }
 
     if (!newTablesResult.ok) {
       destroyChart(newTablesChart);
       newTablesChart = null;
-      if (newTablesStatusEl) newTablesStatusEl.textContent = "Unable to load chart data.";
     } else {
       const items = Array.isArray(newTablesResult.data?.items)
         ? newTablesResult.data.items
@@ -813,27 +762,18 @@ async function refreshCharts() {
       if (items.length === 0) {
         destroyChart(newTablesChart);
         newTablesChart = null;
-        if (newTablesStatusEl) {
-          newTablesStatusEl.textContent = "No newly added tables found for this window.";
-        }
       } else {
         newTablesChart = renderNewTablesLineChart(
           "newTablesChart",
           newTablesChart,
           items,
         );
-        if (newTablesStatusEl) {
-          newTablesStatusEl.textContent = newTablesChart
-            ? "Newest 10 tables plotted by first-seen date and installed player count."
-            : "Chart library unavailable.";
-        }
       }
     }
 
     if (!reviewersResult.ok) {
       destroyChart(reviewersChart);
       reviewersChart = null;
-      if (reviewersStatusEl) reviewersStatusEl.textContent = "Unable to load chart data.";
     } else {
       const items = Array.isArray(reviewersResult.data)
         ? reviewersResult.data
@@ -847,27 +787,18 @@ async function refreshCharts() {
       if (items.length === 0) {
         destroyChart(reviewersChart);
         reviewersChart = null;
-        if (reviewersStatusEl) {
-          reviewersStatusEl.textContent = "No submitted reviews found.";
-        }
       } else {
         reviewersChart = renderReviewersBarChart(
           "reviewersChart",
           reviewersChart,
           items,
         );
-        if (reviewersStatusEl) {
-          reviewersStatusEl.textContent = reviewersChart
-            ? "Top 10 players ranked by submitted review count."
-            : "Chart library unavailable.";
-        }
       }
     }
 
     if (!scoreHoldersResult.ok) {
       destroyChart(scoreHoldersChart);
       scoreHoldersChart = null;
-      if (scoreHoldersStatusEl) scoreHoldersStatusEl.textContent = "Unable to load chart data.";
     } else {
       const items = Array.isArray(scoreHoldersResult.data)
         ? scoreHoldersResult.data
@@ -881,20 +812,12 @@ async function refreshCharts() {
       if (items.length === 0) {
         destroyChart(scoreHoldersChart);
         scoreHoldersChart = null;
-        if (scoreHoldersStatusEl) {
-          scoreHoldersStatusEl.textContent = "No high score holders found.";
-        }
       } else {
         scoreHoldersChart = renderScoreHoldersBarChart(
           "scoreHoldersChart",
           scoreHoldersChart,
           items,
         );
-        if (scoreHoldersStatusEl) {
-          scoreHoldersStatusEl.textContent = scoreHoldersChart
-            ? "Top 10 players ranked by current first-place score spots."
-            : "Chart library unavailable.";
-        }
       }
     }
   } finally {
