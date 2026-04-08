@@ -69,6 +69,61 @@ class TablesCarousel extends HTMLElement {
       }
     };
     document.addEventListener("keydown", this._dialogKeyHandler);
+
+    const carouselTrack = this.shadowRoot.querySelector(".carousel-track");
+    if (carouselTrack) {
+      this._setupDragScroll(carouselTrack);
+    }
+  }
+
+  _setupDragScroll(element) {
+    let isDown = false;
+    let isDragging = false;
+    let startX;
+    let scrollLeft;
+
+    element.addEventListener("mousedown", (e) => {
+      isDown = true;
+      isDragging = false;
+      element.style.cursor = "grabbing";
+      startX = e.pageX - element.offsetLeft;
+      scrollLeft = element.scrollLeft;
+      e.preventDefault();
+    });
+
+    element.addEventListener("mouseleave", () => {
+      isDown = false;
+      element.style.cursor = "grab";
+    });
+
+    element.addEventListener("mouseup", () => {
+      isDown = false;
+      element.style.cursor = "grab";
+    });
+
+    element.addEventListener("mousemove", (e) => {
+      if (!isDown) return;
+      e.preventDefault();
+      isDragging = true;
+      const x = e.pageX - element.offsetLeft;
+      const walk = (x - startX) * 2;
+      element.scrollLeft = scrollLeft - walk;
+    });
+
+    element.addEventListener(
+      "click",
+      (e) => {
+        if (isDragging) {
+          e.preventDefault();
+          e.stopPropagation();
+        }
+      },
+      true,
+    );
+
+    element.addEventListener("dragstart", (e) => {
+      e.preventDefault();
+    });
   }
 
   resetAndLoad() {
@@ -213,6 +268,8 @@ class TablesCarousel extends HTMLElement {
           overflow-x: auto;
           gap: 20px;
           padding: 10px;
+          cursor: grab;
+          user-select: none;
           scroll-behavior: smooth;
           scrollbar-width: thin;
           scrollbar-color: var(--neon-purple) var(--bg-secondary);
@@ -252,6 +309,7 @@ class TablesCarousel extends HTMLElement {
           display: flex;
           flex-direction: column;
           border: 1px solid var(--line);
+          user-select: none;
         }
 
         .card:hover {
@@ -277,6 +335,8 @@ class TablesCarousel extends HTMLElement {
           height: 100%;
           object-fit: contain;
           transition: transform 0.5s ease;
+          pointer-events: none;
+          user-select: none; 
         }
 
         .card:hover .image-container img {
@@ -289,6 +349,7 @@ class TablesCarousel extends HTMLElement {
           flex-wrap: wrap;
           gap: 6px;
           min-height: 80px;
+          pointer-events: auto;
         }
 
         .info-left {
@@ -336,12 +397,20 @@ class TablesCarousel extends HTMLElement {
         .vps-link:hover {
           transform: scale(1.3);
         }
+
+        .card-link, .name-link, .vps-link {
+          user-select: none;
+          -webkit-user-drag: none;
+        }
         
         .vps-logo {
           width: 1.5rem;
           height: 1.5rem;
           object-fit: contain;
           display: block;
+          pointer-events: none;
+          user-select: none;
+          -webkit-user-drag: none;
         }
 
         .row-2 {
