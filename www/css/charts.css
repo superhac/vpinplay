@@ -65,6 +65,20 @@
     var(--surface-2);
 }
 
+.chart-stage-player-runtime {
+  min-height: 420px;
+  background:
+    linear-gradient(180deg, rgba(108, 229, 255, 0.1), rgba(10, 5, 24, 0.04)),
+    var(--surface-2);
+}
+
+.chart-stage-player-starts {
+  min-height: 420px;
+  background:
+    linear-gradient(180deg, rgba(255, 123, 176, 0.1), rgba(10, 5, 24, 0.04)),
+    var(--surface-2);
+}
+
 .chart-stage canvas {
   width: 100%;
   height: 100%;
@@ -97,6 +111,14 @@
   }
 
   .chart-stage-scoreholders {
+    min-height: 340px;
+  }
+
+  .chart-stage-player-runtime {
+    min-height: 340px;
+  }
+
+  .chart-stage-player-starts {
     min-height: 340px;
   }
 }

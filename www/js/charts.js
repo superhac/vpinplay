@@ -2,7 +2,9 @@ const CHART_WINDOW_DAYS = 30;
 const CHART_TOP_LIMIT = 10;
 
 let topRuntimeChart = null;
+let topPlayerRuntimeChart = null;
 let topStartsChart = null;
+let topPlayerStartsChart = null;
 let newTablesChart = null;
 let reviewersChart = null;
 let scoreHoldersChart = null;
@@ -96,6 +98,98 @@ function renderMultiTableLineChart(canvasId, chartRef, payload, metricKey, toolt
     data: {
       labels,
       datasets: buildDatasets(items, metricKey),
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: {
+        mode: "index",
+        intersect: false,
+      },
+      plugins: {
+        legend: {
+          position: "bottom",
+          labels: {
+            color: axisInk,
+            boxWidth: 18,
+            usePointStyle: true,
+            pointStyle: "line",
+          },
+        },
+        tooltip: {
+          callbacks: {
+            label(context) {
+              const value = Number(context.parsed.y || 0);
+              return `${context.dataset.label}: ${tooltipFormatter(value)}`;
+            },
+          },
+        },
+      },
+      scales: {
+        x: {
+          ticks: {
+            color: axisInk,
+            maxRotation: 0,
+            autoSkip: true,
+            maxTicksLimit: 10,
+          },
+          grid: {
+            color: axisLine,
+          },
+        },
+        y: {
+          beginAtZero: true,
+          ticks: {
+            color: axisInk,
+            callback(value) {
+              return yTickFormatter(value);
+            },
+          },
+          grid: {
+            color: axisLine,
+          },
+        },
+      },
+    },
+  });
+}
+
+function buildUserDatasets(items, metricKey) {
+  const palette = getChartPalette();
+  return items.map((item, index) => ({
+    label: String(item.userId || "Unknown User"),
+    data: Array.isArray(item.dailyBuckets)
+      ? item.dailyBuckets.map((point) => Number(point[metricKey] || 0))
+      : [],
+    borderColor: palette[index % palette.length],
+    backgroundColor: palette[index % palette.length],
+    borderWidth: 2,
+    pointRadius: 1.5,
+    pointHoverRadius: 4,
+    pointBackgroundColor: palette[index % palette.length],
+    pointBorderWidth: 0,
+    tension: 0.28,
+    fill: false,
+  }));
+}
+
+function renderMultiUserLineChart(canvasId, chartRef, payload, metricKey, tooltipFormatter, yTickFormatter) {
+  const canvas = q(canvasId);
+  if (!canvas || typeof Chart === "undefined") return null;
+
+  destroyChart(chartRef);
+
+  const items = Array.isArray(payload?.items) ? payload.items : [];
+  const buckets = Array.isArray(payload?.buckets) ? payload.buckets : [];
+  const labels = buckets.map(formatBucketLabel);
+  const axisInk = getCssVar("--ink-muted", "#b89dd9");
+  const axisLine = getCssVar("--line", "#3d2461");
+
+  return new Chart(canvas, {
+    type: "line",
+    data: {
+      labels,
+      datasets: buildUserDatasets(items, metricKey),
     },
     options: {
       responsive: true,
@@ -499,8 +593,12 @@ async function refreshCharts() {
   const header = document.querySelector("vpinplay-header");
   const topRuntimeStatusEl = q("topRuntimeChartStatus");
   const topRuntimeMetaEl = q("topRuntimeChartMeta");
+  const topPlayerRuntimeStatusEl = q("topPlayerRuntimeChartStatus");
+  const topPlayerRuntimeMetaEl = q("topPlayerRuntimeChartMeta");
   const topStartsStatusEl = q("topStartsChartStatus");
   const topStartsMetaEl = q("topStartsChartMeta");
+  const topPlayerStartsStatusEl = q("topPlayerStartsChartStatus");
+  const topPlayerStartsMetaEl = q("topPlayerStartsChartMeta");
   const newTablesStatusEl = q("newTablesChartStatus");
   const newTablesMetaEl = q("newTablesChartMeta");
   const reviewersStatusEl = q("reviewersChartStatus");
@@ -510,18 +608,34 @@ async function refreshCharts() {
 
   if (header) header.setRefreshing(true);
   if (topRuntimeStatusEl) topRuntimeStatusEl.textContent = "Loading chart data...";
+  if (topPlayerRuntimeStatusEl) topPlayerRuntimeStatusEl.textContent = "Loading chart data...";
   if (topStartsStatusEl) topStartsStatusEl.textContent = "Loading chart data...";
+  if (topPlayerStartsStatusEl) topPlayerStartsStatusEl.textContent = "Loading chart data...";
   if (newTablesStatusEl) newTablesStatusEl.textContent = "Loading chart data...";
   if (reviewersStatusEl) reviewersStatusEl.textContent = "Loading chart data...";
   if (scoreHoldersStatusEl) scoreHoldersStatusEl.textContent = "Loading chart data...";
 
   try {
-    const [runtimeResult, startsResult, newTablesResult, reviewersResult, scoreHoldersResult] = await Promise.all([
+    const [
+      runtimeResult,
+      playerRuntimeResult,
+      startsResult,
+      playerStartsResult,
+      newTablesResult,
+      reviewersResult,
+      scoreHoldersResult,
+    ] = await Promise.all([
       api(
         `/api/v1/tables/top-play-time-buckets?days=${encodeURIComponent(CHART_WINDOW_DAYS)}&limit=${encodeURIComponent(CHART_TOP_LIMIT)}`,
       ),
       api(
+        `/api/v1/users/top-activity-buckets?metric=${encodeURIComponent("runTimePlayed")}&days=${encodeURIComponent(CHART_WINDOW_DAYS)}&limit=${encodeURIComponent(CHART_TOP_LIMIT)}`,
+      ),
+      api(
         `/api/v1/tables/top-starts-buckets?days=${encodeURIComponent(CHART_WINDOW_DAYS)}&limit=${encodeURIComponent(CHART_TOP_LIMIT)}`,
+      ),
+      api(
+        `/api/v1/users/top-activity-buckets?metric=${encodeURIComponent("startCountPlayed")}&days=${encodeURIComponent(CHART_WINDOW_DAYS)}&limit=${encodeURIComponent(CHART_TOP_LIMIT)}`,
       ),
       api(
         `/api/v1/tables/top-newly-added?days=${encodeURIComponent(CHART_WINDOW_DAYS)}&limit=${encodeURIComponent(CHART_TOP_LIMIT)}`,
@@ -571,6 +685,43 @@ async function refreshCharts() {
       }
     }
 
+    if (!playerRuntimeResult.ok) {
+      destroyChart(topPlayerRuntimeChart);
+      topPlayerRuntimeChart = null;
+      if (topPlayerRuntimeStatusEl) topPlayerRuntimeStatusEl.textContent = "Unable to load chart data.";
+    } else {
+      const items = Array.isArray(playerRuntimeResult.data?.items)
+        ? playerRuntimeResult.data.items
+        : [];
+
+      if (topPlayerRuntimeMetaEl) {
+        topPlayerRuntimeMetaEl.textContent =
+          `Daily runtime buckets from ${fmtDate(playerRuntimeResult.data?.from)} to ${fmtDate(playerRuntimeResult.data?.to)}.`;
+      }
+
+      if (items.length === 0) {
+        destroyChart(topPlayerRuntimeChart);
+        topPlayerRuntimeChart = null;
+        if (topPlayerRuntimeStatusEl) {
+          topPlayerRuntimeStatusEl.textContent = "No player runtime activity found for this window.";
+        }
+      } else {
+        topPlayerRuntimeChart = renderMultiUserLineChart(
+          "topPlayerRuntimeChart",
+          topPlayerRuntimeChart,
+          playerRuntimeResult.data,
+          "runTimePlayed",
+          fmtWeeklyRuntime,
+          fmtWeeklyRuntime,
+        );
+        if (topPlayerRuntimeStatusEl) {
+          topPlayerRuntimeStatusEl.textContent = topPlayerRuntimeChart
+            ? "Top 10 players ranked by total runtime across the selected window."
+            : "Chart library unavailable.";
+        }
+      }
+    }
+
     if (!startsResult.ok) {
       destroyChart(topStartsChart);
       topStartsChart = null;
@@ -603,6 +754,43 @@ async function refreshCharts() {
         if (topStartsStatusEl) {
           topStartsStatusEl.textContent = topStartsChart
             ? "Top 10 tables ranked by total starts across the selected window."
+            : "Chart library unavailable.";
+        }
+      }
+    }
+
+    if (!playerStartsResult.ok) {
+      destroyChart(topPlayerStartsChart);
+      topPlayerStartsChart = null;
+      if (topPlayerStartsStatusEl) topPlayerStartsStatusEl.textContent = "Unable to load chart data.";
+    } else {
+      const items = Array.isArray(playerStartsResult.data?.items)
+        ? playerStartsResult.data.items
+        : [];
+
+      if (topPlayerStartsMetaEl) {
+        topPlayerStartsMetaEl.textContent =
+          `Daily start-count buckets from ${fmtDate(playerStartsResult.data?.from)} to ${fmtDate(playerStartsResult.data?.to)}.`;
+      }
+
+      if (items.length === 0) {
+        destroyChart(topPlayerStartsChart);
+        topPlayerStartsChart = null;
+        if (topPlayerStartsStatusEl) {
+          topPlayerStartsStatusEl.textContent = "No player start activity found for this window.";
+        }
+      } else {
+        topPlayerStartsChart = renderMultiUserLineChart(
+          "topPlayerStartsChart",
+          topPlayerStartsChart,
+          playerStartsResult.data,
+          "startCountPlayed",
+          (value) => `${fmtNumber(value)} starts`,
+          fmtNumber,
+        );
+        if (topPlayerStartsStatusEl) {
+          topPlayerStartsStatusEl.textContent = topPlayerStartsChart
+            ? "Top 10 players ranked by total starts across the selected window."
             : "Chart library unavailable.";
         }
       }

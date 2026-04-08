@@ -13,6 +13,40 @@ router = APIRouter(
 )
 
 
+def _build_daily_bucket_labels(days: int, end_exclusive: datetime) -> list[str]:
+    start_day = (end_exclusive - timedelta(days=days)).date()
+    return [
+        (start_day + timedelta(days=offset)).isoformat()
+        for offset in range(days)
+    ]
+
+
+def _normalize_daily_bucket_points(
+    bucket_labels: list[str],
+    raw_points: list[dict],
+) -> list[dict]:
+    point_map = {
+        str(point.get("bucket")): {
+            "bucket": str(point.get("bucket")),
+            "runTimePlayed": int(point.get("runTimePlayed", 0)),
+            "startCountPlayed": int(point.get("startCountPlayed", 0)),
+        }
+        for point in raw_points
+        if point.get("bucket")
+    }
+    return [
+        point_map.get(
+            bucket,
+            {
+                "bucket": bucket,
+                "runTimePlayed": 0,
+                "startCountPlayed": 0,
+            },
+        )
+        for bucket in bucket_labels
+    ]
+
+
 @router.get("/users")
 async def get_all_user_ids(
     limit: int = Query(100, ge=1, le=100),
@@ -342,6 +376,106 @@ async def get_top_users_by_activity(
         "to": now,
         "limit": limit,
         "offset": offset,
+        "items": items,
+    }
+
+
+@router.get("/users/top-activity-buckets")
+async def get_top_users_by_activity_buckets(
+    metric: str = Query("startCountPlayed", pattern="^(startCountPlayed|runTimePlayed)$"),
+    days: int = Query(30, ge=1, le=365),
+    limit: int = Query(10, ge=1, le=25),
+    db: Database = Depends(get_db),
+):
+    """
+    Get top users by trailing N-day activity with one daily bucket per user.
+
+    `metric`:
+      - startCountPlayed: sum of positive deltaStartCount
+      - runTimePlayed: sum of positive deltaRunTime (minutes)
+    """
+    end_exclusive = datetime.utcnow().replace(
+        hour=0,
+        minute=0,
+        second=0,
+        microsecond=0,
+    ) + timedelta(days=1)
+    since = end_exclusive - timedelta(days=days)
+    bucket_labels = _build_daily_bucket_labels(days, end_exclusive)
+
+    pipeline = [
+        {"$match": {"changedAt": {"$gte": since, "$lt": end_exclusive}}},
+        {
+            "$group": {
+                "_id": {
+                    "userId": "$userId",
+                    "bucket": {
+                        "$dateToString": {
+                            "format": "%Y-%m-%d",
+                            "date": "$changedAt",
+                        }
+                    },
+                },
+                "startCountPlayed": {
+                    "$sum": {
+                        "$cond": [
+                            {"$gt": ["$deltaStartCount", 0]},
+                            "$deltaStartCount",
+                            0,
+                        ]
+                    }
+                },
+                "runTimePlayed": {
+                    "$sum": {
+                        "$cond": [
+                            {"$gt": ["$deltaRunTime", 0]},
+                            "$deltaRunTime",
+                            0,
+                        ]
+                    }
+                },
+            }
+        },
+        {
+            "$group": {
+                "_id": "$_id.userId",
+                "startCountPlayed": {"$sum": "$startCountPlayed"},
+                "runTimePlayed": {"$sum": "$runTimePlayed"},
+                "dailyBuckets": {
+                    "$push": {
+                        "bucket": "$_id.bucket",
+                        "runTimePlayed": "$runTimePlayed",
+                        "startCountPlayed": "$startCountPlayed",
+                    }
+                },
+            }
+        },
+        {"$match": {metric: {"$gt": 0}}},
+        {"$sort": {metric: -1, "_id": 1}},
+        {"$limit": limit},
+    ]
+
+    rows = list(db["user_table_state_deltas"].aggregate(pipeline))
+    items = [
+        {
+            "userId": row.get("_id"),
+            "startCountPlayed": int(row.get("startCountPlayed", 0)),
+            "runTimePlayed": int(row.get("runTimePlayed", 0)),
+            "dailyBuckets": _normalize_daily_bucket_points(
+                bucket_labels,
+                row.get("dailyBuckets", []),
+            ),
+        }
+        for row in rows
+    ]
+
+    return {
+        "metric": metric,
+        "days": days,
+        "bucketUnit": "day",
+        "from": since,
+        "to": end_exclusive,
+        "buckets": bucket_labels,
         "items": items,
     }
 

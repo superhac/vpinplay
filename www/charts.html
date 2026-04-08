@@ -46,6 +46,26 @@
         <section class="panel chart-panel">
           <div class="panel-heading">
             <div>
+              <h3>Top 10 Player Runtime Over The Last 30 Days</h3>
+              <p id="topPlayerRuntimeChartMeta" class="panel-meta">
+                Daily runtime buckets for the most active players.
+              </p>
+            </div>
+          </div>
+          <div class="chart-stage chart-stage-player-runtime">
+            <canvas
+              id="topPlayerRuntimeChart"
+              aria-label="Top 10 player runtime over the last 30 days"
+            ></canvas>
+          </div>
+          <div id="topPlayerRuntimeChartStatus" class="muted chart-status">
+            Loading chart data...
+          </div>
+        </section>
+
+        <section class="panel chart-panel">
+          <div class="panel-heading">
+            <div>
               <h3>Top 10 Table Starts Over The Last 30 Days</h3>
               <p id="topStartsChartMeta" class="panel-meta">
                 Daily start-count buckets for the most-played tables.
@@ -59,6 +79,26 @@
             ></canvas>
           </div>
           <div id="topStartsChartStatus" class="muted chart-status">
+            Loading chart data...
+          </div>
+        </section>
+
+        <section class="panel chart-panel">
+          <div class="panel-heading">
+            <div>
+              <h3>Top 10 Player Start Counts Over The Last 30 Days</h3>
+              <p id="topPlayerStartsChartMeta" class="panel-meta">
+                Daily start-count buckets for the most active players.
+              </p>
+            </div>
+          </div>
+          <div class="chart-stage chart-stage-player-starts">
+            <canvas
+              id="topPlayerStartsChart"
+              aria-label="Top 10 player start counts over the last 30 days"
+            ></canvas>
+          </div>
+          <div id="topPlayerStartsChartStatus" class="muted chart-status">
             Loading chart data...
           </div>
         </section>
