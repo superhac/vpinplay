@@ -301,19 +301,10 @@ async function refreshDashboard() {
       limitInput.value = String(limit);
     }
 
-    const [
-      weeklyActivityRes,
-      tableCountRes,
-      submittedScoresSummaryRes,
-    ] = await Promise.all([
+    const [weeklyActivityRes, submittedScoresSummaryRes] = await Promise.all([
       api("/api/v1/tables/activity-weekly?days=7"),
-      api("/api/v1/tables/count"),
       api("/api/v1/users/scores/summary?days=7"),
     ]);
-
-    q("kpiTotalTables").textContent = tableCountRes.ok
-      ? `${fmtNumber(tableCountRes.data.uniqueVpsIdCount)} / ${fmtNumber(tableCountRes.data.totalTableRows)}`
-      : "-";
 
     if (weeklyActivityRes.ok) {
       q("kpiWeeklyActivity").textContent = `${fmtWeeklyRuntime(
