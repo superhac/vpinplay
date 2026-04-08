@@ -481,6 +481,10 @@ class TablesDataTable extends HTMLElement {
         
         .sentinel {
           height: 20px;
+          width: 100%;
+          flex-shrink: 0;
+          visibility: hidden;
+          margin-top: -20px;
         }
         
         .empty-state {
@@ -1308,26 +1312,6 @@ class TablesDataTable extends HTMLElement {
     const tableUrl = `/tables?vpsid=${encodeURIComponent(item.vpsId || "")}`;
     return `
       <div class="row-name-cell">
-        <button
-          type="button"
-          class="row-expand-btn"
-          data-index="${index}"
-          aria-label="Expand ${label}"
-          title="Expand row"
-        >
-          <span class="row-expand-icon" aria-hidden="true">
-            <svg viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
-              <path
-                d="M7 3H3v4M13 3h4v4M17 13v4h-4M3 13v4h4"
-                fill="none"
-                stroke="currentColor"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="1.8"
-              />
-            </svg>
-          </span>
-        </button>
         <span class="row-name-content">
           <a href="${tableUrl}" class="table-link">${label}</a>
         </span>
