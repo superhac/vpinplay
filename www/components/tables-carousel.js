@@ -10,6 +10,7 @@ class TablesCarousel extends HTMLElement {
     this.loading = false;
     this.hasMore = true;
     this.observer = null;
+    this.isExpanded = false;
 
     // Attributes
     this.shelfTitle = "";
@@ -17,6 +18,8 @@ class TablesCarousel extends HTMLElement {
     this.sortOrder = -1;
     this.shelfStat = "";
     this.apiUrl = "/api/v1/tables-plus/search";
+    this.expandedColumnsOrder =
+      "avgRating, name, manufacturer, year, authors, ratingCount, playerCount, startCountTotal, runTimeTotal, variationCount, vpsId, firstSeenAt";
   }
 
   connectedCallback() {
@@ -25,20 +28,47 @@ class TablesCarousel extends HTMLElement {
     this.sortOrder = parseInt(this.getAttribute("sortOrder")) || -1;
     this.shelfStat = this.getAttribute("shelfStat") || this.sortBy;
     this.apiUrl = this.getAttribute("api-url") || this.apiUrl;
+    this.expandedColumnsOrder =
+      this.getAttribute("expanded-columns-order") || this.expandedColumnsOrder;
 
     this.render();
-    this.attachSortListener();
+    this.attachEventListeners();
     this.setupIntersectionObserver();
     this.loadData();
   }
 
-  attachSortListener() {
+  attachEventListeners() {
     const toggle = this.shadowRoot.getElementById("sort-toggle");
     toggle.addEventListener("click", () => {
       this.sortOrder = this.sortOrder === 1 ? -1 : 1;
       toggle.className = `sort-toggle ${this.sortOrder === 1 ? "asc" : "desc"}`;
       this.resetAndLoad();
     });
+
+    const expandBtn = this.shadowRoot.getElementById("expand-toggle");
+    const dialog = this.shadowRoot.getElementById("shelfDialog");
+    const closeBtn = this.shadowRoot.getElementById("shelfDialogClose");
+
+    expandBtn.addEventListener("click", () => {
+      this.openExpandedView();
+    });
+
+    closeBtn.addEventListener("click", () => {
+      this.closeExpandedView();
+    });
+
+    dialog.addEventListener("click", (e) => {
+      if (e.target === dialog) {
+        this.closeExpandedView();
+      }
+    });
+
+    this._dialogKeyHandler = (e) => {
+      if (e.key === "Escape" && this.isExpanded) {
+        this.closeExpandedView();
+      }
+    };
+    document.addEventListener("keydown", this._dialogKeyHandler);
   }
 
   resetAndLoad() {
@@ -54,6 +84,9 @@ class TablesCarousel extends HTMLElement {
   disconnectedCallback() {
     if (this.observer) {
       this.observer.disconnect();
+    }
+    if (this._dialogKeyHandler) {
+      document.removeEventListener("keydown", this._dialogKeyHandler);
     }
   }
 
@@ -73,6 +106,20 @@ class TablesCarousel extends HTMLElement {
           align-items: center;
           gap: 12px;
           margin-bottom: 12px;
+        }
+
+        .shelf-title-wrap {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          min-width: 0;
+        }
+
+        .shelf-header-actions {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          margin-left: auto;
         }
 
         .shelf-title {
@@ -109,6 +156,50 @@ class TablesCarousel extends HTMLElement {
 
         .sort-toggle.desc::after {
           content: '↓';
+        }
+
+        .expand-toggle {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          width: 32px;
+          height: 32px;
+          padding: 0;
+          border: 1px solid var(--line);
+          border-radius: 8px;
+          background: var(--surface-2);
+          color: var(--ink);
+          cursor: pointer;
+          flex: 0 0 auto;
+          transition:
+            background-color 120ms ease,
+            border-color 120ms ease,
+            color 120ms ease,
+            transform 120ms ease;
+        }
+
+        .expand-toggle:hover {
+          background: var(--neon-purple);
+          border-color: var(--neon-purple);
+          color: #fff;
+        }
+
+        .expand-toggle:focus-visible {
+          outline: 2px solid var(--neon-purple);
+          outline-offset: 2px;
+        }
+
+        .expand-icon {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          width: 16px;
+          height: 16px;
+        }
+
+        .expand-icon svg {
+          width: 100%;
+          height: 100%;
         }
 
         .carousel-container {
@@ -329,7 +420,90 @@ class TablesCarousel extends HTMLElement {
           padding-top: 4px;
         }
 
+        .shelf-dialog[hidden] {
+          display: none;
+        }
+
+        .shelf-dialog {
+          position: fixed;
+          inset: 0;
+          z-index: 2000;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 24px;
+          background: rgba(4, 7, 16, 0.82);
+          backdrop-filter: blur(8px);
+        }
+
+        .shelf-dialog-panel {
+          width: min(1320px, 100%);
+          max-height: min(84vh, 100%);
+          background: var(--surface);
+          border: 1px solid var(--line);
+          border-radius: var(--radius);
+          box-shadow: var(--shadow-intense);
+          overflow: hidden;
+          display: flex;
+          flex-direction: column;
+        }
+
+        .shelf-dialog-header {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 16px;
+          padding: 16px 18px;
+          border-bottom: 1px solid var(--line);
+          background: var(--surface-2);
+        }
+
+        .shelf-dialog-title {
+          margin: 0;
+          font-size: 1rem;
+          color: var(--ink);
+        }
+
+        .shelf-dialog-close {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          width: 34px;
+          height: 34px;
+          padding: 0;
+          border: 1px solid var(--line);
+          border-radius: 8px;
+          background: var(--surface);
+          color: var(--ink);
+          cursor: pointer;
+        }
+
+        .shelf-dialog-close:hover {
+          background: var(--neon-pink);
+          border-color: var(--neon-pink);
+          color: #fff;
+        }
+
+        .shelf-dialog-body {
+          overflow: auto;
+          padding: 14px;
+          background: var(--bg);
+        }
+
+        .shelf-dialog-body tables-data-table {
+          margin: 0;
+        }
+
         @media (max-width: 640px) {
+          .shelf-header {
+            align-items: flex-start;
+            flex-wrap: wrap;
+          }
+
+          .shelf-header-actions {
+            margin-left: auto;
+          }
+
           .card {
             flex: 0 0 200px;
           }
@@ -359,11 +533,43 @@ class TablesCarousel extends HTMLElement {
           .stat-value {
             font-size: 1rem;
           }
+
+          .shelf-dialog {
+            padding: 12px;
+          }
+
+          .shelf-dialog-body {
+            padding: 10px;
+          }
         }
       </style>
       <div class="shelf-header">
-        <h3 class="shelf-title">${this.shelfTitle}</h3>
-        <div id="sort-toggle" class="sort-toggle ${this.sortOrder === 1 ? "asc" : "desc"}"></div>
+        <div class="shelf-title-wrap">
+          <h3 class="shelf-title">${this.shelfTitle}</h3>
+          <button
+            id="expand-toggle"
+            class="expand-toggle"
+            type="button"
+            aria-label="Expand ${this.escapeHtml(this.shelfTitle)}"
+            title="Expand ${this.escapeHtml(this.shelfTitle)}"
+          >
+            <span class="expand-icon" aria-hidden="true">
+              <svg viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                <path
+                  d="M7 3H3v4M13 3h4v4M17 13v4h-4M3 13v4h4"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="1.8"
+                />
+              </svg>
+            </span>
+          </button>
+        </div>
+        <div class="shelf-header-actions">
+          <div id="sort-toggle" class="sort-toggle ${this.sortOrder === 1 ? "asc" : "desc"}"></div>
+        </div>
       </div>
       <div class="carousel-container">
         <div class="carousel-track" id="track">
@@ -371,7 +577,45 @@ class TablesCarousel extends HTMLElement {
           <div id="sentinel" class="sentinel"></div>
         </div>
       </div>
+      <div id="shelfDialog" class="shelf-dialog" hidden>
+        <div class="shelf-dialog-panel" role="dialog" aria-modal="true" aria-labelledby="shelfDialogTitle">
+          <div class="shelf-dialog-header">
+            <h3 id="shelfDialogTitle" class="shelf-dialog-title">${this.escapeHtml(this.shelfTitle)} Table View</h3>
+            <button id="shelfDialogClose" class="shelf-dialog-close" type="button" aria-label="Close expanded ${this.escapeHtml(this.shelfTitle)} view">×</button>
+          </div>
+          <div class="shelf-dialog-body">
+            <tables-data-table
+              id="expandedTable"
+              api-url="${this.escapeHtml(this.apiUrl)}"
+              searchKey="name"
+              sortBy="${this.escapeHtml(this.sortBy)}"
+              sortOrder="${this.escapeHtml(String(this.sortOrder))}"
+              columns-order="${this.escapeHtml(this.expandedColumnsOrder)}"
+              limit="20"
+              class="panel panel-full"
+            ></tables-data-table>
+          </div>
+        </div>
+      </div>
     `;
+  }
+
+  openExpandedView() {
+    const dialog = this.shadowRoot.getElementById("shelfDialog");
+    const expandedTable = this.shadowRoot.getElementById("expandedTable");
+    if (!dialog || !expandedTable) return;
+
+    expandedTable.setAttribute("sortBy", this.sortBy);
+    expandedTable.setAttribute("sortOrder", String(this.sortOrder));
+    dialog.hidden = false;
+    this.isExpanded = true;
+  }
+
+  closeExpandedView() {
+    const dialog = this.shadowRoot.getElementById("shelfDialog");
+    if (!dialog) return;
+    dialog.hidden = true;
+    this.isExpanded = false;
   }
 
   setupIntersectionObserver() {
