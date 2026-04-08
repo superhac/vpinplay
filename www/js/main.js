@@ -132,7 +132,7 @@ function linkTableNameWithVps(name, vpsId) {
   const tableLink = linkTableName(name, vpsId);
   const vpsLink = linkVpsId(vpsId);
   if (vpsLink === "-") return tableLink;
-  return `<span style="display: inline-flex; align-items: center; gap: 0.45rem;">${tableLink}${vpsLink}</span>`;
+  return `<span class="table-name-with-vps"><span class="table-name-link">${tableLink}</span><span class="table-vps-link">${vpsLink}</span></span>`;
 }
 
 function linkVpsId(vpsId) {

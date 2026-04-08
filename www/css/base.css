@@ -454,6 +454,25 @@ tbody tr:hover td:first-child {
   border-left: 2px solid var(--neon-pink);
 }
 
+.table-name-with-vps {
+  display: inline-grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.45rem;
+  max-width: 100%;
+}
+
+.table-name-link {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.table-vps-link {
+  display: inline-flex;
+  align-items: center;
+  flex: 0 0 auto;
+}
+
 /* ============================================
    Status & Utility Classes
    ============================================ */

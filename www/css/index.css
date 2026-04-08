@@ -11,6 +11,7 @@
 
 .dashboard-panel {
   min-height: 0;
+  min-width: 0;
 }
 
 .panel-heading {
@@ -143,5 +144,48 @@
 @media (max-width: 900px) {
   .grid-panels {
     grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .dashboard-panel {
+    padding: 12px;
+  }
+
+  .dashboard-panel table {
+    table-layout: fixed;
+    font-size: 0.76rem;
+  }
+
+  .dashboard-panel th,
+  .dashboard-panel td {
+    padding: 9px 6px;
+    overflow-wrap: anywhere;
+  }
+
+  .dashboard-panel th:first-child,
+  .dashboard-panel td:first-child {
+    width: 42%;
+  }
+
+  .dashboard-panel .table-name-with-vps {
+    width: 100%;
+    align-items: start;
+  }
+
+  .dashboard-panel .table-name-link {
+    line-height: 1.25;
+  }
+
+  .dashboard-panel .rating-stars {
+    gap: 0;
+  }
+
+  .dashboard-panel .rating-star {
+    font-size: 0.82rem;
+  }
+
+  .dashboard-panel .rating-value {
+    display: none;
   }
 }
