@@ -23,6 +23,7 @@ class TablesDataTable extends HTMLElement {
     this.searchDebounceMs = 500;
     this.currentFocusIndex = -1;
     this.listenersAttached = false;
+    this.expandedItem = null;
   }
 
   connectedCallback() {
@@ -43,6 +44,9 @@ class TablesDataTable extends HTMLElement {
     }
     if (this._pickerCloseHandler) {
       document.removeEventListener("click", this._pickerCloseHandler);
+    }
+    if (this._dialogKeyHandler) {
+      document.removeEventListener("keydown", this._dialogKeyHandler);
     }
   }
 
@@ -536,6 +540,64 @@ class TablesDataTable extends HTMLElement {
           white-space: nowrap;
         }
 
+        .row-name-cell {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          min-width: 0;
+        }
+
+        .row-expand-btn {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          width: 30px;
+          height: 30px;
+          padding: 0;
+          border: 1px solid var(--line);
+          border-radius: 8px;
+          background: var(--surface-2);
+          color: var(--ink);
+          cursor: pointer;
+          flex: 0 0 auto;
+          transition:
+            background-color 120ms ease,
+            border-color 120ms ease,
+            color 120ms ease,
+            transform 120ms ease;
+        }
+
+        .row-expand-btn:hover {
+          background: var(--neon-purple);
+          border-color: var(--neon-purple);
+          color: #fff;
+        }
+
+        .row-expand-btn:focus-visible {
+          outline: 2px solid var(--neon-purple);
+          outline-offset: 2px;
+        }
+
+        .row-expand-icon {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          width: 16px;
+          height: 16px;
+        }
+
+        .row-expand-icon svg {
+          width: 100%;
+          height: 100%;
+        }
+
+        .row-name-content {
+          min-width: 0;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+
         .table-link, .vps-link {
           color: var(--neon-cyan);
           text-decoration: none;
@@ -547,6 +609,79 @@ class TablesDataTable extends HTMLElement {
 
         .external-link-icon {
           color: var(--neon-cyan);
+        }
+
+        .row-dialog[hidden] {
+          display: none;
+        }
+
+        .row-dialog {
+          position: fixed;
+          inset: 0;
+          z-index: 2000;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 24px;
+          background: rgba(4, 7, 16, 0.82);
+          backdrop-filter: blur(8px);
+        }
+
+        .row-dialog-panel {
+          width: min(1120px, 100%);
+          max-height: min(80vh, 100%);
+          background: var(--surface);
+          border: 1px solid var(--line);
+          border-radius: var(--radius);
+          box-shadow: var(--shadow-intense);
+          overflow: hidden;
+          display: flex;
+          flex-direction: column;
+        }
+
+        .row-dialog-header {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 16px;
+          padding: 16px 18px;
+          border-bottom: 1px solid var(--line);
+          background: var(--surface-2);
+        }
+
+        .row-dialog-title {
+          margin: 0;
+          font-size: 1rem;
+          color: var(--ink);
+        }
+
+        .row-dialog-close {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          width: 34px;
+          height: 34px;
+          padding: 0;
+          border: 1px solid var(--line);
+          border-radius: 8px;
+          background: var(--surface);
+          color: var(--ink);
+          cursor: pointer;
+        }
+
+        .row-dialog-close:hover {
+          background: var(--neon-pink);
+          border-color: var(--neon-pink);
+          color: #fff;
+        }
+
+        .row-dialog-body {
+          overflow: auto;
+          padding: 0;
+        }
+
+        .row-dialog-body table {
+          min-width: 100%;
         }
 
         @media (max-width: 900px) {
@@ -602,6 +737,10 @@ class TablesDataTable extends HTMLElement {
             white-space: nowrap;
           }
 
+          .row-dialog {
+            padding: 14px;
+          }
+
           .stats {
             padding: 6px 8px;
             font-size: 0.8rem;
@@ -617,6 +756,15 @@ class TablesDataTable extends HTMLElement {
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
+          }
+
+          .row-name-cell {
+            gap: 8px;
+          }
+
+          .row-expand-btn {
+            width: 26px;
+            height: 26px;
           }
 
           .table-title-panel {
@@ -657,6 +805,21 @@ class TablesDataTable extends HTMLElement {
         
         <div class="stats">
           Showing <span id="showing-count">0</span> of <span id="total-count">0</span> items
+        </div>
+      </div>
+
+      <div id="rowDialog" class="row-dialog" hidden>
+        <div class="row-dialog-panel" role="dialog" aria-modal="true" aria-labelledby="rowDialogTitle">
+          <div class="row-dialog-header">
+            <h3 id="rowDialogTitle" class="row-dialog-title">Table Details</h3>
+            <button id="rowDialogClose" class="row-dialog-close" type="button" aria-label="Close table details">×</button>
+          </div>
+          <div class="row-dialog-body">
+            <table>
+              <thead id="rowDialogHead"></thead>
+              <tbody id="rowDialogBody"></tbody>
+            </table>
+          </div>
         </div>
       </div>
     `;
@@ -906,6 +1069,39 @@ class TablesDataTable extends HTMLElement {
 
       this.resetAndLoad();
     });
+
+    const tbody = this.shadowRoot.getElementById("table-body");
+    tbody.addEventListener("click", (e) => {
+      const expandBtn = e.target.closest(".row-expand-btn");
+      if (!expandBtn) return;
+
+      const index = Number(expandBtn.dataset.index);
+      if (!Number.isFinite(index)) return;
+
+      e.preventDefault();
+      e.stopPropagation();
+      this.openRowDialog(index);
+    });
+
+    const dialog = this.shadowRoot.getElementById("rowDialog");
+    const closeBtn = this.shadowRoot.getElementById("rowDialogClose");
+
+    closeBtn.addEventListener("click", () => {
+      this.closeRowDialog();
+    });
+
+    dialog.addEventListener("click", (e) => {
+      if (e.target === dialog) {
+        this.closeRowDialog();
+      }
+    });
+
+    this._dialogKeyHandler = (e) => {
+      if (e.key === "Escape" && this.expandedItem) {
+        this.closeRowDialog();
+      }
+    };
+    document.addEventListener("keydown", this._dialogKeyHandler);
   }
 
   setupIntersectionObserver() {
@@ -1036,7 +1232,7 @@ class TablesDataTable extends HTMLElement {
           td.innerHTML = this.escapeHtml(this.formatRunTime(value));
         } else if (col.key === "name") {
           td.classList.add("column-name");
-          td.innerHTML = `<a href="/tables?vpsid=${item.vpsId}" class="table-link">${this.escapeHtml(this.formatValue(value, col.key))}</a>`;
+          td.innerHTML = this.renderNameCell(item, value, i);
         } else if (col.key === "vpsId") {
           td.innerHTML = `<a href="https://virtualpinballspreadsheet.github.io/games?game=${value}" target="_blank" class="vps-link">
             ${this.escapeHtml(this.formatValue(value, col.key))}
@@ -1054,6 +1250,110 @@ class TablesDataTable extends HTMLElement {
     }
 
     tbody.appendChild(fragment);
+  }
+
+  renderNameCell(item, value, index) {
+    const label = this.escapeHtml(this.formatValue(value, "name"));
+    const tableUrl = `/tables?vpsid=${encodeURIComponent(item.vpsId || "")}`;
+    return `
+      <div class="row-name-cell">
+        <button
+          type="button"
+          class="row-expand-btn"
+          data-index="${index}"
+          aria-label="Expand ${label}"
+          title="Expand row"
+        >
+          <span class="row-expand-icon" aria-hidden="true">
+            <svg viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+              <path
+                d="M7 3H3v4M13 3h4v4M17 13v4h-4M3 13v4h4"
+                fill="none"
+                stroke="currentColor"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="1.8"
+              />
+            </svg>
+          </span>
+        </button>
+        <span class="row-name-content">
+          <a href="${tableUrl}" class="table-link">${label}</a>
+        </span>
+      </div>
+    `;
+  }
+
+  formatCellHtml(item, col) {
+    const value = this.getNestedValue(item, col.key);
+
+    if (value === null || value === undefined || value === "") return "—";
+    if (col.key === "avgRating") return this.renderStars(Number(value));
+    if (col.key === "runTimeTotal")
+      return this.escapeHtml(this.formatRunTime(value));
+    if (col.key === "name")
+      return `<a href="/tables?vpsid=${encodeURIComponent(item.vpsId || "")}" class="table-link">${this.escapeHtml(this.formatValue(value, col.key))}</a>`;
+    if (col.key === "vpsId") {
+      return `<a href="https://virtualpinballspreadsheet.github.io/games?game=${encodeURIComponent(value)}" target="_blank" class="vps-link">
+        ${this.escapeHtml(this.formatValue(value, col.key))}
+        <svg class="external-link-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6m4-3h6v6m-11 5L21 3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </a>`;
+    }
+    if (col.key === "firstSeenAt") return this.formatValue(value, col.key);
+    return this.escapeHtml(this.formatValue(value, col.key));
+  }
+
+  openRowDialog(index) {
+    const item = this.items[index];
+    if (!item) return;
+
+    this.expandedItem = item;
+    const dialog = this.shadowRoot.getElementById("rowDialog");
+    const title = this.shadowRoot.getElementById("rowDialogTitle");
+    const head = this.shadowRoot.getElementById("rowDialogHead");
+    const body = this.shadowRoot.getElementById("rowDialogBody");
+    const columns = this.getOrderedColumns();
+    const alignMap = {
+      year: "center",
+      avgRating: "center",
+      ratingCount: "center",
+      playerCount: "center",
+      startCountTotal: "center",
+      runTimeTotal: "center",
+      variationCount: "center",
+    };
+
+    title.textContent = this.getNestedValue(item, "name") || "Table Details";
+    head.innerHTML = "";
+    body.innerHTML = "";
+
+    const headerRow = document.createElement("tr");
+    columns.forEach((col) => {
+      const th = document.createElement("th");
+      th.textContent = col.label;
+      if (alignMap[col.key]) th.style.textAlign = alignMap[col.key];
+      headerRow.appendChild(th);
+    });
+    head.appendChild(headerRow);
+
+    const dataRow = document.createElement("tr");
+    columns.forEach((col) => {
+      const td = document.createElement("td");
+      td.innerHTML = this.formatCellHtml(item, col);
+      if (alignMap[col.key]) td.style.textAlign = alignMap[col.key];
+      if (col.key === "name") td.classList.add("column-name");
+      dataRow.appendChild(td);
+    });
+    body.appendChild(dataRow);
+
+    dialog.hidden = false;
+  }
+
+  closeRowDialog() {
+    const dialog = this.shadowRoot.getElementById("rowDialog");
+    if (!dialog) return;
+    this.expandedItem = null;
+    dialog.hidden = true;
   }
 
   updateSortIndicators() {
