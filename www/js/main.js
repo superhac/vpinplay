@@ -128,6 +128,13 @@ function linkTableName(name, vpsId) {
   return `<a href="tables?vpsid=${encodeURIComponent(id)}">${escapeHtml(text)}</a>`;
 }
 
+function linkTableNameWithVps(name, vpsId) {
+  const tableLink = linkTableName(name, vpsId);
+  const vpsLink = linkVpsId(vpsId);
+  if (vpsLink === "-") return tableLink;
+  return `<span style="display: inline-flex; align-items: center; gap: 0.45rem;">${tableLink}${vpsLink}</span>`;
+}
+
 function linkVpsId(vpsId) {
   const id = String(vpsId || "").trim();
   if (!id) return "-";
@@ -242,12 +249,12 @@ async function loadAllTablesPage() {
     [
       {
         label: "Name",
-        getter: (r) => linkTableName(r.vpsdb?.name || "Unknown Table", r.vpsId),
+        getter: (r) =>
+          linkTableNameWithVps(r.vpsdb?.name || "Unknown Table", r.vpsId),
         html: true,
       },
       { label: "Manufacturer", getter: (r) => r.vpsdb?.manufacturer || "-" },
       { label: "Year", getter: (r) => r.vpsdb?.year || "-" },
-      { label: "VPS", getter: (r) => linkVpsId(r.vpsId), html: true },
       { label: "Filename", getter: (r) => r.filename || "-" },
       { label: "Filehash", getter: (r) => truncateHash(r.filehash, 32) },
     ],

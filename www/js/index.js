@@ -20,7 +20,7 @@ function getDashboardPanelConfigs() {
       columns: [
         {
           label: "Table",
-          getter: (r) => linkTableName(fmtTableName(r), r.vpsId),
+          getter: (r) => linkTableNameWithVps(fmtTableName(r), r.vpsId),
           html: true,
         },
         {
@@ -29,7 +29,6 @@ function getDashboardPanelConfigs() {
           html: true,
         },
         { label: "Rating Count", getter: (r) => r.ratingCount },
-        { label: "VPS", getter: (r) => linkVpsId(r.vpsId), html: true },
       ],
     },
     topPlayTimePanel: {
@@ -40,7 +39,7 @@ function getDashboardPanelConfigs() {
       columns: [
         {
           label: "Table",
-          getter: (r) => linkTableName(fmtTableName(r), r.vpsId),
+          getter: (r) => linkTableNameWithVps(fmtTableName(r), r.vpsId),
           html: true,
         },
         {
@@ -49,7 +48,6 @@ function getDashboardPanelConfigs() {
         },
         { label: "Starts (Total)", getter: (r) => r.startCountTotal },
         { label: "Players", getter: (r) => r.playerCount },
-        { label: "VPS", getter: (r) => linkVpsId(r.vpsId), html: true },
       ],
     },
     topWeeklyPlayTimePanel: {
@@ -64,7 +62,7 @@ function getDashboardPanelConfigs() {
       columns: [
         {
           label: "Table",
-          getter: (r) => linkTableName(fmtTableName(r), r.vpsId),
+          getter: (r) => linkTableNameWithVps(fmtTableName(r), r.vpsId),
           html: true,
         },
         {
@@ -73,7 +71,6 @@ function getDashboardPanelConfigs() {
         },
         { label: "Plays (7d)", getter: (r) => fmtNumber(r.startCountPlayed) },
         { label: "Players", getter: (r) => fmtNumber(r.playerCount) },
-        { label: "VPS", getter: (r) => linkVpsId(r.vpsId), html: true },
       ],
     },
     latestSubmittedRatingsPanel: {
@@ -88,7 +85,7 @@ function getDashboardPanelConfigs() {
       columns: [
         {
           label: "Table",
-          getter: (r) => linkTableName(fmtTableName(r), r.vpsId),
+          getter: (r) => linkTableNameWithVps(fmtTableName(r), r.vpsId),
           html: true,
         },
         { label: "User", getter: (r) => linkUserId(r.userId), html: true },
@@ -108,12 +105,11 @@ function getDashboardPanelConfigs() {
       columns: [
         {
           label: "Table",
-          getter: (r) => linkTableName(fmtTableName(r), r.vpsId),
+          getter: (r) => linkTableNameWithVps(fmtTableName(r), r.vpsId),
           html: true,
         },
         { label: "First Seen", getter: (r) => fmtDate(r.firstSeenAt) },
         { label: "Variations", getter: (r) => r.variationCount },
-        { label: "VPS", getter: (r) => linkVpsId(r.vpsId), html: true },
       ],
     },
     topVariantsPanel: {
@@ -124,11 +120,10 @@ function getDashboardPanelConfigs() {
       columns: [
         {
           label: "Table",
-          getter: (r) => linkTableName(fmtTableName(r), r.vpsId),
+          getter: (r) => linkTableNameWithVps(fmtTableName(r), r.vpsId),
           html: true,
         },
         { label: "Variants", getter: (r) => r.variationCount },
-        { label: "VPS", getter: (r) => linkVpsId(r.vpsId), html: true },
       ],
     },
     topPlayerPlaysPanel: {
@@ -178,7 +173,7 @@ function getDashboardPanelConfigs() {
         {
           label: "Table",
           getter: (r) =>
-            linkTableName(
+            linkTableNameWithVps(
               r.tableTitle || r.vpsdb?.name || "Unknown Table",
               r.vpsId,
             ),

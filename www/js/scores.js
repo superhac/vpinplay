@@ -237,8 +237,11 @@ function renderOverview(rows) {
   renderTable(
     "scoreOverviewTable",
     [
-      { label: "Table", getter: (row) => fmtTableName(row) },
-      { label: "VPS", getter: (row) => linkVpsId(row.vpsId), html: true },
+      {
+        label: "Table",
+        getter: (row) => linkTableNameWithVps(fmtTableName(row), row.vpsId),
+        html: true,
+      },
       {
         label: "Score Type",
         getter: (row) => getScorePayload(row)?.score_type || "-",
