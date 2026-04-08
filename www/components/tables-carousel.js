@@ -300,6 +300,7 @@ class TablesCarousel extends HTMLElement {
 
         .card {
           flex: 0 0 320px;
+          height: 300px;
           background: var(--surface);
           border-radius: var(--radius);
           overflow: hidden;
@@ -346,9 +347,11 @@ class TablesCarousel extends HTMLElement {
         .card-info {
           padding: 12px;
           display: flex;
+          flex: 1;
           flex-wrap: wrap;
           gap: 6px;
           min-height: 80px;
+          overflow: hidden;
           pointer-events: auto;
         }
 
@@ -381,6 +384,7 @@ class TablesCarousel extends HTMLElement {
           -webkit-box-orient: vertical;
           font-size: 1.1rem;
           line-height: 1.2;
+          max-width: 100%;
         }
 
         .name-link:hover {
@@ -388,9 +392,12 @@ class TablesCarousel extends HTMLElement {
         }
 
         .vps-link {
-          align-self: flex-start;
           display: flex;
-          align-items: center;
+          flex: 1;
+          margin-top: auto;
+          justify-content: flex-start;
+          align-self: flex-start;
+          align-items: end;
           transition: transform 0.5s ease;
         }
         
@@ -583,21 +590,38 @@ class TablesCarousel extends HTMLElement {
 
           .card {
             flex: 0 0 200px;
+            max-height: 260px;
           }
+
           .card-info {
+            display: flex;
             flex-direction: column;
             gap: 8px;
             padding: 8px;
-            flex: 1; /* Allow card-info to grow */
-            display: flex; /* Ensure it's flex */
           }
+
           .info-left {
             flex: 0 0 auto;
+            position: relative;
           }
+
+          .name-link,
+          .row-2 {
+            padding-right: 2rem;
+          }
+
+          .vps-link {
+            position: absolute;
+            top: 0;
+            right: 0;
+            margin-top: 0;
+          }
+
           .info-right {
-            border-left: none;
-            margin-top: auto; /* Push to bottom */
             display: flex;
+            flex: 0 0 40px;
+            border-left: none;
+            margin-top: auto;
             align-items: end;
           }
           .stat-prominent {
