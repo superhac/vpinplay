@@ -233,6 +233,14 @@ class TablesCarousel extends HTMLElement {
           border-radius: 10px;
         }
 
+        #sentinel {
+          width: 20px;
+          flex-shrink: 0;
+          height: 100%;
+          visibility: hidden;
+          margin-left: -20px;
+        }
+
         .card {
           flex: 0 0 320px;
           background: var(--surface);
