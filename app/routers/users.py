@@ -1391,3 +1391,115 @@ async def get_user_all_tables(
     ).skip(offset).limit(limit))
 
     return _map_user_states(user_states, db)
+
+@router.get("/users-plus/search")
+async def search_users_plus(
+    userId: str = Query(
+        "", description="Filter by userId (case-insensitive partial match)"
+    ),
+    vpsId: str = Query(None, description="Filter by vpsId"),
+    sort_by: str = Query(
+        "userId",
+        pattern="^(userId|tableCount|runTimeTotal|startCountTotal|lastSyncAt|submittedScores|topScoreSpots)$",
+    ),
+    sort_order: str = Query("asc", pattern="^(asc|desc)$"),
+    limit: int = Query(100, ge=1, le=100),
+    offset: int = Query(0, ge=0),
+    db: Database = Depends(get_db),
+):
+    """
+    Search and retrieve comprehensive user and table-state data.
+    """
+
+    all_users = list(db["client_registry"].find({}))
+    query = {"vpsId": vpsId} if vpsId else {}
+    user_table_states = list(db["user_table_state"].find(query))
+
+    initials_by_user_id = {
+        normalize_user_id(u.get("userIdNormalized") or u.get("userId") or ""): str(u.get("initials") or "").strip()
+        for u in all_users
+        if (u.get("userIdNormalized") or u.get("userId"))
+    }
+
+    def _get_detailed_user_table_stats(states):
+        stats = {}
+        for s in states:
+            uid = normalize_user_id(s.get("userIdNormalized") or s.get("userId") or "")
+            if not uid: continue
+            if uid not in stats:
+                stats[uid] = {
+                    "runTime": 0,
+                    "startCount": 0,
+                    "tables": 0,
+                    "scores": 0,
+                    "details": [] 
+                }
+            stats[uid]["runTime"] += (s.get("runTime") or 0)
+            stats[uid]["startCount"] += (s.get("startCount") or 0)
+            stats[uid]["tables"] += 1
+            if s.get("score"): stats[uid]["scores"] += 1
+            stats[uid]["details"].append(s)
+        return stats
+
+    stats = _get_detailed_user_table_stats(user_table_states)
+
+    user_records = []
+    for user in all_users:
+        uid = normalize_user_id(user.get("userIdNormalized") or user.get("userId") or "")
+        if not uid or (userId and userId.lower() not in uid.lower()): continue
+        
+        if vpsId and not any(d.get("vpsId") == vpsId for d in stats.get(uid, {"details": []})["details"]):
+            continue
+
+        user_stats = stats.get(uid, {"runTime": 0, "startCount": 0, "tables": 0, "scores": 0, "details": []})
+        initials = initials_by_user_id.get(uid, "")
+        
+        record = {
+            "userId": uid,
+            "initials": initials,
+            "tableCount": user_stats["tables"],
+            "runTimeTotal": user_stats["runTime"],
+            "startCountTotal": user_stats["startCount"],
+            "submittedScores": 0,
+            "tables": []
+        }
+        
+        for state in user_stats["details"]:
+            if vpsId and state.get("vpsId") != vpsId:
+                continue
+            
+            score_payload = _get_score_payload(state) or state.get("score")
+            score_entries = []
+            
+            if score_payload:
+                entries = _get_case_insensitive_value(score_payload, "entries")
+                if isinstance(entries, list):
+                    score_entries = entries
+                else:
+                    if _get_case_insensitive_value(score_payload, "value") or _get_case_insensitive_value(score_payload, "score"):
+                        score_entries = [score_payload]
+                    else:
+                        score_entries = [score_payload]
+            
+            record["submittedScores"] += len(score_entries)
+            
+            record["tables"].append({
+                "vpsId": state.get("vpsId"),
+                "rating": state.get("rating"),
+                "lastRun": state.get("lastRun"),
+                "scores": score_entries,
+            })
+        
+        user_records.append(record)
+
+    reverse = sort_order == "desc"
+    user_records.sort(key=lambda x: x.get(sort_by, 0), reverse=reverse)
+    total = len(user_records)
+    paged = user_records[offset : offset + limit]
+
+    return {
+        "userId": userId,
+        "vpsId": vpsId,
+        "pagination": {"limit": limit, "offset": offset, "total": total},
+        "items": paged,
+    }
