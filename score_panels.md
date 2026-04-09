@@ -211,7 +211,7 @@ const PANEL_VPS_ID = "<NEW_VPSID>";
 Header art uses this pattern:
 
 ```html
-src="https://github.com/superhac/vpinmediadb/raw/refs/heads/main/<VPSID>/1k/bg.png"
+src="https://raw.githubusercontent.com/superhac/vpinmediadb/refs/heads/main/bg_thumbs/<VPSID>.png"
 ```
 
 So replace the embedded VPS ID in the image URL.

@@ -1056,7 +1056,7 @@ class PlayerScoresPanel extends HTMLElement {
     this.q("table-subtitle").innerHTML =
       `<strong>${manufacturer || "Unknown Manufacturer"}</strong>${year ? ` • ${year}` : ""}`;
 
-    const artUrl = `https://github.com/superhac/vpinmediadb/raw/refs/heads/main/${this.vpsId}/1k/bg.png`;
+    const artUrl = `https://raw.githubusercontent.com/superhac/vpinmediadb/refs/heads/main/bg_thumbs/${this.vpsId}.png`;
     this.q("table-art").src = artUrl;
 
     const groups = this.groupEntries(entries);

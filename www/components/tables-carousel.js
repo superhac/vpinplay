@@ -612,7 +612,7 @@ class TablesCarousel extends HTMLElement {
       card.className = "card";
 
       const vpsId = item.vpsId;
-      const bgUrl = `https://github.com/superhac/vpinmediadb/raw/refs/heads/main/${encodeURIComponent(vpsId)}/1k/bg.png`;
+      const bgUrl = `https://raw.githubusercontent.com/superhac/vpinmediadb/refs/heads/main/bg_thumbs/${encodeURIComponent(vpsId)}.png`;
       const tableUrl = `/tables?vpsid=${encodeURIComponent(vpsId)}`;
       const vpsUrl = `https://virtualpinballspreadsheet.github.io/games?game=${encodeURIComponent(vpsId)}`;
 

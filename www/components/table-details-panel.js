@@ -347,7 +347,7 @@ class TableDetailsPanel extends HTMLElement {
 
   getTableArtUrl(vpsId) {
     if (!vpsId) return "";
-    return `https://github.com/superhac/vpinmediadb/raw/refs/heads/main/${encodeURIComponent(vpsId)}/1k/bg.png`;
+    return `https://raw.githubusercontent.com/superhac/vpinmediadb/refs/heads/main/bg_thumbs/${encodeURIComponent(vpsId)}.png`;
   }
 
   async api(path) {
