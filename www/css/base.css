@@ -580,43 +580,8 @@ tbody tr:hover td:first-child {
 }
 
 /* ============================================
-   Grid Layouts
-   ============================================ */
-
-.grid-dashboard {
-  display: grid;
-  gap: 36px;
-}
-
-.grid-kpi {
-  display: grid;
-  grid-template-columns: repeat(6, minmax(0, 1fr));
-  gap: 36px;
-}
-
-.grid-panels {
-  display: grid;
-  grid-template-columns: repeat(1, minmax(0, 1fr));
-  gap: 36px;
-}
-
-/* ============================================
    Responsive Design
    ============================================ */
-
-@media (max-width: 1050px) {
-  .grid-dashboard {
-    gap: 24px;
-  }
-
-  .grid-kpi {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-  .grid-panels {
-    grid-template-columns: 1fr;
-  }
-}
-
 @media (max-width: 640px) {
   .main {
     padding: 20px;
@@ -638,14 +603,6 @@ tbody tr:hover td:first-child {
   .pill {
     font-size: 0.82rem;
     padding: 7px 11px;
-  }
-
-  .grid-dashboard {
-    gap: 24px;
-  }
-
-  .grid-kpi {
-    grid-template-columns: 1fr;
   }
 
   input,
