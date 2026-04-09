@@ -72,7 +72,7 @@ class PlayerRatings extends HTMLElement {
   }
 
   linkUserId(userId) {
-    return `<a href="/users.html?userid=${encodeURIComponent(userId)}" class="user-link">${userId}</a>`;
+    return `<a href="/players.html?userid=${encodeURIComponent(userId)}" class="user-link">${userId}</a>`;
   }
 
   fmtRatingStars(rating) {
