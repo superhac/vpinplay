@@ -268,26 +268,88 @@ async def get_table_top_runtime_players(
     db: Database = Depends(get_db),
 ):
     """
-    Get top players for a table by cumulative runTime (highest first).
+    Get players for a table ranked by each player's cumulative runTime
+    across all tables (highest first).
+    Collapses duplicate state rows to one record per normalized user.
     """
-    rows = list(
-        db["user_table_state"]
-        .find(
-            {
+    pipeline = [
+        {
+            "$match": {
                 "vpsId": vpsId,
                 "runTime": {"$gt": 0},
-            },
-            {
-                "_id": 0,
-                "userId": 1,
-                "runTime": 1,
-                "lastRun": 1,
-                "updatedAt": 1,
-            },
-        )
-        .sort([("runTime", -1), ("userId", 1)])
-        .limit(limit)
-    )
+            }
+        },
+        {
+            "$addFields": {
+                "userIdGroup": {
+                    "$toLower": {
+                        "$ifNull": [
+                            "$userIdNormalized",
+                            {"$ifNull": ["$userId", ""]},
+                        ]
+                    }
+                }
+            }
+        },
+        {"$sort": {"runTime": -1, "updatedAt": -1, "userId": 1}},
+        {
+            "$group": {
+                "_id": "$userIdGroup",
+                "userId": {"$first": "$userId"},
+                "lastRun": {"$first": "$lastRun"},
+                "updatedAt": {"$first": "$updatedAt"},
+            }
+        },
+        {
+            "$lookup": {
+                "from": "user_table_state",
+                "let": {"userIdGroup": "$_id"},
+                "pipeline": [
+                    {
+                        "$addFields": {
+                            "userIdGroup": {
+                                "$toLower": {
+                                    "$ifNull": [
+                                        "$userIdNormalized",
+                                        {"$ifNull": ["$userId", ""]},
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    {"$match": {"$expr": {"$eq": ["$userIdGroup", "$$userIdGroup"]}}},
+                    {"$sort": {"runTime": -1, "updatedAt": -1, "vpsId": 1}},
+                    {
+                        "$group": {
+                            "_id": "$vpsId",
+                            "runTime": {"$first": {"$ifNull": ["$runTime", 0]}},
+                        }
+                    },
+                    {
+                        "$group": {
+                            "_id": None,
+                            "runTimeTotal": {"$sum": "$runTime"},
+                        }
+                    },
+                ],
+                "as": "runtimeTotals",
+            }
+        },
+        {
+            "$addFields": {
+                "runTime": {
+                    "$ifNull": [
+                        {"$arrayElemAt": ["$runtimeTotals.runTimeTotal", 0]},
+                        0,
+                    ]
+                }
+            }
+        },
+        {"$sort": {"runTime": -1, "userId": 1}},
+        {"$limit": limit},
+    ]
+
+    rows = list(db["user_table_state"].aggregate(pipeline))
 
     return [
         {
@@ -304,14 +366,36 @@ async def get_table_top_runtime_players(
 async def get_table_activity_summary(vpsId: str, db: Database = Depends(get_db)):
     """
     Get cumulative runTime and startCount totals for one table across all users.
+    Collapses duplicate state rows to one record per normalized user.
     """
     pipeline = [
         {"$match": {"vpsId": vpsId}},
         {
+            "$addFields": {
+                "userIdGroup": {
+                    "$toLower": {
+                        "$ifNull": [
+                            "$userIdNormalized",
+                            {"$ifNull": ["$userId", ""]},
+                        ]
+                    }
+                }
+            }
+        },
+        {"$sort": {"runTime": -1, "startCount": -1, "updatedAt": -1, "userId": 1}},
+        {
             "$group": {
-                "_id": "$vpsId",
-                "runTimeTotal": {"$sum": {"$ifNull": ["$runTime", 0]}},
-                "startCountTotal": {"$sum": {"$ifNull": ["$startCount", 0]}},
+                "_id": "$userIdGroup",
+                "userId": {"$first": "$userId"},
+                "runTime": {"$first": {"$ifNull": ["$runTime", 0]}},
+                "startCount": {"$first": {"$ifNull": ["$startCount", 0]}},
+            }
+        },
+        {
+            "$group": {
+                "_id": vpsId,
+                "runTimeTotal": {"$sum": "$runTime"},
+                "startCountTotal": {"$sum": "$startCount"},
                 "playerCount": {"$sum": 1},
             }
         }
