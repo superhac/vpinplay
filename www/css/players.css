@@ -7,6 +7,12 @@
   width: 100%;
 }
 
+.grid-panels {
+  display: grid;
+  grid-template-columns: repeat(1, minmax(0, 1fr));
+  gap: 36px;
+}
+
 .grid-kpi {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
