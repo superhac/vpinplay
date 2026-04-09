@@ -80,7 +80,7 @@ class PlayerRuntimes extends HTMLElement {
   }
 
   linkUserId(userId) {
-    return `<a href="/players.html?userid=${encodeURIComponent(userId)}" class="user-link">${userId}</a>`;
+    return `<a href="/players?userid=${encodeURIComponent(userId)}" class="user-link">${userId}</a>`;
   }
 
   fmtWeeklyRuntime(minutes) {
