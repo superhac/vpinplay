@@ -52,10 +52,15 @@ class TablesDataTable extends HTMLElement {
     const urlSortBy = params.get("sort-by");
     const urlSortOrder = params.get("sort-order");
 
-    this.sortBy = urlSortBy || this.getAttribute("sort-by") || "";
+    this.sortBy =
+      urlSortBy ||
+      this.getAttribute("sort-by") ||
+      (this.getAttribute("columns-order") || "").split(",")[0]?.trim() ||
+      "";
+
     this.sortOrder = urlSortOrder
       ? parseInt(urlSortOrder)
-      : parseInt(this.getAttribute("sort-order")) || 1;
+      : parseInt(this.getAttribute("sort-order") || "1");
 
     this.setupIntersectionObserver();
     this.loadData();
