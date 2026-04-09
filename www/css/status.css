@@ -1,0 +1,22 @@
+/* ============================================
+   Status Page Specific Styles
+   ============================================ */
+.grid-kpi {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 36px;
+}
+
+/* Responsive overrides */
+@media (max-width: 900px) {
+  .grid-kpi {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 24px;
+  }
+}
+
+@media (max-width: 640px) {
+  .grid-kpi {
+    grid-template-columns: 1fr;
+  }
+}
