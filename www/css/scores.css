@@ -1,6 +1,17 @@
 /* ============================================
    Scores Page Specific Styles
    ============================================ */
+.grid-panels {
+  display: grid;
+  grid-template-columns: repeat(1, minmax(0, 1fr));
+  gap: 36px;
+}
+
+.grid-kpi {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 36px;
+}
 
 /* Setup section */
 .setup-note {
@@ -143,13 +154,26 @@ pre {
 }
 
 /* Responsive overrides for scores */
-@media (max-width: 980px) {
+@media (max-width: 900px) {
+  .grid-dashboard {
+    gap: 24px;
+  }
+
+  .grid-kpi {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 24px;
+  }
+
   .score-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
 @media (max-width: 640px) {
+  .grid-kpi {
+    grid-template-columns: 1fr;
+  }
+
   .score-grid {
     grid-template-columns: 1fr;
   }
