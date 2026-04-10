@@ -31,7 +31,7 @@ class TablesMetadata extends HTMLElement {
     const expandIcon = this.shadowRoot.querySelector(".expand-icon");
     if (details) details.style.display = expanded ? "block" : "none";
     if (expandIcon)
-      expandIcon.style.transform = expanded ? "rotate(0deg)" : "rotate(45deg)";
+      expandIcon.style.transform = expanded ? "rotate(180deg)" : "rotate(0deg)";
   }
 
   attachEventListeners() {
@@ -455,7 +455,7 @@ class TablesMetadata extends HTMLElement {
           <span class="expand-icon"> 
             <svg viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
               <path
-                d="M7 3H3v4M13 3h4v4M17 13v4h-4M3 13v4h4"
+                d="M5 7l5 5 5-5M5 11l5 5 5-5"
                 fill="none"
                 stroke="currentColor"
                 stroke-linecap="round"

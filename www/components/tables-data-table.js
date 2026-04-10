@@ -57,7 +57,7 @@ class TablesDataTable extends HTMLElement {
 
       const expandIcon = this.shadowRoot.querySelector(".expand-icon");
       if (expandIcon) {
-        expandIcon.style.transform = "rotate(45deg)";
+        expandIcon.style.transform = "rotate(180deg)";
       }
 
       return;
@@ -277,7 +277,7 @@ class TablesDataTable extends HTMLElement {
             background-color 120ms ease,
             border-color 120ms ease,
             color 120ms ease,
-            transform 120ms ease;
+            transform 360ms ease;
         }
 
         .expand-button:hover {
@@ -292,7 +292,7 @@ class TablesDataTable extends HTMLElement {
         }
 
         .expand-button .expand-icon {
-          transform: rotate(0deg);
+          transform: rotate(180deg);
         }
 
         .expand-icon {
@@ -768,16 +768,16 @@ class TablesDataTable extends HTMLElement {
           <h3>Tables</h3>
           <button id="expandButton" class="expand-button" type="button">
             <span class="expand-icon"> 
-            <svg viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
-              <path
-                d="M7 3H3v4M13 3h4v4M17 13v4h-4M3 13v4h4"
-                fill="none"
-                stroke="currentColor"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="1.8"
-              />
-            </svg>
+              <svg viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                <path
+                  d="M5 7l5 5 5-5M5 11l5 5 5-5"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="1.8"
+                />
+              </svg>
             </span>
           </button>
           <div class="filters" id="filters">
@@ -1071,7 +1071,7 @@ class TablesDataTable extends HTMLElement {
           if (filters) filters.style.display = "";
           if (tableWrapper) tableWrapper.style.display = "";
           if (stats) stats.style.display = "";
-          if (expandIcon) expandIcon.style.transform = "rotate(0deg)";
+          if (expandIcon) expandIcon.style.transform = "rotate(180deg)";
 
           if (this.items.length === 0 && !this.loading) {
             this.setupIntersectionObserver();
@@ -1081,7 +1081,7 @@ class TablesDataTable extends HTMLElement {
           if (filters) filters.style.display = "none";
           if (tableWrapper) tableWrapper.style.display = "none";
           if (stats) stats.style.display = "none";
-          if (expandIcon) expandIcon.style.transform = "rotate(45deg)";
+          if (expandIcon) expandIcon.style.transform = "rotate(0deg)";
         }
       });
     }
