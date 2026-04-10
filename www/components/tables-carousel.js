@@ -176,6 +176,7 @@ class TablesCarousel extends HTMLElement {
         .sort-toggle {
           cursor: pointer;
           font-size: 1rem;
+          font-weight: 600;
           color: var(--neon-cyan);
           user-select: none;
           opacity: 0.7;
@@ -204,8 +205,9 @@ class TablesCarousel extends HTMLElement {
         }
 
         .see-all-link a {
-          color: var(--neon-cyan);
+          color: var(--link);
           text-decoration: none;
+          font-weight: 600;
           display: flex;
           align-items: center;
           gap: 4px;
