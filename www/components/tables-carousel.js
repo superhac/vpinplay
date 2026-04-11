@@ -568,8 +568,6 @@ class TablesCarousel extends HTMLElement {
     if (this.loading || !this.hasMore) return;
 
     this.loading = true;
-    const track = this.shadowRoot.getElementById("track");
-    const sentinel = this.shadowRoot.getElementById("sentinel");
 
     try {
       const params = new URLSearchParams({
