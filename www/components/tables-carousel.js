@@ -98,9 +98,6 @@ class TablesCarousel extends HTMLElement {
 
   async resetAndLoad() {
     const track = this.shadowRoot.getElementById("track");
-    const sentinel = this.shadowRoot.getElementById("sentinel");
-    const scrollPos = track.scrollLeft;
-
     const cards = track.querySelectorAll(".card");
     cards.forEach((card) => {
       card.style.opacity = "0";
@@ -160,7 +157,6 @@ class TablesCarousel extends HTMLElement {
           font-size: 1.2rem;
           color: var(--neon-purple);
           text-transform: uppercase;
-          letter-spacing: 0.05em;
           padding-left: 10px;
           border-left: 4px solid var(--neon-pink);
           margin: 0;
@@ -221,7 +217,7 @@ class TablesCarousel extends HTMLElement {
         }
 
         .see-all-link a::after {
-          content: '»'; /* Double right angle quotation mark */
+          content: '»';
           font-size: 1.2em;
           line-height: 1;
         }
