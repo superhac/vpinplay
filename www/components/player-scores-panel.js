@@ -6,6 +6,7 @@ class PlayerScoresPanel extends HTMLElement {
     this.userId = null;
     this.apiBase = null;
     this.availableTables = [];
+    this.hasAutoSelectedDefault = false;
   }
 
   static get observedAttributes() {
@@ -53,6 +54,66 @@ class PlayerScoresPanel extends HTMLElement {
     const rawApi =
       this.getAttribute("api-base") || "https://api.vpinplay.com:8888";
     this.apiBase = rawApi.replace(/\/$/, "");
+  }
+
+  getTableLabel(table) {
+    return table?.vpsdb?.name || table?.tableTitle || table?.vpsId || "";
+  }
+
+  parseSortableDate(value) {
+    if (!value) return null;
+    const parsed = new Date(value);
+    const timestamp = parsed.getTime();
+    return Number.isNaN(timestamp) ? null : timestamp;
+  }
+
+  getDefaultTable() {
+    if (!this.availableTables.length) return null;
+
+    const withLastRun = this.availableTables
+      .map((table) => ({
+        table,
+        lastRun: this.parseSortableDate(table.lastRun),
+      }))
+      .filter((entry) => entry.lastRun !== null)
+      .sort((a, b) => b.lastRun - a.lastRun);
+
+    if (withLastRun.length) {
+      return withLastRun[0].table;
+    }
+
+    return this.availableTables[0];
+  }
+
+  setSelectedTable(table, options = {}) {
+    if (!table?.vpsId) return;
+
+    const { updateHistory = true, scroll = true } = options;
+    this.vpsId = table.vpsId;
+
+    const trigger = this.shadowRoot.getElementById("pickerTrigger");
+    if (trigger) {
+      trigger.textContent = this.getTableLabel(table);
+    }
+
+    if (updateHistory) {
+      const url = new URL(window.location);
+      url.searchParams.set("vpsid", table.vpsId);
+      window.history.pushState({}, "", url);
+    }
+
+    this.loadPanel();
+
+    if (scroll) {
+      const offsetHeader = 73;
+      const elementRect = this.getBoundingClientRect();
+      const absoluteElementTop = elementRect.top + window.pageYOffset;
+
+      window.scrollTo({
+        top: absoluteElementTop - offsetHeader,
+        behavior: "smooth",
+      });
+    }
   }
 
   render() {
@@ -644,23 +705,10 @@ class PlayerScoresPanel extends HTMLElement {
   handleScorePanelChange(event) {
     const vpsId = event.target.value;
     if (!vpsId) return;
-
-    this.vpsId = vpsId;
-
-    const url = new URL(window.location);
-    url.searchParams.set("vpsid", vpsId);
-    window.history.pushState({}, "", url);
-
-    this.loadPanel();
-
-    const offsetHeader = 73;
-    const elementRect = this.getBoundingClientRect();
-    const absoluteElementTop = elementRect.top + window.pageYOffset;
-
-    window.scrollTo({
-      top: absoluteElementTop - offsetHeader,
-      behavior: "smooth",
-    });
+    const selectedTable =
+      this.availableTables.find((table) => table.vpsId === vpsId) ||
+      { vpsId };
+    this.setSelectedTable(selectedTable, { updateHistory: true, scroll: true });
   }
 
   async loadAvailableTables() {
@@ -690,20 +738,35 @@ class PlayerScoresPanel extends HTMLElement {
 
       menu.innerHTML = this.availableTables
         .map((table) => {
-          const name = table.vpsdb?.name || table.tableTitle || table.vpsId;
+          const name = this.getTableLabel(table);
           return `<div class="picker-option" data-value="${table.vpsId}">${name}</div>`;
         })
         .join("");
 
-      if (this.vpsId) {
-        const currentTable = this.availableTables.find(
-          (t) => t.vpsId === this.vpsId,
-        );
-        if (currentTable) {
-          trigger.textContent =
-            currentTable.vpsdb?.name ||
-            currentTable.tableTitle ||
-            currentTable.vpsId;
+    if (this.vpsId) {
+      const currentTable = this.availableTables.find(
+        (t) => t.vpsId === this.vpsId,
+      );
+      if (currentTable) {
+        trigger.textContent = this.getTableLabel(currentTable);
+      } else if (!this.hasAutoSelectedDefault) {
+        const defaultTable = this.getDefaultTable();
+        if (defaultTable) {
+          this.hasAutoSelectedDefault = true;
+          this.setSelectedTable(defaultTable, {
+            updateHistory: true,
+            scroll: false,
+          });
+        }
+      }
+    } else if (!this.hasAutoSelectedDefault) {
+      const defaultTable = this.getDefaultTable();
+      if (defaultTable) {
+        this.hasAutoSelectedDefault = true;
+          this.setSelectedTable(defaultTable, {
+            updateHistory: true,
+            scroll: false,
+          });
         }
       }
 
