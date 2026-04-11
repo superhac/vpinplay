@@ -134,7 +134,7 @@ class VPinPlayHeader extends HTMLElement {
               .nav-link:hover,
               .nav-link.active {
                 color: var(--neon-cyan);
-                text-shadow: var(--glow-cyan);
+                text-shadow: 1px 1px 0 rgba(0, 0, 0, 1);
                 border-bottom-color: var(--neon-cyan);
               }
 
@@ -142,6 +142,70 @@ class VPinPlayHeader extends HTMLElement {
                 display: flex;
                 gap: 12px;
                 align-items: center;
+              }
+
+              .btn {
+                border-radius: 8px;
+                background: var(--surface);
+                color: var(--neon-pink);
+                font-weight: 800;
+                padding: 6px 10px;
+                min-height: 36px;
+                cursor: pointer;
+                text-transform: uppercase;
+                font-size: 0.8rem;
+                transition: all 200ms ease;
+                box-shadow: 0 0 0;
+                min-width: fit-content;
+              }
+
+              .btn:hover {
+                background: var(--neon-pink);
+                color: var(--neon-cyan);
+                box-shadow:
+                  var(--glow-cyan),
+                  var(--glow-cyan);
+                transform: translateY(-2px);
+              }
+
+              .btn:disabled {
+                opacity: 0.5;
+                cursor: not-allowed;
+                transform: none;
+              }
+
+              .btn-theme {
+                display: inline-flex;
+                align-items: center;
+                gap: 8px;
+              }
+
+              .btn-theme svg {
+                width: 18px;
+                height: 18px;
+                vertical-align: middle;
+                filter: drop-shadow(0 0 2px currentColor);
+              }
+
+              .btn-theme:hover svg {
+                filter: drop-shadow(0 0 5px #fff);
+              }
+
+              .btn svg {
+                transition: transform 200ms ease;
+              }
+
+              .btn.refreshing svg {
+                animation: spin 600ms linear;
+              }
+
+              @keyframes spin {
+                from {
+                  transform: rotate(0deg);
+                }
+                to {
+                  transform: rotate(360deg);
+                }
               }
 
               @media (max-width: 900px) {
