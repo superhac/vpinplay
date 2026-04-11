@@ -1,14 +1,6 @@
 /* ============================================
    Table Page Specific Styles
    ============================================ */
-.grid-panels {
-  display: none;
-}
-
-.grid-panels.show {
-  display: grid;
-}
-
 .main {
   display: flex;
   flex-direction: column;
@@ -19,9 +11,15 @@
 }
 
 .grid-panels {
+  display: none;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   align-items: start;
   width: 100%;
+  gap: 36px;
+}
+
+.grid-panels.show {
+  display: grid;
 }
 
 @media (max-width: 900px) {
