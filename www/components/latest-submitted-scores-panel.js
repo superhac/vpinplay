@@ -1,7 +1,7 @@
 class LatestSubmittedScoresPanel extends HTMLElement {
   constructor() {
     super();
-    this.limit = 5;
+    this.limit = 10;
   }
 
   static get observedAttributes() {
@@ -28,8 +28,8 @@ class LatestSubmittedScoresPanel extends HTMLElement {
   }
 
   parseLimit(value) {
-    const parsed = Number(value || 5);
-    if (!Number.isFinite(parsed)) return 5;
+    const parsed = Number(value || 10);
+    if (!Number.isFinite(parsed)) return 10;
     return Math.max(1, Math.min(API_PAGE_LIMIT, Math.floor(parsed)));
   }
 

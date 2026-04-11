@@ -16,6 +16,11 @@
   width: 100%;
 }
 
+#latestSubmittedScoresPanel {
+  width: 100%;
+  align-self: stretch;
+}
+
 .panel-heading {
   display: flex;
   align-items: center;
