@@ -44,7 +44,6 @@ class PlayerScoresPanel extends HTMLElement {
     const urlParams = new URLSearchParams(window.location.search);
     this.vpsId =
       this.getAttribute("vps-id") ||
-      urlParams.get("score_vpsid") ||
       urlParams.get("vpsid") ||
       this.vpsId;
 
@@ -390,7 +389,6 @@ class PlayerScoresPanel extends HTMLElement {
       .grand-initials {
         font-size: 2.4rem;
         font-weight: 900;
-        letter-spacing: 0.08em;
         text-align: center;
         color: var(--neon-cyan);
         text-shadow: var(--glow-cyan);
@@ -650,7 +648,7 @@ class PlayerScoresPanel extends HTMLElement {
     this.vpsId = vpsId;
 
     const url = new URL(window.location);
-    url.searchParams.set("score_vpsid", vpsId);
+    url.searchParams.set("vpsid", vpsId);
     window.history.pushState({}, "", url);
 
     this.loadPanel();

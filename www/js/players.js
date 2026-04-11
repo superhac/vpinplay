@@ -1,180 +1,4 @@
 let currentUserId = null;
-let currentViewMode = "table";
-const USER_PAGE_LIMIT = 100;
-
-function setPlayersSetupExpanded(expanded) {
-  const details = q("playersSetupDetails");
-  const toggle = q("playersSetupToggle");
-  if (!details || !toggle) return;
-
-  details.classList.toggle("hidden", !expanded);
-  toggle.setAttribute("aria-expanded", expanded ? "true" : "false");
-
-  const indicator = toggle.querySelector(".panel-toggle-indicator");
-  if (indicator) {
-    indicator.textContent = expanded ? "-" : "+";
-  }
-}
-
-function togglePlayersSetup() {
-  const toggle = q("playersSetupToggle");
-  if (!toggle) return;
-
-  const nextExpanded = toggle.getAttribute("aria-expanded") !== "true";
-  setPlayersSetupExpanded(nextExpanded);
-}
-
-function handlePlayersSetupSubmit(event) {
-  event.preventDefault();
-  applyUserId();
-}
-
-async function fetchAllRegisteredUserIds() {
-  const items = [];
-  let offset = 0;
-  let hasNext = true;
-
-  while (hasNext) {
-    const res = await api(
-      `/api/v1/users?limit=${USER_PAGE_LIMIT}&offset=${offset}`,
-    );
-    if (!res.ok) break;
-
-    const pageItems = Array.isArray(res.data?.items) ? res.data.items : [];
-    items.push(...pageItems.filter(Boolean));
-
-    const returned = Number(res.data?.pagination?.returned ?? pageItems.length);
-    hasNext = Boolean(res.data?.pagination?.hasNext) && returned > 0;
-    offset += returned;
-  }
-
-  return [...new Set(items)];
-}
-
-function populateUserSelect(userIds, selectedUserId) {
-  const setupSelect = q("setupUserId");
-  if (!setupSelect) return;
-
-  const normalizedSelected = String(selectedUserId || "").trim();
-  const options = [];
-
-  options.push(`<option value="">Select a user</option>`);
-
-  if (
-    normalizedSelected &&
-    !userIds.some((userId) => userId === normalizedSelected)
-  ) {
-    options.push(
-      `<option value="${escapeHtml(normalizedSelected)}" selected>${escapeHtml(normalizedSelected)}</option>`,
-    );
-  }
-
-  userIds.forEach((userId) => {
-    const selected = userId === normalizedSelected ? " selected" : "";
-    options.push(
-      `<option value="${escapeHtml(userId)}"${selected}>${escapeHtml(userId)}</option>`,
-    );
-  });
-
-  setupSelect.innerHTML = options.join("");
-}
-
-function getPreferredViewMode() {
-  const saved = localStorage.getItem("vpin-view-mode");
-  return saved === "carousel" ? "carousel" : "table";
-}
-
-function applyViewMode(mode) {
-  currentViewMode = mode;
-  const panels = q("panels");
-  const btn = q("viewToggleBtn");
-  if (mode === "carousel") {
-    panels.classList.add("carousel-view");
-    btn.textContent = "Table View";
-  } else {
-    panels.classList.remove("carousel-view");
-    btn.textContent = "Carousel View";
-  }
-}
-
-function initViewMode() {
-  applyViewMode(getPreferredViewMode());
-}
-
-function toggleViewMode() {
-  const next = currentViewMode === "carousel" ? "table" : "carousel";
-  localStorage.setItem("vpin-view-mode", next);
-  applyViewMode(next);
-  refreshDashboard();
-}
-
-async function getGlobalAvgRatingMap(rows) {
-  const vpsIds = [
-    ...new Set((rows || []).map((r) => r?.vpsId).filter(Boolean)),
-  ];
-  if (vpsIds.length === 0) return {};
-
-  const responses = await Promise.all(
-    vpsIds.map((vpsId) =>
-      api(`/api/v1/tables/${encodeURIComponent(vpsId)}/rating-summary`),
-    ),
-  );
-
-  const map = {};
-  responses.forEach((res, idx) => {
-    const vpsId = vpsIds[idx];
-    if (!res.ok || !res.data) {
-      map[vpsId] = null;
-      return;
-    }
-    const avg = res.data.avgRating;
-    map[vpsId] = avg === null || avg === undefined ? null : Number(avg);
-  });
-  return map;
-}
-
-function fmtUserOverGlobalRating(row, globalAvgRatingMap) {
-  const userRating = row?.rating;
-  const globalAvg = globalAvgRatingMap?.[row?.vpsId];
-  return `${fmtRatingStars(userRating)}<span class="rating-separator">/</span>${fmtRatingStars(globalAvg, { showNumeric: true })}`;
-}
-
-function getCardImageUrl(vpsId) {
-  if (!vpsId) return "";
-  return `https://github.com/superhac/vpinmediadb/raw/refs/heads/main/${encodeURIComponent(vpsId)}/cab.png`;
-}
-
-function renderCarousel(elId, rows, options = {}) {
-  const el = q(elId);
-  if (!rows || rows.length === 0) {
-    el.innerHTML = `<div class="muted" style="padding: 20px;">No data</div>`;
-    return;
-  }
-
-  let html = `<div class="carousel-container">`;
-  rows.forEach((row) => {
-    const title = options.titleGetter(row);
-    const sub = options.subGetter(row);
-    const vpsId = row.vpsId;
-    const imgUrl = vpsId
-      ? getCardImageUrl(vpsId)
-      : "https://placehold.co/160x220/111d31/e8f0ff?text=No+VPS+ID";
-
-    html += `
-                    <a href="tables?vpsid=${encodeURIComponent(vpsId || "")}" class="carousel-card">
-                        <div class="card-img-wrap">
-                            <img src="${imgUrl}" alt="${escapeHtml(title)}" onerror="this.src='https://placehold.co/160x220/111d31/e8f0ff?text=No+Image'; this.onerror=null;" loading="lazy">
-                        </div>
-                        <div class="card-info">
-                            <div class="card-title" title="${escapeHtml(title)}">${escapeHtml(title)}</div>
-                            <div class="card-sub">${options.subHtml ? sub : escapeHtml(sub)}</div>
-                        </div>
-                    </a>
-                `;
-  });
-  html += `</div>`;
-  el.innerHTML = html;
-}
 
 async function refreshDashboard() {
   const header = document.querySelector("vpinplay-header");
@@ -190,13 +14,6 @@ async function refreshDashboard() {
       runtimeWeekRes,
       startCountSumRes,
       startCountWeekRes,
-      topRatedRes,
-      recentRes,
-      topPlaytimeRes,
-      mostPlayedRes,
-      userNewlyAddedRes,
-      latestSubmittedScoresRes,
-      scorePanelRows,
     ] = await Promise.all([
       api(`/api/v1/users/${encodeURIComponent(currentUserId)}/last-sync`),
       api(`/api/v1/users/${encodeURIComponent(currentUserId)}/tables/count`),
@@ -212,34 +29,7 @@ async function refreshDashboard() {
       api(
         `/api/v1/users/${encodeURIComponent(currentUserId)}/tables/start-count-weekly?days=7`,
       ),
-      api(
-        `/api/v1/users/${encodeURIComponent(currentUserId)}/tables/top-rated?limit=5`,
-      ),
-      api(
-        `/api/v1/users/${encodeURIComponent(currentUserId)}/tables/recently-played?limit=5`,
-      ),
-      api(
-        `/api/v1/users/${encodeURIComponent(currentUserId)}/tables/top-play-time?limit=5&offset=0`,
-      ),
-      api(
-        `/api/v1/users/${encodeURIComponent(currentUserId)}/tables/most-played?limit=5`,
-      ),
-      api(
-        `/api/v1/users/${encodeURIComponent(currentUserId)}/tables/newly-added?limit=5`,
-      ),
-      api(
-        `/api/v1/users/${encodeURIComponent(currentUserId)}/scores/latest?limit=5&offset=0`,
-      ),
     ]);
-
-    const rowsNeedingGlobalRating = [
-      ...(topRatedRes.ok ? topRatedRes.data : []),
-      ...(recentRes.ok ? recentRes.data : []),
-      ...(userNewlyAddedRes.ok ? userNewlyAddedRes.data : []),
-    ];
-    const globalAvgRatingMap = await getGlobalAvgRatingMap(
-      rowsNeedingGlobalRating,
-    );
 
     const totalStarts = startCountSumRes.ok
       ? Number(startCountSumRes.data.startCountTotal || 0)
@@ -270,159 +60,6 @@ async function refreshDashboard() {
       "kpiWeeklyActivity",
       `${fmtWeeklyRuntime(runtimeWeek)} / ${fmtNumber(startsWeek)}`,
     );
-
-    renderTable(
-      "spotlightTable",
-      [
-        {
-          label: "Table",
-          getter: (r) => linkTableName(fmtTableName(r), r.vpsId),
-          html: true,
-        },
-        { label: "Run Time", getter: (r) => fmtWeeklyRuntime(r.runTime) },
-        { label: "Starts", getter: (r) => fmtNumber(r.startCount) },
-      ],
-      topPlaytimeRes.ok ? topPlaytimeRes.data : [],
-    );
-
-    const isCarousel = currentViewMode === "carousel";
-    const tableListPanels = [
-      {
-        id: "topRatedTable",
-        container: "topRatedContainer",
-        data: topRatedRes.ok ? topRatedRes.data : [],
-        title: "Top Rated (User)",
-        sub: (r) => fmtUserOverGlobalRating(r, globalAvgRatingMap),
-        cols: [
-          {
-            label: "Table",
-            getter: (r) => linkTableName(fmtTableName(r), r.vpsId),
-            html: true,
-          },
-          {
-            label: "Mine / Avg Rating",
-            getter: (r) => fmtUserOverGlobalRating(r, globalAvgRatingMap),
-            html: true,
-          },
-          { label: "Starts", getter: (r) => r.startCount },
-        ],
-      },
-      {
-        id: "recentlyPlayedTable",
-        container: "recentlyPlayedContainer",
-        data: recentRes.ok ? recentRes.data : [],
-        title: "Recently Played",
-        sub: (r) =>
-          `${fmtDate(r.lastRun)} • ${fmtUserOverGlobalRating(r, globalAvgRatingMap)}`,
-        cols: [
-          {
-            label: "Table",
-            getter: (r) => linkTableName(fmtTableName(r), r.vpsId),
-            html: true,
-          },
-          { label: "Last Run", getter: (r) => fmtDate(r.lastRun) },
-          {
-            label: "Mine / Avg Rating",
-            getter: (r) => fmtUserOverGlobalRating(r, globalAvgRatingMap),
-            html: true,
-          },
-        ],
-      },
-      {
-        id: "topPlaytimeTable",
-        container: "topPlaytimeContainer",
-        data: topPlaytimeRes.ok ? topPlaytimeRes.data : [],
-        title: "Top Play Time",
-        sub: (r) =>
-          `${fmtWeeklyRuntime(r.runTime)} (${fmtNumber(r.startCount)} starts)`,
-        cols: [
-          {
-            label: "Table",
-            getter: (r) => linkTableName(fmtTableName(r), r.vpsId),
-            html: true,
-          },
-          { label: "Run Time", getter: (r) => fmtWeeklyRuntime(r.runTime) },
-          { label: "Starts", getter: (r) => fmtNumber(r.startCount) },
-        ],
-      },
-      {
-        id: "mostPlayedTable",
-        container: "mostPlayedContainer",
-        data: mostPlayedRes.ok ? mostPlayedRes.data : [],
-        title: "Most Played",
-        sub: (r) =>
-          `${fmtNumber(r.startCount)} starts (Last: ${fmtDate(r.lastRun)})`,
-        cols: [
-          {
-            label: "Table",
-            getter: (r) => linkTableName(fmtTableName(r), r.vpsId),
-            html: true,
-          },
-          { label: "Starts", getter: (r) => fmtNumber(r.startCount) },
-          { label: "Last Run", getter: (r) => fmtDate(r.lastRun) },
-        ],
-      },
-      {
-        id: "userNewlyAddedTable",
-        container: "userNewlyAddedContainer",
-        data: userNewlyAddedRes.ok ? userNewlyAddedRes.data : [],
-        title: "Newest Added",
-        sub: (r) =>
-          `Added: ${fmtDate(r.createdAt)} • ${fmtUserOverGlobalRating(r, globalAvgRatingMap)}`,
-        cols: [
-          {
-            label: "Table",
-            getter: (r) => linkTableName(fmtTableName(r), r.vpsId),
-            html: true,
-          },
-          { label: "Added", getter: (r) => fmtDate(r.createdAt) },
-          {
-            label: "My / Avg Rating",
-            getter: (r) => fmtUserOverGlobalRating(r, globalAvgRatingMap),
-            html: true,
-          },
-        ],
-      },
-      {
-        id: "latestSubmittedScoresTable",
-        container: "latestSubmittedScoresContainer",
-        data:
-          latestSubmittedScoresRes.ok &&
-          Array.isArray(latestSubmittedScoresRes.data?.items)
-            ? latestSubmittedScoresRes.data.items
-            : [],
-        title: "Latest Submitted Scores",
-        sub: (r) => `${r.label || "Score"} • ${fmtDate(r.updatedAt)}`,
-        cols: [
-          {
-            label: "Table",
-            getter: (r) =>
-              linkTableName(
-                r.tableTitle || r.vpsdb?.name || "Unknown Table",
-                r.vpsId,
-              ),
-            html: true,
-          },
-          { label: "Label", getter: (r) => r.label || "-" },
-          { label: "Score", getter: (r) => fmtLatestScoreValue(r.score) },
-          { label: "Updated", getter: (r) => fmtDate(r.updatedAt) },
-        ],
-      },
-    ];
-
-    tableListPanels.forEach((panel) => {
-      const container = q(panel.container);
-      if (isCarousel) {
-        renderCarousel(panel.container, panel.data, {
-          titleGetter: (r) => fmtTableName(r),
-          subGetter: panel.sub,
-          subHtml: true,
-        });
-      } else {
-        container.innerHTML = `<table id="${panel.id}"></table>`;
-        renderTable(panel.id, panel.cols, panel.data);
-      }
-    });
   } finally {
     if (header) {
       header.markRefresh();
@@ -430,42 +67,35 @@ async function refreshDashboard() {
   }
 }
 
-function applyUserId() {
-  const setupUserId = q("setupUserId");
-  if (!setupUserId) return;
-  const entered = setupUserId.value.trim();
-  if (!entered) return;
-  const url = new URL(window.location.href);
-  url.searchParams.set("userid", entered);
-  window.location.href = url.toString();
-}
-
 async function init() {
   await customElements.whenDefined("vpinplay-header");
-  setPlayersSetupExpanded(false);
-
-  initViewMode();
-
   const params = new URLSearchParams(window.location.search);
   const userId = params.get("userid");
-  const registeredUserIds = await fetchAllRegisteredUserIds();
-  populateUserSelect(registeredUserIds, userId);
-
-  const setupSelect = q("setupUserId");
-  if (setupSelect) {
-    setupSelect.addEventListener("change", () => {
-      if (setupSelect.value.trim()) {
-        applyUserId();
-      }
-    });
-  }
 
   currentUserId = userId;
 
-  const dashboard = q("dashboard");
-  if (dashboard) dashboard.classList.remove("hidden");
-
-  refreshDashboard();
+  if (currentUserId) {
+    dashboard.style.display = "";
+    const carouselsContainer = document.getElementById("carouselsContainer");
+    if (carouselsContainer) {
+      carouselsContainer.style.display = "flex";
+    }
+    const userBadge = document.getElementById("userBadge");
+    if (userBadge) {
+      userBadge.textContent = currentUserId;
+    }
+    refreshDashboard();
+  } else {
+    dashboard.style.display = "none";
+    const carouselsContainer = document.getElementById("carouselsContainer");
+    if (carouselsContainer) {
+      carouselsContainer.style.display = "none";
+    }
+    const userBadge = document.getElementById("userBadge");
+    if (userBadge) {
+      userBadge.textContent = "";
+    }
+  }
 }
 
 document.addEventListener("DOMContentLoaded", () => {

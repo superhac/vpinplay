@@ -71,7 +71,7 @@ class PlayerRatings extends HTMLElement {
   }
 
   linkUserId(userId) {
-    return `<a href="/players?userid=${encodeURIComponent(userId)}&score_vpsid=${encodeURIComponent(this.getAttribute("vps-id"))}" class="user-link">${userId}</a>`;
+    return `<a href="/players?userid=${encodeURIComponent(userId)}&vpsid=${encodeURIComponent(this.getAttribute("vps-id"))}" class="user-link">${userId}</a>`;
   }
 
   fmtRatingStars(rating) {

@@ -18,41 +18,21 @@
     <script src="js/main.js"></script>
     <script src="components/vpinplay-header.js"></script>
     <script src="components/player-scores-panel.js"></script>
+    <script src="components/players-data-table.js"></script>
+    <script src="components/players-tables-carousel.js"></script>
   </head>
   <body>
     <vpinplay-header refresh-btn-id="refreshPlayersBtn"></vpinplay-header>
     <div class="main">
-      <section id="setup" class="setup">
-        <button
-          id="playersSetupToggle"
-          class="panel-toggle"
-          type="button"
-          aria-expanded="false"
-          aria-controls="playersSetupDetails"
-          onclick="togglePlayersSetup()"
-        >
-          <span>Set User ID</span>
-          <span class="panel-toggle-indicator" aria-hidden="true">+</span>
-        </button>
-        <div id="playersSetupDetails" class="setup-details hidden">
-          <form class="setup-row" onsubmit="handlePlayersSetupSubmit(event)">
-            <select id="setupUserId" aria-label="Select registered user">
-              <option value="">Select a user</option>
-            </select>
-            <button
-              id="viewToggleBtn"
-              type="button"
-              class="btn btn-theme"
-              onclick="toggleViewMode()"
-            >
-              Carousel
-            </button>
-          </form>
-        </div>
-      </section>
+      <players-data-table
+        api-url="/api/v1/users-plus/search"
+        columns-order="userId,initials,tableCount,runTimeTotal,startCountTotal,submittedScores,lastSyncAt"
+        class="panel panel-full"
+      ></players-data-table>
 
       <section id="dashboard" class="grid-dashboard">
-        <div class="grid-kpi">
+        <div class="grid-kpi panel panel-full">
+          <div id="userBadge" class="user-badge"></div>
           <div class="kpi">
             <div class="kpi-label">Table Count</div>
             <div id="kpiTableCount" class="kpi-value">-</div>
@@ -74,58 +54,34 @@
             <div class="kpi-sub">Latest successful sync</div>
           </div>
         </div>
-
         <player-scores-panel class="panel panel-full"></player-scores-panel>
-
-        <div id="panels" class="grid-panels">
-          <div class="panel">
-            <h3>Most Played Tables</h3>
-            <table id="spotlightTable"></table>
-          </div>
-
-          <div id="topRatedPanel" class="panel">
-            <h3>Top Rated</h3>
-            <div id="topRatedContainer" class="panel-details">
-              <table id="topRatedTable"></table>
-            </div>
-          </div>
-
-          <div id="recentlyPlayedPanel" class="panel">
-            <h3>Recently Played</h3>
-            <div id="recentlyPlayedContainer" class="panel-details">
-              <table id="recentlyPlayedTable"></table>
-            </div>
-          </div>
-
-          <div id="topPlaytimePanel" class="panel">
-            <h3>Top Play Time</h3>
-            <div id="topPlaytimeContainer" class="panel-details">
-              <table id="topPlaytimeTable"></table>
-            </div>
-          </div>
-
-          <div id="mostPlayedPanel" class="panel">
-            <h3>Most Played</h3>
-            <div id="mostPlayedContainer" class="panel-details">
-              <table id="mostPlayedTable"></table>
-            </div>
-          </div>
-
-          <div id="userNewlyAddedPanel" class="panel">
-            <h3>Newest Tables Added</h3>
-            <div id="userNewlyAddedContainer" class="panel-details">
-              <table id="userNewlyAddedTable"></table>
-            </div>
-          </div>
-
-          <div id="latestSubmittedScoresPanel" class="panel">
-            <h3>Latest Submitted Scores</h3>
-            <div id="latestSubmittedScoresContainer" class="panel-details">
-              <table id="latestSubmittedScoresTable"></table>
-            </div>
-          </div>
-        </div>
       </section>
+
+      <div id="carouselsContainer" class="carousels-container">
+        <players-tables-carousel 
+          title="Most Play Time" 
+          shelf-stat="runTime"
+          api-url="/tables/top-play-time">
+        </players-tables-carousel>
+
+        <players-tables-carousel 
+          title="Recently Played" 
+          shelf-stat="lastRun"
+          api-url="/tables/recently-played">
+        </players-tables-carousel>
+
+        <players-tables-carousel 
+          title="Most Played" 
+          shelf-stat="startCount"
+          api-url="/tables/most-played">
+        </players-tables-carousel>
+
+        <players-tables-carousel 
+          title="Newest Added" 
+          shelf-stat="createdAt"
+          api-url="/tables/newly-added">
+        </players-tables-carousel>
+      </div>
     </div>
     <script src="js/players.js"></script>
   </body>
