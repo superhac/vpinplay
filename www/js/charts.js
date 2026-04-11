@@ -81,7 +81,14 @@ function buildDatasets(items, metricKey) {
   }));
 }
 
-function renderMultiTableLineChart(canvasId, chartRef, payload, metricKey, tooltipFormatter, yTickFormatter) {
+function renderMultiTableLineChart(
+  canvasId,
+  chartRef,
+  payload,
+  metricKey,
+  tooltipFormatter,
+  yTickFormatter,
+) {
   const canvas = q(canvasId);
   if (!canvas || typeof Chart === "undefined") return null;
 
@@ -111,9 +118,8 @@ function renderMultiTableLineChart(canvasId, chartRef, payload, metricKey, toolt
           position: "bottom",
           labels: {
             color: axisInk,
-            boxWidth: 18,
-            usePointStyle: true,
-            pointStyle: "line",
+            boxWidth: 12,
+            boxHeight: 4,
           },
         },
         tooltip: {
@@ -173,7 +179,14 @@ function buildUserDatasets(items, metricKey) {
   }));
 }
 
-function renderMultiUserLineChart(canvasId, chartRef, payload, metricKey, tooltipFormatter, yTickFormatter) {
+function renderMultiUserLineChart(
+  canvasId,
+  chartRef,
+  payload,
+  metricKey,
+  tooltipFormatter,
+  yTickFormatter,
+) {
   const canvas = q(canvasId);
   if (!canvas || typeof Chart === "undefined") return null;
 
@@ -203,9 +216,8 @@ function renderMultiUserLineChart(canvasId, chartRef, payload, metricKey, toolti
           position: "bottom",
           labels: {
             color: axisInk,
-            boxWidth: 18,
-            usePointStyle: true,
-            pointStyle: "line",
+            boxWidth: 12,
+            boxHeight: 4,
           },
         },
         tooltip: {
@@ -361,7 +373,9 @@ function renderReviewersBarChart(canvasId, chartRef, items) {
           callbacks: {
             title(itemsCtx) {
               const index = itemsCtx?.[0]?.dataIndex ?? -1;
-              return index >= 0 ? String(items[index].userId || "Unknown User") : "";
+              return index >= 0
+                ? String(items[index].userId || "Unknown User")
+                : "";
             },
             label(context) {
               return `${fmtNumber(context.parsed.x || 0)} reviews`;
@@ -436,7 +450,9 @@ function renderScoreHoldersBarChart(canvasId, chartRef, items) {
           callbacks: {
             title(itemsCtx) {
               const index = itemsCtx?.[0]?.dataIndex ?? -1;
-              return index >= 0 ? String(items[index].userId || "Unknown User") : "";
+              return index >= 0
+                ? String(items[index].userId || "Unknown User")
+                : "";
             },
             label(context) {
               return `${fmtNumber(context.parsed.x || 0)} first-place spots`;
@@ -535,8 +551,8 @@ function renderNewTablesLineChart(canvasId, chartRef, items) {
           position: "bottom",
           labels: {
             color: axisInk,
-            boxWidth: 18,
-            usePointStyle: true,
+            boxWidth: 12,
+            boxHeight: 4,
           },
         },
         tooltip: {
@@ -603,6 +619,10 @@ async function refreshCharts() {
 
   try {
     const [
+      lastSyncRes,
+      vpsdbStatusRes,
+      userCountRes,
+      tableCountRes,
       runtimeResult,
       playerRuntimeResult,
       startsResult,
@@ -611,6 +631,10 @@ async function refreshCharts() {
       reviewersResult,
       scoreHoldersResult,
     ] = await Promise.all([
+      api("/api/v1/sync/last"),
+      api("/api/v1/vpsdb/status"),
+      api("/api/v1/users/count"),
+      api("/api/v1/tables/count"),
       api(
         `/api/v1/tables/top-play-time-buckets?days=${encodeURIComponent(CHART_WINDOW_DAYS)}&limit=${encodeURIComponent(CHART_TOP_LIMIT)}`,
       ),
@@ -634,6 +658,34 @@ async function refreshCharts() {
       ),
     ]);
 
+    q("kpiLastSync").textContent = lastSyncRes.ok
+      ? "Last Sync on " + fmtDate(lastSyncRes.data.lastSyncAt)
+      : "-";
+    q("kpiLastSyncUser").textContent =
+      `${lastSyncRes.ok ? lastSyncRes.data.userId || "-" : "-"}`;
+
+    q("kpiUserCount").textContent = userCountRes.ok
+      ? fmtNumber(userCountRes.data.userCount)
+      : "-";
+
+    q("kpiTotalTables").textContent = tableCountRes.ok
+      ? `${fmtNumber(tableCountRes.data.uniqueVpsIdCount)} / ${fmtNumber(tableCountRes.data.totalTableRows)}`
+      : "-";
+
+    if (vpsdbStatusRes.ok) {
+      const statusText = `${vpsdbStatusRes.data.recordCount ?? "-"} Games`;
+      setKpi(
+        "kpiVpsdbStatus",
+        statusText,
+        vpsdbStatusRes.data.status ? "status-ok" : "status-bad",
+      );
+      q("kpiVpsdbMeta").textContent =
+        `VPSDB Sync on ${fmtDate(vpsdbStatusRes.data.lastSyncAt)}`;
+    } else {
+      setKpi("kpiVpsdbStatus", "error", "status-bad");
+      q("kpiVpsdbMeta").textContent = "Unable to fetch VPSDB status";
+    }
+
     if (!runtimeResult.ok) {
       destroyChart(topRuntimeChart);
       topRuntimeChart = null;
@@ -643,8 +695,7 @@ async function refreshCharts() {
         : [];
 
       if (topRuntimeMetaEl) {
-        topRuntimeMetaEl.textContent =
-          `Daily runtime buckets from ${fmtDate(runtimeResult.data?.from)} to ${fmtDate(runtimeResult.data?.to)}.`;
+        topRuntimeMetaEl.textContent = `Daily runtime buckets from ${fmtDate(runtimeResult.data?.from)} to ${fmtDate(runtimeResult.data?.to)}.`;
       }
 
       if (items.length === 0) {
@@ -671,8 +722,7 @@ async function refreshCharts() {
         : [];
 
       if (topPlayerRuntimeMetaEl) {
-        topPlayerRuntimeMetaEl.textContent =
-          `Daily runtime buckets from ${fmtDate(playerRuntimeResult.data?.from)} to ${fmtDate(playerRuntimeResult.data?.to)}.`;
+        topPlayerRuntimeMetaEl.textContent = `Daily runtime buckets from ${fmtDate(playerRuntimeResult.data?.from)} to ${fmtDate(playerRuntimeResult.data?.to)}.`;
       }
 
       if (items.length === 0) {
@@ -699,8 +749,7 @@ async function refreshCharts() {
         : [];
 
       if (topStartsMetaEl) {
-        topStartsMetaEl.textContent =
-          `Daily start-count buckets from ${fmtDate(startsResult.data?.from)} to ${fmtDate(startsResult.data?.to)}.`;
+        topStartsMetaEl.textContent = `Daily start-count buckets from ${fmtDate(startsResult.data?.from)} to ${fmtDate(startsResult.data?.to)}.`;
       }
 
       if (items.length === 0) {
@@ -727,8 +776,7 @@ async function refreshCharts() {
         : [];
 
       if (topPlayerStartsMetaEl) {
-        topPlayerStartsMetaEl.textContent =
-          `Daily start-count buckets from ${fmtDate(playerStartsResult.data?.from)} to ${fmtDate(playerStartsResult.data?.to)}.`;
+        topPlayerStartsMetaEl.textContent = `Daily start-count buckets from ${fmtDate(playerStartsResult.data?.from)} to ${fmtDate(playerStartsResult.data?.to)}.`;
       }
 
       if (items.length === 0) {
@@ -755,8 +803,7 @@ async function refreshCharts() {
         : [];
 
       if (newTablesMetaEl) {
-        newTablesMetaEl.textContent =
-          `Newest tables first from ${fmtDay(newTablesResult.data?.from)} to ${fmtDay(newTablesResult.data?.to)}, with installed player count on the y-axis.`;
+        newTablesMetaEl.textContent = `Newest tables first from ${fmtDay(newTablesResult.data?.from)} to ${fmtDay(newTablesResult.data?.to)}, with installed player count on the y-axis.`;
       }
 
       if (items.length === 0) {

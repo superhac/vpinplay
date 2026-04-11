@@ -13,61 +13,8 @@
   padding: 18px 36px;
 }
 
-.grid-kpi {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 36px;
-  margin: auto;
-}
-
-/* KPI Overrides */
-.kpi {
-  padding: 8px 14px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
-}
-
-.kpi .label {
-  color: var(--ink-muted);
-  font-size: 0.6rem;
-  text-transform: uppercase;
-  font-weight: 800;
-  text-align: center;
-}
-
-.kpi .value {
-  font-size: 1.4rem;
-  font-weight: 900;
-  background-clip: text;
-  text-align: center;
-}
-
-/* Responsive overrides */
-@media (max-width: 900px) {
-  .grid-kpi {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 24px;
-  }
-}
-
 @media (max-width: 640px) {
   .main {
     padding: 18px;
-  }
-
-  .grid-kpi {
-    grid-template-columns: 1fr;
-    gap: 18px;
-  }
-
-  .kpi {
-    padding: 4px 10px;
-    gap: 4px;
-  }
-
-  .kpi .value {
-    font-size: 1rem;
   }
 }

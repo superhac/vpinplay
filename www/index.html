@@ -23,25 +23,6 @@
   <body>
     <vpinplay-header></vpinplay-header>
     <div class="main">
-      <section class="grid-kpi">
-        <div class="kpi">
-          <div id="kpiLastSync" class="label">Last Sync</div>
-          <div id="kpiLastSyncUser" class="value">N/A</div>
-        </div>
-        <div class="kpi">
-          <div class="label">Total Registered Users</div>
-          <div id="kpiUserCount" class="value">-</div>
-        </div>
-        <div class="kpi">
-          <div class="label">Unique VPS Games / Total Variations</div>
-          <div id="kpiTotalTables" class="value">-</div>
-        </div>
-        <div class="kpi">
-          <div id="kpiVpsdbMeta" class="label">VPSDB Sync</div>
-          <div id="kpiVpsdbStatus" class="value">-</div>
-        </div>
-      </section>
-
       <tables-carousel
         title="Top Rated"
         sortBy="avgRating"
@@ -98,6 +79,5 @@
         api-url="/api/v1/tables-plus/search"
       ></tables-carousel>
     </div>
-    <script src="js/index.js"></script>
   </body>
 </html>

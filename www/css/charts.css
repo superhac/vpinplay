@@ -1,3 +1,49 @@
+/* ============================================
+   Charts Page Specific Styles
+   ============================================ */
+
+.main {
+  position: relative;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: start;
+  gap: 18px;
+  margin: 0;
+  padding: 18px 36px;
+}
+
+/* KPI Overrides */
+.grid-kpi {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 36px;
+  margin: auto;
+}
+
+.kpi {
+  padding: 8px 14px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.kpi .label {
+  color: var(--ink-muted);
+  font-size: 0.6rem;
+  text-transform: uppercase;
+  font-weight: 800;
+  text-align: center;
+}
+
+.kpi .value {
+  font-size: 1.4rem;
+  font-weight: 900;
+  background-clip: text;
+  text-align: center;
+}
+
 .grid-panels {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -85,6 +131,11 @@
 }
 
 @media (max-width: 900px) {
+  .grid-kpi {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 24px;
+  }
+
   .grid-panels {
     grid-template-columns: 1fr;
   }
@@ -116,5 +167,27 @@
 
   .chart-stage-player-starts {
     min-height: 340px;
+  }
+}
+
+@media (max-width: 640px) {
+  .main {
+    gap: 18px;
+    margin: 0;
+    padding: 9px 18px;
+  }
+
+  .grid-kpi {
+    grid-template-columns: 1fr;
+    gap: 18px;
+  }
+
+  .kpi {
+    padding: 4px 10px;
+    gap: 4px;
+  }
+
+  .kpi .value {
+    font-size: 1rem;
   }
 }
