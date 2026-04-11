@@ -18,8 +18,8 @@ class VPinPlayHeader extends HTMLElement {
       { name: "Charts", href: "/charts" },
       { name: "Tables", href: "/tables" },
       { name: "Players", href: "/players" },
-      { name: "Scores", href: "/scores" },
-      { name: "Status", href: "/status" },
+      // { name: "Scores", href: "/scores" },
+      // { name: "Status", href: "/status" },
     ];
 
     const navHtml = navItems
