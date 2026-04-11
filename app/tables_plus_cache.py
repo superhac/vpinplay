@@ -95,6 +95,7 @@ def _aggregate_state_stats(db: Database, vps_ids: list[str] | None) -> dict[str,
                 "runTimeTotal": {"$sum": {"$ifNull": ["$runTime", 0]}},
                 "startCountTotal": {"$sum": {"$ifNull": ["$startCount", 0]}},
                 "playerCount": {"$sum": 1},
+                "lastSeenAt": {"$max": "$lastSeenAt"},
             }
         }
     )
@@ -103,6 +104,7 @@ def _aggregate_state_stats(db: Database, vps_ids: list[str] | None) -> dict[str,
             "runTimeTotal": int(row.get("runTimeTotal") or 0),
             "startCountTotal": int(row.get("startCountTotal") or 0),
             "playerCount": int(row.get("playerCount") or 0),
+            "lastSeenAt": row.get("lastSeenAt"),
         }
         for row in db["user_table_state"].aggregate(pipeline)
         if row.get("_id")
@@ -168,6 +170,7 @@ def rebuild_tables_plus_cache(db: Database, vps_ids: list[str] | None = None) ->
             "playerCount": int((state_stats.get(vps_id) or {}).get("playerCount") or 0),
             "startCountTotal": int((state_stats.get(vps_id) or {}).get("startCountTotal") or 0),
             "runTimeTotal": int((state_stats.get(vps_id) or {}).get("runTimeTotal") or 0),
+            "lastSeenAt": (state_stats.get(vps_id) or {}).get("lastSeenAt"),
             "variationCount": int(variation_data.get("variationCount") or 0),
             "firstSeenAt": variation_data.get("firstSeenAt"),
             "cacheUpdatedAt": now,

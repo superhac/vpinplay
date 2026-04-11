@@ -39,6 +39,14 @@
       ></tables-carousel>
 
       <tables-carousel
+        title="Recently Played"
+        sortBy="lastSeenAt"
+        sortOrder="-1"
+        shelfStat="lastSeenAt"
+        api-url="/api/v1/tables-plus/search"
+      ></tables-carousel>
+
+      <tables-carousel
         title="Most Installed"
         sortBy="playerCount"
         sortOrder="-1"

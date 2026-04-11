@@ -655,6 +655,8 @@ class TablesCarousel extends HTMLElement {
         return `<span class="stat-label">Total Plays</span> <span class="stat-value">${val || 0}</span>`;
       case "firstSeenAt":
         return `<span class="stat-label">Added</span> <span class="stat-value stat-date">${new Date(val).toLocaleDateString()}</span>`;
+      case "lastSeenAt":
+        return `<span class="stat-label">Played</span> <span class="stat-value stat-date">${val ? new Date(val).toLocaleDateString() : "—"}</span>`;
       case "ratingCount":
         return `<span class="stat-label">Ratings</span> <span class="stat-value">${val || 0}</span>`;
       case "name":
