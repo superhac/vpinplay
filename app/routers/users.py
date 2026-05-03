@@ -730,7 +730,18 @@ def _collect_latest_score_submission_items(
         if not normalized_user_id or not initials:
             continue
 
-        items.extend(_build_extracted_score_items(
+        prev_items = _build_extracted_score_items(
+            {
+                "userId": normalized_user_id,
+                "vpsId": delta.get("vpsId"),
+                "score": delta.get("prevScore"),
+                "updatedAt": delta.get("changedAt"),
+                "alttitle": None,
+            },
+            normalized_user_id,
+            initials,
+        )
+        new_items = _build_extracted_score_items(
             {
                 "userId": normalized_user_id,
                 "vpsId": delta.get("vpsId"),
@@ -740,7 +751,8 @@ def _collect_latest_score_submission_items(
             },
             normalized_user_id,
             initials,
-        ))
+        )
+        items.extend(_filter_new_score_submission_items(prev_items, new_items))
 
     items.sort(
         key=lambda item: (
@@ -784,6 +796,48 @@ def _score_item_numeric_value(item: dict) -> float | None:
     except (TypeError, ValueError):
         return None
     return numeric if numeric == numeric else None
+
+
+def _score_submission_entry_key(item: dict) -> tuple[str, ...]:
+    score = ((item or {}).get("score") or {})
+    raw_value = _get_case_insensitive_value(score, "score")
+    if raw_value is None:
+        raw_value = _get_case_insensitive_value(score, "value")
+
+    numeric_value = _score_item_numeric_value(item)
+    normalized_value = (
+        f"num:{numeric_value:g}"
+        if numeric_value is not None
+        else f"text:{str(raw_value if raw_value is not None else '').strip().lower()}"
+    )
+    extra_lines = _get_case_insensitive_value(score, "extra_lines") or []
+    if not isinstance(extra_lines, list):
+        extra_lines = [extra_lines]
+
+    return (
+        str(item.get("userId") or "").strip().lower(),
+        str(item.get("vpsId") or "").strip(),
+        str(_get_case_insensitive_value(score, "initials") or item.get("initials") or "").strip().upper(),
+        str(_get_case_insensitive_value(score, "section") or item.get("label") or "").strip().lower(),
+        normalized_value,
+        str(_get_case_insensitive_value(score, "value_prefix") or "").strip().lower(),
+        str(_get_case_insensitive_value(score, "value_suffix") or "").strip().lower(),
+        str(_get_case_insensitive_value(score, "value_format") or "").strip().lower(),
+        "|".join(
+            str(part).strip().lower()
+            for part in extra_lines
+            if str(part).strip()
+        ),
+    )
+
+
+def _filter_new_score_submission_items(prev_items: list[dict], new_items: list[dict]) -> list[dict]:
+    prev_keys = {_score_submission_entry_key(item) for item in prev_items}
+    return [
+        item
+        for item in new_items
+        if _score_submission_entry_key(item) not in prev_keys
+    ]
 
 
 def _score_item_sort_key(item: dict):
