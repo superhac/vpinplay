@@ -55,7 +55,7 @@ def _normalize_score_payload(value):
 
 
 @router.get("/sync/last")
-async def get_last_global_sync(db: Database = Depends(get_db)):
+def get_last_global_sync(db: Database = Depends(get_db)):
     """
     Get the most recent successful sync across all users.
     """
@@ -74,7 +74,7 @@ async def get_last_global_sync(db: Database = Depends(get_db)):
 
 
 @router.post("/sync", response_model=SyncResponse)
-async def submit_sync(request: FullSyncRequest, db: Database = Depends(get_db)):
+def submit_sync(request: FullSyncRequest, db: Database = Depends(get_db)):
     """
     Submit full current state snapshot of tables from a client.
     
