@@ -690,14 +690,15 @@ def _collect_latest_score_submission_items(
         if not normalized_user_id or not initials:
             continue
 
-        items.extend(_build_extracted_score_items(
+        current_items = _build_extracted_score_items(
             {
                 **state,
                 "updatedAt": state.get("createdAt") or state.get("updatedAt"),
             },
             normalized_user_id,
             initials,
-        ))
+        )
+        items.extend(_dedupe_score_submission_items(current_items))
 
     delta_query: dict[str, object] = {"newScore": {"$type": "object"}}
     if user_id and vps_id:
@@ -762,7 +763,7 @@ def _collect_latest_score_submission_items(
         ),
         reverse=True,
     )
-    return items
+    return _dedupe_score_submission_items(items)
 
 
 def _coerce_datetime_utc(value) -> datetime | None:
@@ -833,11 +834,23 @@ def _score_submission_entry_key(item: dict) -> tuple[str, ...]:
 
 def _filter_new_score_submission_items(prev_items: list[dict], new_items: list[dict]) -> list[dict]:
     prev_keys = {_score_submission_entry_key(item) for item in prev_items}
-    return [
+    return _dedupe_score_submission_items(
         item
         for item in new_items
         if _score_submission_entry_key(item) not in prev_keys
-    ]
+    )
+
+
+def _dedupe_score_submission_items(score_items) -> list[dict]:
+    deduped_items: list[dict] = []
+    seen_keys: set[tuple[str, ...]] = set()
+    for item in score_items:
+        key = _score_submission_entry_key(item)
+        if key in seen_keys:
+            continue
+        seen_keys.add(key)
+        deduped_items.append(item)
+    return deduped_items
 
 
 def _score_item_sort_key(item: dict):
