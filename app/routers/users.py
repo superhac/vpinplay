@@ -755,6 +755,7 @@ def _collect_latest_score_submission_items(
         )
         items.extend(_filter_new_score_submission_items(prev_items, new_items))
 
+    items = _dedupe_score_submission_items(items, prefer_earliest=True)
     items.sort(
         key=lambda item: (
             str(item.get("updatedAt") or ""),
@@ -763,7 +764,7 @@ def _collect_latest_score_submission_items(
         ),
         reverse=True,
     )
-    return _dedupe_score_submission_items(items)
+    return items
 
 
 def _coerce_datetime_utc(value) -> datetime | None:
@@ -841,14 +842,21 @@ def _filter_new_score_submission_items(prev_items: list[dict], new_items: list[d
     )
 
 
-def _dedupe_score_submission_items(score_items) -> list[dict]:
+def _score_item_seen_at(item: dict) -> datetime:
+    return _coerce_datetime_utc(item.get("updatedAt")) or datetime.max.replace(tzinfo=timezone.utc)
+
+
+def _dedupe_score_submission_items(score_items, prefer_earliest: bool = False) -> list[dict]:
     deduped_items: list[dict] = []
-    seen_keys: set[tuple[str, ...]] = set()
+    seen_keys: dict[tuple[str, ...], int] = {}
     for item in score_items:
         key = _score_submission_entry_key(item)
-        if key in seen_keys:
+        existing_index = seen_keys.get(key)
+        if existing_index is not None:
+            if prefer_earliest and _score_item_seen_at(item) < _score_item_seen_at(deduped_items[existing_index]):
+                deduped_items[existing_index] = item
             continue
-        seen_keys.add(key)
+        seen_keys[key] = len(deduped_items)
         deduped_items.append(item)
     return deduped_items
 
