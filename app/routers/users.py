@@ -948,6 +948,7 @@ async def get_top_score_holders(
                 "vpsId": 1,
                 "score": 1,
                 "alttitle": 1,
+                "createdAt": 1,
                 "updatedAt": 1,
             },
         )
@@ -959,7 +960,14 @@ async def get_top_score_holders(
         initials = initials_by_user_id.get(normalized_user_id)
         if not normalized_user_id or not initials:
             continue
-        extracted_items.extend(_build_extracted_score_items(state, normalized_user_id, initials))
+        extracted_items.extend(_build_extracted_score_items(
+            {
+                **state,
+                "updatedAt": state.get("createdAt") or state.get("updatedAt"),
+            },
+            normalized_user_id,
+            initials,
+        ))
 
     winning_items_by_slot: dict[tuple[str, str], dict] = {}
     for item in extracted_items:
@@ -1131,6 +1139,7 @@ async def get_all_users_best_ever_matching_scores(
                 "vpsId": 1,
                 "score": 1,
                 "alttitle": 1,
+                "createdAt": 1,
                 "updatedAt": 1,
             },
         )
@@ -1140,7 +1149,14 @@ async def get_all_users_best_ever_matching_scores(
         initials = initials_by_user_id.get(normalized_user_id)
         if not normalized_user_id or not initials:
             continue
-        extracted_items.extend(_build_extracted_score_items(state, normalized_user_id, initials))
+        extracted_items.extend(_build_extracted_score_items(
+            {
+                **state,
+                "updatedAt": state.get("createdAt") or state.get("updatedAt"),
+            },
+            normalized_user_id,
+            initials,
+        ))
 
     delta_rows = list(
         db["user_table_state_deltas"].find(
@@ -1167,6 +1183,9 @@ async def get_all_users_best_ever_matching_scores(
         )
     )
     for delta in delta_rows:
+        if not _score_payload_changed(delta.get("prevScore"), delta.get("newScore")):
+            continue
+
         normalized_user_id = normalize_user_id(delta.get("userIdNormalized") or delta.get("userId") or "")
         initials = initials_by_user_id.get(normalized_user_id)
         if not normalized_user_id or not initials:
