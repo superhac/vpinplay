@@ -660,6 +660,7 @@ def _collect_latest_score_submission_items(
     vps_id: str | None = None,
 ) -> list[dict]:
     items: list[dict] = []
+    first_seen_by_key: dict[tuple[str, ...], dict] = {}
 
     current_query: dict[str, object] = {"score": {"$type": "object"}}
     if user_id and vps_id:
@@ -679,26 +680,10 @@ def _collect_latest_score_submission_items(
                 "vpsId": 1,
                 "score": 1,
                 "alttitle": 1,
-                "createdAt": 1,
                 "updatedAt": 1,
             },
         )
     )
-    for state in current_states:
-        normalized_user_id = normalize_user_id(state.get("userIdNormalized") or state.get("userId") or "")
-        initials = initials_by_user_id.get(normalized_user_id)
-        if not normalized_user_id or not initials:
-            continue
-
-        current_items = _build_extracted_score_items(
-            {
-                **state,
-                "updatedAt": state.get("createdAt") or state.get("updatedAt"),
-            },
-            normalized_user_id,
-            initials,
-        )
-        items.extend(_dedupe_score_submission_items(current_items))
 
     delta_query: dict[str, object] = {"newScore": {"$type": "object"}}
     if user_id and vps_id:
@@ -753,7 +738,31 @@ def _collect_latest_score_submission_items(
             normalized_user_id,
             initials,
         )
-        items.extend(_filter_new_score_submission_items(prev_items, new_items))
+        delta_items = _filter_new_score_submission_items(prev_items, new_items)
+        for item in delta_items:
+            key = _score_submission_entry_key(item)
+            existing = first_seen_by_key.get(key)
+            if existing is None or _score_item_seen_at(item) < _score_item_seen_at(existing):
+                first_seen_by_key[key] = item
+        items.extend(delta_items)
+
+    for state in current_states:
+        normalized_user_id = normalize_user_id(state.get("userIdNormalized") or state.get("userId") or "")
+        initials = initials_by_user_id.get(normalized_user_id)
+        if not normalized_user_id or not initials:
+            continue
+
+        current_items = _dedupe_score_submission_items(
+            _build_extracted_score_items(state, normalized_user_id, initials)
+        )
+        for item in current_items:
+            first_seen_item = first_seen_by_key.get(_score_submission_entry_key(item))
+            if first_seen_item is not None:
+                item = {
+                    **item,
+                    "updatedAt": first_seen_item.get("updatedAt"),
+                }
+            items.append(item)
 
     items = _dedupe_score_submission_items(items, prefer_earliest=True)
     items.sort(
@@ -960,14 +969,7 @@ async def get_top_score_holders(
         initials = initials_by_user_id.get(normalized_user_id)
         if not normalized_user_id or not initials:
             continue
-        extracted_items.extend(_build_extracted_score_items(
-            {
-                **state,
-                "updatedAt": state.get("createdAt") or state.get("updatedAt"),
-            },
-            normalized_user_id,
-            initials,
-        ))
+        extracted_items.extend(_build_extracted_score_items(state, normalized_user_id, initials))
 
     winning_items_by_slot: dict[tuple[str, str], dict] = {}
     for item in extracted_items:
@@ -1139,7 +1141,6 @@ async def get_all_users_best_ever_matching_scores(
                 "vpsId": 1,
                 "score": 1,
                 "alttitle": 1,
-                "createdAt": 1,
                 "updatedAt": 1,
             },
         )
@@ -1149,14 +1150,7 @@ async def get_all_users_best_ever_matching_scores(
         initials = initials_by_user_id.get(normalized_user_id)
         if not normalized_user_id or not initials:
             continue
-        extracted_items.extend(_build_extracted_score_items(
-            {
-                **state,
-                "updatedAt": state.get("createdAt") or state.get("updatedAt"),
-            },
-            normalized_user_id,
-            initials,
-        ))
+        extracted_items.extend(_build_extracted_score_items(state, normalized_user_id, initials))
 
     delta_rows = list(
         db["user_table_state_deltas"].find(
