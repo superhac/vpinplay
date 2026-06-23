@@ -1,6 +1,15 @@
 :8888 {
-    # API requests go to backend
-    reverse_proxy /api/* api:9000
+    log {
+        output stdout
+    }
+
+    # API requests go to production backend
+    reverse_proxy /api* https://api.vpinplay.com:8888 {
+        header_up Host api.vpinplay.com:8888
+        transport http {
+            tls_server_name api.vpinplay.com
+        }
+    }
     
     # Serve frontend files
     root * /www

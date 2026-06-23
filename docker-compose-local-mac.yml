@@ -1,52 +1,10 @@
 services:
-  api:
-    build:
-      context: .
-    container_name: vpinplay_api
-    restart: unless-stopped
-    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "9000"]
-    environment:
-      - MONGO_URL=mongodb://mongo:27017
-      - MONGO_DB_NAME=vpinplay_db
-    depends_on:
-      mongo:
-        condition: service_healthy
-    volumes:
-      - .:/app
-    healthcheck:
-      test: ["CMD-SHELL", "python -c \"import requests; requests.get('http://localhost:9000/health', timeout=3)\""]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 10s
-
-  mongo:
-    image: mongo:7.0
-    container_name: vpinplay_mongo
-    command: ["mongod", "--bind_ip", "0.0.0.0", "--port", "27017"]
-    ports:
-      - "27017:27017"
-    restart: unless-stopped
-    environment:
-      - MONGO_INITDB_DATABASE=vpinplay_db
-    volumes:
-      - mongo_data:/data/db
-    healthcheck:
-      test: ["CMD-SHELL", "mongosh --quiet mongodb://localhost:27017/admin --eval \"quit(db.runCommand({ ping: 1 }).ok ? 0 : 1)\""]
-      interval: 10s
-      timeout: 10s
-      retries: 12
-      start_period: 40s
-
   caddy:
     image: caddy:2.8-alpine
     container_name: vpinplay_caddy
     ports:
       - "8888:8888"
     restart: unless-stopped
-    depends_on:
-      api:
-        condition: service_started
     volumes:
       - ./Caddyfile.local-mac:/etc/caddy/Caddyfile:ro
       - ./www:/www:ro
